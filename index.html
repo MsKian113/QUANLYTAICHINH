@@ -11491,6 +11491,11 @@
     } catch(e) {}
   }
 
+  function t7_normalizeMemberName(rawName) {
+    if (!rawName) return '';
+    return rawName.replace(/\s*\((Tôi|tôi|Chủ ví|chủ ví)\)\s*/gi, '').trim();
+  }
+
   function t7_getFamilyDatabaseMap() {
     const familyMap = new Map();
     const deletedSet = t7_getDeletedFamiliesSet();
@@ -11501,22 +11506,40 @@
         const key = (f.family_name || f.family_id || '').trim().toLowerCase();
         if (!key || deletedSet.has(key)) return;
         const isFamMe = Boolean(f.isMe || (f.members && f.members.some(m => m.isMe || m.is_me)) || key.includes('2f') || key.includes('tôi'));
+
+        const memberDedupeMap = new Map();
+        (f.members || []).forEach(m => {
+          const rawName = (m.member_name || m.name || '').trim();
+          const cleanName = t7_normalizeMemberName(rawName) || rawName;
+          const normKey = cleanName.toLowerCase();
+          if (!normKey) return;
+
+          const isMMe = Boolean(m.isMe || m.is_me || rawName.toLowerCase().includes('tôi') || rawName.toLowerCase().includes('chủ ví'));
+
+          if (memberDedupeMap.has(normKey)) {
+            const existing = memberDedupeMap.get(normKey);
+            if (isMMe) existing.isMe = true;
+          } else {
+            memberDedupeMap.set(normKey, {
+              id: m.member_id || m.id,
+              name: cleanName,
+              member_name: cleanName,
+              type: m.member_type || m.type || 'ADULT',
+              member_type: m.member_type || m.type || 'ADULT',
+              weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
+              sortOrder: m.sort_order,
+              status: m.status,
+              isMe: isMMe
+            });
+          }
+        });
+
         familyMap.set(key, {
           id: f.family_id,
           name: f.family_name,
           repMember: f.repMember,
           isMe: isFamMe,
-          members: (f.members || []).map(m => ({
-            id: m.member_id || m.id,
-            name: m.member_name || m.name,
-            member_name: m.member_name || m.name,
-            type: m.member_type || m.type || 'ADULT',
-            member_type: m.member_type || m.type || 'ADULT',
-            weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
-            sortOrder: m.sort_order,
-            status: m.status,
-            isMe: Boolean(m.isMe || m.is_me || isFamMe)
-          })),
+          members: Array.from(memberDedupeMap.values()),
           explicit: true
         });
       });
@@ -11532,22 +11555,32 @@
               const key = f.name.trim().toLowerCase();
               if (!deletedSet.has(key)) {
                 if (!familyMap.has(key)) {
-                  familyMap.set(key, f);
+                  const cleanedMembers = (f.members || []).map(m => {
+                    const cleanName = t7_normalizeMemberName(m.name || m.member_name || '') || (m.name || m.member_name || '');
+                    return { ...m, name: cleanName, member_name: cleanName };
+                  });
+                  familyMap.set(key, { ...f, members: cleanedMembers });
                 } else {
                   const existingFam = familyMap.get(key);
                   (f.members || []).forEach(m => {
-                    const mName = (m.name || m.member_name || '').trim();
-                    const mKey = mName.toLowerCase();
-                    if (mKey && !existingFam.members.some(em => (em.name || em.member_name || '').trim().toLowerCase() === mKey)) {
-                      existingFam.members.push({
-                        id: m.id || m.member_id || '',
-                        name: mName,
-                        member_name: mName,
-                        type: m.type || m.member_type || 'ADULT',
-                        member_type: m.type || m.member_type || 'ADULT',
-                        weight: m.weight !== undefined ? m.weight : (m.default_weight !== undefined ? m.default_weight : 1.0),
-                        isMe: Boolean(m.isMe || m.is_me)
-                      });
+                    const rawName = (m.name || m.member_name || '').trim();
+                    const cleanName = t7_normalizeMemberName(rawName) || rawName;
+                    const normKey = cleanName.toLowerCase();
+                    if (normKey) {
+                      const existing = existingFam.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
+                      if (existing) {
+                        if (m.isMe || m.is_me || rawName.toLowerCase().includes('tôi')) existing.isMe = true;
+                      } else {
+                        existingFam.members.push({
+                          id: m.id || m.member_id || '',
+                          name: cleanName,
+                          member_name: cleanName,
+                          type: m.type || m.member_type || 'ADULT',
+                          member_type: m.type || m.member_type || 'ADULT',
+                          weight: m.weight !== undefined ? m.weight : 1.0,
+                          isMe: Boolean(m.isMe || m.is_me || rawName.toLowerCase().includes('tôi'))
+                        });
+                      }
                     }
                   });
                 }
@@ -11571,18 +11604,25 @@
           }
           const famObj = familyMap.get(key);
 
-          const mName = (m.name || m.member_name || '').trim();
-          const mbrKey = mName.toLowerCase();
-          if (mbrKey && !famObj.members.some(existing => (existing.name || existing.member_name || '').trim().toLowerCase() === mbrKey)) {
-            famObj.members.push({
-              id: m.id || m.member_id || '',
-              name: mName,
-              member_name: mName,
-              type: m.type || m.member_type || 'ADULT',
-              member_type: m.type || m.member_type || 'ADULT',
-              weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-              isMe: Boolean(m.isMe || m.is_me)
-            });
+          const rawName = (m.name || m.member_name || '').trim();
+          const cleanName = t7_normalizeMemberName(rawName) || rawName;
+          const normKey = cleanName.toLowerCase();
+
+          if (normKey) {
+            const existing = famObj.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
+            if (existing) {
+              if (m.isMe || m.is_me || rawName.toLowerCase().includes('tôi')) existing.isMe = true;
+            } else {
+              famObj.members.push({
+                id: m.id || m.member_id || '',
+                name: cleanName,
+                member_name: cleanName,
+                type: m.type || m.member_type || 'ADULT',
+                member_type: m.type || m.member_type || 'ADULT',
+                weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
+                isMe: Boolean(m.isMe || m.is_me || rawName.toLowerCase().includes('tôi'))
+              });
+            }
           }
         }
       });

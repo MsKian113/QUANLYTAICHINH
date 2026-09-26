@@ -680,9 +680,6 @@ function saveSplitGroup(groupData, ssTarget) {
       var mId = String(m.id || m.member_id || m.memberId || ("MBR_" + (idx + 1) + "_" + Math.floor(100 + Math.random() * 900))).trim();
       var gmId = String(m.groupMemberId || m.group_member_id || ("GM_" + String(idx + 1).padStart(3, '0'))).trim();
       var isMe = Boolean(m.isMe || m.is_me);
-      if (isMe && !mName.toLowerCase().includes("tôi") && !mName.toLowerCase().includes("chủ ví")) {
-        mName = mName + " (Tôi)";
-      }
 
       var defaultWeight = 1.0;
       if (mType === "CHILD") defaultWeight = 0.5;
@@ -1548,7 +1545,7 @@ function calculateGroupBalances(groupIdOrGroupObj, ssTarget, preFetchedExpenses)
         name: m.name,
         family: m.family || "Gia đình",
         type: m.type,
-        isMe: Boolean(m.isMe),
+        isMe: Boolean(m.isMe || m.is_me || (m.name && String(m.name).toLowerCase().includes('tôi')) || (m.family && String(m.family).toLowerCase().includes('2f'))),
         sortOrder: sortOrder,
         paid: paid,
         owed: owed,
@@ -1893,7 +1890,10 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
             var fromTargetName = formatDebtTargetName(stl.fromName);
             var toTargetName = formatDebtTargetName(stl.toName);
 
-            if (stl.toIsMe) {
+            var toIsMe = Boolean(stl.toIsMe || (stl.toName && (stl.toName.toLowerCase().includes('tôi') || stl.toName.toLowerCase().includes('2f'))));
+            var fromIsMe = Boolean(stl.fromIsMe || (stl.fromName && (stl.fromName.toLowerCase().includes('tôi') || stl.fromName.toLowerCase().includes('2f'))));
+
+            if (toIsMe) {
               saveDebtTransaction({
                 ten: fromTargetName,
                 sotien: stl.amount,
@@ -1905,11 +1905,23 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
                 expenseSource: "TAB7_TRICOUNT"
               }, ss);
               exportedCount++;
-            } else if (stl.fromIsMe) {
+            } else if (fromIsMe) {
               saveDebtTransaction({
                 ten: toTargetName,
                 sotien: stl.amount,
                 loai: "TRA",
+                nguon: "",
+                noidung: formattedNoiDung,
+                groupId: group.id,
+                batchId: batchId,
+                expenseSource: "TAB7_TRICOUNT"
+              }, ss);
+              exportedCount++;
+            } else {
+              saveDebtTransaction({
+                ten: fromTargetName,
+                sotien: stl.amount,
+                loai: "THU",
                 nguon: "",
                 noidung: formattedNoiDung,
                 groupId: group.id,
