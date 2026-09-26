@@ -1909,9 +1909,18 @@
           id: m.id || m.member_id || '',
           name: m.name || m.member_name || ''
         }));
-        const hasRep = famObj.members.some(m => Boolean(m.isRep || m.isMe || Number(m.sort_order) === 1));
+
+        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep));
+        if (repIdx < 0) {
+          repIdx = famObj.members.findIndex(m => Boolean(m.isMe || m.is_me));
+        }
+        if (repIdx < 0) {
+          repIdx = famObj.members.findIndex(m => Number(m.sort_order || m.sortOrder) === 1);
+        }
+        if (repIdx < 0) repIdx = 0;
+
         famObj.members.forEach((m, idx) => {
-          const isThisRep = hasRep ? Boolean(m.isRep || m.isMe || Number(m.sort_order) === 1) : (idx === 0);
+          const isThisRep = (idx === repIdx);
           t7_addFamMemberRow({ ...m, isRep: isThisRep });
         });
       } else {
@@ -1932,7 +1941,7 @@
       if (famNameToEdit) {
         const familyMap = t7_getFamilyDatabaseMap();
         const famObj = familyMap.get(famNameToEdit.trim().toLowerCase());
-        isMe = famObj ? Boolean(famObj.isMe || (famObj.members && famObj.members.some(m => m.isMe))) : famNameToEdit.toLowerCase().includes('2f');
+        isMe = famObj ? Boolean(famObj.isMe || (famObj.members && famObj.members.some(m => m.isMe || m.is_me))) : famNameToEdit.toLowerCase().includes('2f');
       } else {
         isMe = false;
       }
@@ -1950,7 +1959,7 @@
     const mId = m ? (m.id || m.member_id || '') : '';
     const name = m ? (m.name || m.member_name || '') : '';
     const type = m ? (m.type || m.member_type || 'ADULT') : 'ADULT';
-    const isRep = m ? Boolean(m.isRep || m.isMe || Number(m.sort_order) === 1) : false;
+    const isRep = m ? Boolean(m.isRep) : false;
 
     row.innerHTML = `
       <input type="hidden" class="fam-member-id" value="${mId}" />
@@ -1960,7 +1969,7 @@
         <option value="CHILD" ${type==='CHILD'?'selected':''}>🧒 Nhỏ</option>
         <option value="BABY" ${type==='BABY'?'selected':''}>🍼 Bé</option>
       </select>
-      <label class="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 cursor-pointer select-none shrink-0 px-1" title="Người đại diện nhận/trả công nợ gia đình (Sort Order = 1)">
+      <label class="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 cursor-pointer select-none shrink-0 px-1" title="Người đại diện nhận/trả công nợ gia đình">
         <input type="radio" name="fam-rep-radio" class="fam-member-is-rep" ${isRep?'checked':''} /> 👑 Đại diện
       </label>
       <button type="button" onclick="this.closest('.fam-member-row').remove()" class="text-rose-500 hover:text-rose-700 font-bold px-1 text-sm cursor-pointer shrink-0">&times;</button>
@@ -1996,7 +2005,7 @@
       else if (mType === 'BABY') w = 0.0;
 
       if (mName) {
-        rawMembers.push({ id: mId, member_id: mId, name: mName, type: mType, weight: w, isMe: isFamMe || mIsRep, isRep: mIsRep });
+        rawMembers.push({ id: mId, member_id: mId, name: mName, member_name: mName, type: mType, member_type: mType, weight: w, isMe: mIsRep, isRep: mIsRep });
       }
     });
 
@@ -2005,12 +2014,16 @@
       return;
     }
 
-    // Ensure representative (isRep = true) is placed first so sort_order = 1
-    const members = rawMembers.slice().sort((a, b) => (b.isRep ? 1 : 0) - (a.isRep ? 1 : 0));
-    if (!members.some(m => m.isRep)) {
-      members[0].isRep = true;
-      members[0].isMe = true;
+    if (!rawMembers.some(m => m.isRep)) {
+      rawMembers[0].isRep = true;
+      rawMembers[0].isMe = true;
     }
+
+    const members = rawMembers.map((m, idx) => ({
+      ...m,
+      sort_order: idx + 1,
+      sortOrder: idx + 1
+    }));
 
     // Find removed members for deactivation
     const currentMemberIds = new Set(members.map(m => m.id || m.member_id).filter(Boolean));
