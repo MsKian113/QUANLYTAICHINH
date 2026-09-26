@@ -120,27 +120,50 @@ test('SplitFamilies: saveSplitFamilyBatch sets sort_order = 1 for representative
   assert.equal(chit.sort_order, "");
   assert.equal(chit.isRep, false);
 
-  // Switch representative from Chi to Quậy
-  const batchRes2 = Server_Tab7.saveSplitFamilyBatch({
+  // Switch representative back from Quậy to Chi
+  const batchRes3 = Server_Tab7.saveSplitFamilyBatch({
     family_name: '2F',
     members: [
-      { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: true },
-      { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: false },
+      { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: false },
+      { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: true },
       { name: 'Chít', type: 'CHILD', weight: 0.5, isRep: false }
     ]
   }, ss);
 
-  assert.equal(batchRes2.success, true);
-  const fam2 = batchRes2.families.find(f => f.family_name === '2F');
-  assert.equal(fam2.repMember.member_name, 'Quậy');
+  assert.equal(batchRes3.success, true);
+  const fam3 = batchRes3.families.find(f => f.family_name === '2F');
+  assert.equal(fam3.repMember.member_name, 'Chi');
+  assert.equal(fam3.members.find(m => m.member_name === 'Chi').sort_order, 1);
+  assert.equal(fam3.members.find(m => m.member_name === 'Quậy').sort_order, "");
+});
 
-  const quay2 = fam2.members.find(m => m.member_name === 'Quậy');
-  assert.equal(quay2.sort_order, 1);
-  assert.equal(quay2.isRep, true);
+test('SplitFamilies: saveSplitFamilyMember clears sort_order of old rep when new rep is saved', () => {
+  const ss = createMockSpreadsheet();
 
-  const chi2 = fam2.members.find(m => m.member_name === 'Chi');
-  assert.equal(chi2.sort_order, "");
-  assert.equal(chi2.isRep, false);
+  // First save Quậy as representative (sort_order = 1)
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_2F', family_name: '2F', member_name: 'Quậy', member_type: 'ADULT', default_weight: 1, sort_order: 1, isRep: true }, ss);
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_2F', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, sort_order: "", isRep: false }, ss);
+
+  let check1 = Server_Tab7.getSplitFamilies(ss);
+  let fam1 = check1.families.find(f => f.family_name === '2F');
+  assert.equal(fam1.repMember.member_name, 'Quậy');
+  assert.equal(fam1.members.find(m => m.member_name === 'Quậy').sort_order, 1);
+  assert.equal(fam1.members.find(m => m.member_name === 'Chi').sort_order, "");
+
+  // Now update Chi to be representative (sort_order = 1)
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_2F', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, sort_order: 1, isRep: true }, ss);
+
+  let check2 = Server_Tab7.getSplitFamilies(ss);
+  let fam2 = check2.families.find(f => f.family_name === '2F');
+  assert.equal(fam2.repMember.member_name, 'Chi');
+
+  const quayFinal = fam2.members.find(m => m.member_name === 'Quậy');
+  assert.equal(quayFinal.sort_order, "");
+  assert.equal(quayFinal.isRep, false);
+
+  const chiFinal = fam2.members.find(m => m.member_name === 'Chi');
+  assert.equal(chiFinal.sort_order, 1);
+  assert.equal(chiFinal.isRep, true);
 });
 
 test('SplitFamilies: deleteSplitFamilyMember sets status to INACTIVE', () => {
