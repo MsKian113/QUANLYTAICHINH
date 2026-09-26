@@ -169,19 +169,30 @@
 
       function execApiCall(actionName, args, successCb, failureCb) {
         var payload = { action: actionName, args: args, data: args[0] };
-        fetch(window.GAS_API_URL, {
-          method: 'POST',
-          mode: 'cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
+        var payloadStr = encodeURIComponent(JSON.stringify(payload));
+        var getUrl = window.GAS_API_URL + "?action=" + encodeURIComponent(actionName) + "&payload=" + payloadStr;
+
+        fetch(getUrl, {
+          method: 'GET',
+          redirect: 'follow'
         })
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (successCb) successCb(data);
         })
         .catch(function(err) {
-          console.error("API error for " + actionName, err);
-          if (failureCb) failureCb(err);
+          fetch(window.GAS_API_URL, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) { if (successCb) successCb(data); })
+          .catch(function(err2) {
+            console.error("API error for " + actionName, err2);
+            if (failureCb) failureCb(err2);
+          });
         });
       }
 
@@ -14940,7 +14951,7 @@
       isSuccess = true;
     }
 
-    const savedPass = (localStorage.getItem('CARD_CUSTOM_PWD') || localStorage.getItem('APP_CUSTOM_PWD') || '').replace(/-/g, '').toLowerCase();
+    const savedPass = (localStorage.getItem('card_custom_pwd') || localStorage.getItem('CARD_CUSTOM_PWD') || localStorage.getItem('APP_CUSTOM_PWD') || '').replace(/-/g, '').toLowerCase();
     if (savedPass && (clean1 === savedPass || clean2 === savedPass)) {
       isSuccess = true;
     }
