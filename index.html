@@ -1,21 +1,21 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Ứng Dụng Quản Lý Tài Chính</title>
-  <!-- Nhúng Tailwind CSS / Icons -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background-color: #f8fafc; }
+    iframe { width: 100%; height: 100%; border: none; display: block; }
+  </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <!-- TOÀN BỘ GIAO DIỆN CÁC TAB 1, TAB 2, TAB 3, TAB 4, TAB 5 NẰM TRỰC TIẾP Ở ĐÂY -->
-  <div id="app">
-     <!-- Nội dung ứng dụng của bạn -->
-  </div>
-  <script>
-    // Link Web App API của bạn (Triển khai ở bước Deploy -> Anyone)
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxclpPstjdG8eLHxRfM2QCJDMEglJ9GKC8VSJLb_RIpmPjcCtWKtfI183UXf9p3bXpFng/exec";
-    // Các hàm Javascript xử lý giao diện và gửi API về Google Sheets...
-  </script>
+<body>
+  <!-- Dán đường link Web App Google Apps Script của bạn vào src bên dưới -->
+  <iframe 
+    src="https://script.google.com/macros/s/AKfycbxclpPstjdG8eLHxRfM2QCJDMEglJ9GKC8VSJLb_RIpmPjcCtWKtfI183UXf9p3bXpFng/exec" 
+    allow="clipboard-read; clipboard-write; geolocation">
+  </iframe>
 </body>
 </html>
