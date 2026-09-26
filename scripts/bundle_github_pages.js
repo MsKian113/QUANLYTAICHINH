@@ -35,32 +35,48 @@ const polyfillScript = `
       if (typeof window.google.script === 'undefined') window.google.script = {};
 
       function execApiCall(actionName, args, successCb, failureCb) {
-        var payload = { action: actionName, args: args, data: args[0] };
+        var callbackName = "gas_cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+        var payload = { action: actionName, args: args, data: args[0], callback: callbackName };
         var payloadStr = encodeURIComponent(JSON.stringify(payload));
-        var getUrl = window.GAS_API_URL + "?action=" + encodeURIComponent(actionName) + "&payload=" + payloadStr;
+        var scriptUrl = window.GAS_API_URL + "?action=" + encodeURIComponent(actionName) + "&callback=" + callbackName + "&payload=" + payloadStr;
 
-        fetch(getUrl, {
-          method: 'GET',
-          redirect: 'follow'
-        })
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
+        var script = document.createElement('script');
+        var isDone = false;
+
+        var timeoutId = setTimeout(function() {
+          if (isDone) return;
+          cleanup();
+          fetch(scriptUrl, { method: 'GET', redirect: 'follow' })
+          .then(function(res) { return res.json(); })
+          .then(function(data) { if (successCb) successCb(data); })
+          .catch(function(err) { if (failureCb) failureCb(err); });
+        }, 15000);
+
+        function cleanup() {
+          isDone = true;
+          if (script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+          clearTimeout(timeoutId);
+        }
+
+        window[callbackName] = function(data) {
+          cleanup();
           if (successCb) successCb(data);
-        })
-        .catch(function(err) {
-          fetch(window.GAS_API_URL, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-          })
+        };
+
+        script.onerror = function(err) {
+          cleanup();
+          fetch(window.GAS_API_URL + "?action=" + encodeURIComponent(actionName) + "&payload=" + payloadStr, { method: 'GET', redirect: 'follow' })
           .then(function(res) { return res.json(); })
           .then(function(data) { if (successCb) successCb(data); })
           .catch(function(err2) {
             console.error("API error for " + actionName, err2);
             if (failureCb) failureCb(err2);
           });
-        });
+        };
+
+        script.src = scriptUrl;
+        document.head.appendChild(script);
       }
 
       function createRunner(successCb, failureCb) {
