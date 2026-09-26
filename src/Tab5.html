@@ -1,0 +1,655 @@
+<!-- ========================================================================= -->
+<!-- TAB 5: QUẢN LÝ LỊCH MUA HÀNG & COOLDOWN GIỚI HẠN TÀI KHOẢN (TRONG TAB KINHDONAH) -->
+<!-- ========================================================================= -->
+<div class="space-y-3 pb-4">
+
+  <!-- MA TRẬN COOLDOWN TÀI KHOẢN THEO CỬA HÀNG -->
+  <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-2xs space-y-2.5">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
+        <span>⏱️</span> <span>Danh sách tài khoản</span>
+      </h3>
+      <button onclick="t5_openAddAccModal()" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-[11px] font-bold shadow-2xs transition cursor-pointer flex items-center gap-1">
+        <span>➕</span> <span>Thêm TK</span>
+      </button>
+    </div>
+
+    <!-- Ô TÌM KIẾM TÀI KHOẢN & BỘ LỌC TIỆM MA TRẬN -->
+    <div class="flex gap-1.5 items-center">
+      <div class="relative flex-1">
+        <input id="t5-matrix-search" oninput="t5_renderMatrix()" type="text" placeholder="🔍 Gõ tìm tên tài khoản (VD: KA, Chi, 602)..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-500 focus:bg-white transition" />
+      </div>
+      <select id="t5-matrix-store-filter" onchange="t5_renderMatrix()" class="bg-white border border-slate-200 text-slate-800 font-bold text-[11px] px-2 py-1.5 rounded-xl outline-none cursor-pointer shadow-2xs">
+        <option value="ALL">🏪 Tất cả</option>
+      </select>
+    </div>
+
+    <!-- CONTAINER DANH SÁCH CÁC TIỆM & TÀI KHOẢN -->
+    <div id="t5-matrix-container" class="space-y-3">
+      <div class="text-center py-6 text-slate-400 text-xs font-medium">Đang tải lịch khả dụng tài khoản...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL POPUP 1: CHI TIẾT TÀI KHOẢN (KHI BẤM VÀO NÚT TK) -->
+<!-- ========================================================================= -->
+<div id="modal-t5-acc-detail" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-t5-acc-detail')">
+  <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[360px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
+    
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
+        <span>👤</span> <span id="t5-md-acc-name">TK Joshin KA</span>
+      </h3>
+      <button onclick="closeModal('modal-t5-acc-detail')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <!-- CHỈ HIỆN NGÀY MUA GẦN NHẤT & TÊN SP -->
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-2">
+      <div class="flex justify-between items-center">
+        <span class="text-slate-500 font-medium">📅 Ngày mua gần nhất:</span>
+        <b id="t5-md-last-date" class="text-slate-900 font-black text-sm">26/05/2026</b>
+      </div>
+      <div class="flex justify-between items-center border-t border-slate-200/60 pt-1.5">
+        <span class="text-slate-500 font-medium">📦 Tên SP mua gần nhất:</span>
+        <b id="t5-md-last-product" class="text-slate-800 font-bold truncate max-w-[170px]">30th Deki</b>
+      </div>
+    </div>
+
+    <div class="flex gap-2 pt-1">
+      <button onclick="t5_openQuickBuyFromDetailModal()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-2xs transition cursor-pointer">
+        ⚡ Ghi Nhận Mua Mới
+      </button>
+      <button id="t5-btn-cancel-cooldown" onclick="t5_handleCancelCooldownFromModal()" class="py-2 px-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition cursor-pointer">
+        ❌ Hủy Cooldown
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+
+
+<!-- ========================================================================= -->
+<!-- MODAL POPUP 3: FORM THÊM TÀI KHOẢN MỚI VÀO CATEGORIES CỘT G -->
+<!-- ========================================================================= -->
+<div id="modal-t5-add-acc" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-t5-add-acc')">
+  <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[360px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+        <span>➕</span> <span>Thêm Tài Khoản</span>
+      </h3>
+      <button onclick="closeModal('modal-t5-add-acc')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <form onsubmit="event.preventDefault(); t5_handleAddAccount();" class="space-y-3">
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">1. Tên Tiệm / Cửa Hàng <span class="text-rose-500">*</span></label>
+        <select id="t5-add-acc-store" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 outline-none focus:border-indigo-500">
+          <option value="Fuji">Fuji</option>
+          <option value="Yodo">Yodo</option>
+          <option value="Joshin">Joshin</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">2. Tên Tài Khoản <span class="text-rose-500">*</span></label>
+        <input type="text" id="t5-add-acc-name" required placeholder="Gõ tên TK (VD: KA, Chi, 602, Màu KA...)" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:border-indigo-500 transition" />
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="closeModal('modal-t5-add-acc')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer">
+          Hủy
+        </button>
+        <button type="submit" id="btn-t5-save-acc" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer flex items-center justify-center gap-1">
+          <span>💾</span> <span>Lưu</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL POPUP 4: SỬA SỐ NGÀY COOLDOWN THEO CỬA HÀNG -->
+<!-- ========================================================================= -->
+<!-- ========================================================================= -->
+<!-- MODAL POPUP 4: SỬA SỐ NGÀY COOLDOWN CỬA HÀNG (DÂN CỬA HÀNG ĐƯỢC CHỌN) -->
+<!-- ========================================================================= -->
+<div id="modal-t5-store-cooldown" class="modal-overlay" style="z-index: 300;" onclick="if(event.target === this) t5_closeStoreCooldownModal()">
+  <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[340px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+        <span>⚙️</span> <span>Sửa Cooldown Cửa Hàng</span>
+      </h3>
+      <button onclick="t5_closeStoreCooldownModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <form onsubmit="event.preventDefault(); t5_handleSaveSingleStoreCooldown();" class="space-y-3">
+      <input type="hidden" id="t5-single-cd-store-key" value="Fuji" />
+      
+      <div class="bg-indigo-50/60 border border-indigo-100 p-2.5 rounded-xl space-y-1">
+        <span class="text-[11px] text-indigo-700 font-semibold">Cửa hàng:</span>
+        <div class="text-sm font-extrabold text-indigo-950 flex items-center gap-1">
+          <span>🏬</span> <span id="t5-single-cd-store-name">Fuji</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Số ngày Cooldown đếm ngược <span class="text-rose-500">*</span></label>
+        <div class="flex items-center gap-2">
+          <input type="number" min="0" max="365" id="t5-single-cd-days" required value="30" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-extrabold text-slate-900 text-sm outline-none focus:border-indigo-500 transition text-center" />
+          <span class="text-slate-600 font-bold shrink-0">ngày</span>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-1 italic">Áp dụng cho các đơn mua sản phẩm Film tại cửa hàng này.</p>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="t5_closeStoreCooldownModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer">
+          Hủy
+        </button>
+        <button type="submit" id="btn-t5-save-store-cd" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer flex items-center justify-center gap-1">
+          <span>💾</span> <span>Lưu</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  window.TAB5_DATA = { items: [], matrix: [], accounts: [], stores: [] };
+  window.T5_CURRENT_ACC = null;
+
+  function t5_getTodayStr() {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function t5_loadData() {
+    if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab5Data === 'function') {
+      google.script.run.withSuccessHandler(function(res) {
+        if (res && res.success) {
+          window.TAB5_DATA = res;
+          t5_renderMatrix();
+        } else {
+          showToast("❌ Không thể tải dữ liệu Lịch Mua!", true);
+        }
+      }).getTab5Data();
+    }
+  }
+
+  // CÔNG THỨC GIÁ MUA REALTIME: GÕ 3553/3 ➔ TÍNH LUÔN VÀ ĐỔI THÀNH 1185
+  function t5_calcRealtimeFormula(inputEl, forceBlur = false) {
+    if (!inputEl) return;
+    let raw = String(inputEl.value || '').trim();
+    let clean = raw.startsWith('=') ? raw.substring(1).trim() : raw;
+
+    if (clean.includes('/')) {
+      const parts = clean.split('/');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+
+      if (!isNaN(num) && !isNaN(den) && den !== 0) {
+        const result = Math.ceil(num / den);
+        inputEl.value = result;
+      }
+    } else if (clean.includes('*')) {
+      const parts = clean.split('*');
+      const num = parseFloat(parts[0]);
+      const den = parseFloat(parts[1]);
+
+      if (!isNaN(num) && !isNaN(den)) {
+        inputEl.value = Math.round(num * den);
+      }
+    } else if (forceBlur && clean && !isNaN(parseFloat(clean))) {
+      inputEl.value = Math.round(parseFloat(clean));
+    }
+  }
+
+  // RENDER MA TRẬN TÀI KHOẢN THEO CỬA HÀNG (DẠNG ULTRALIGHT COMPACT)
+  function t5_renderMatrix() {
+    const containers = document.querySelectorAll('[id="t5-matrix-container"]');
+    if (!containers || containers.length === 0) return;
+
+    const matrix = (window.TAB5_DATA && window.TAB5_DATA.matrix) ? window.TAB5_DATA.matrix : [];
+    
+    // NẠP ĐỘNG DANH SÁCH TIỆM VÀO DROPDOWN FILTER KẾ BÊN TÌM KIẾM
+    const storeFilterEl = document.getElementById('t5-matrix-store-filter');
+    let selectedStore = 'ALL';
+    if (storeFilterEl) {
+      selectedStore = storeFilterEl.value || 'ALL';
+      if (matrix.length > 0) {
+        const uniqueStores = [...new Set(matrix.map(st => st.store))].filter(Boolean);
+        if (storeFilterEl.options.length <= 1 || storeFilterEl.getAttribute('data-loaded') !== String(uniqueStores.length)) {
+          let optHtml = `<option value="ALL">🏪 Tất cả</option>`;
+          uniqueStores.forEach(s => {
+            optHtml += `<option value="${s}">${s}</option>`;
+          });
+          storeFilterEl.innerHTML = optHtml;
+          storeFilterEl.value = selectedStore;
+          storeFilterEl.setAttribute('data-loaded', String(uniqueStores.length));
+        }
+      }
+    }
+
+    let searchQuery = '';
+    document.querySelectorAll('[id="t5-matrix-search"]').forEach(inp => {
+      if (inp && inp.value && inp.value.trim()) searchQuery = inp.value.trim().toLowerCase();
+    });
+
+    if (matrix.length === 0) {
+      containers.forEach(c => {
+        c.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs font-medium">Chưa có dữ liệu tài khoản nào.</div>`;
+      });
+      return;
+    }
+
+    let html = '';
+
+    matrix.forEach(st => {
+      const stNameLower = String(st.store || '').toLowerCase();
+      if (!['fuji', 'yodo', 'joshin'].includes(stNameLower)) {
+        return;
+      }
+      // NẾU CÓ CHỌN LỌC THEO TIỆM VÀ KHÔNG TRÙNG THÌ BỎ QUA
+      if (selectedStore !== 'ALL' && stNameLower !== String(selectedStore).toLowerCase()) {
+        return;
+      }
+
+      let filteredAccs = st.accountsStatus || [];
+      if (searchQuery) {
+        filteredAccs = filteredAccs.filter(acc => 
+          (acc.account || '').toLowerCase().includes(searchQuery) ||
+          (acc.shortName || '').toLowerCase().includes(searchQuery) ||
+          (st.store || '').toLowerCase().includes(searchQuery) ||
+          (acc.category || '').toLowerCase().includes(searchQuery) ||
+          (acc.lastProduct || '').toLowerCase().includes(searchQuery)
+        );
+      }
+
+      if (filteredAccs.length === 0) return;
+
+      const sortAccs = (arr) => {
+        return [...arr].sort((a, b) => {
+          if (!a.isCooldown && b.isCooldown) return -1;
+          if (a.isCooldown && !b.isCooldown) return 1;
+          if (a.isCooldown && b.isCooldown) {
+            return (a.daysLeft || 0) - (b.daysLeft || 0);
+          }
+          return (a.shortName || a.account || '').localeCompare(b.shortName || b.account || '');
+        });
+      };
+
+      const whiteAccs = sortAccs(filteredAccs.filter(a => !(a.category || '').includes('Màu')));
+      const colorAccs = sortAccs(filteredAccs.filter(a => (a.category || '').includes('Màu')));
+      const uniqueCount = new Set(filteredAccs.map(a => a.shortName || a.account).filter(Boolean)).size;
+      let cardTheme = {
+        border: 'border-amber-200/80 bg-amber-50/40',
+        header: 'bg-amber-100/70 border-amber-200/60',
+        titleText: 'text-amber-950',
+        badge: 'bg-amber-600 text-white',
+        divider: 'border-amber-200/50'
+      };
+
+      if (stNameLower.includes('yodo')) {
+        cardTheme = {
+          border: 'border-sky-200/80 bg-sky-50/40',
+          header: 'bg-sky-100/70 border-sky-200/60',
+          titleText: 'text-sky-950',
+          badge: 'bg-sky-600 text-white',
+          divider: 'border-sky-200/50'
+        };
+      } else if (stNameLower.includes('joshin')) {
+        cardTheme = {
+          border: 'border-emerald-200/80 bg-emerald-50/40',
+          header: 'bg-emerald-100/70 border-emerald-200/60',
+          titleText: 'text-emerald-950',
+          badge: 'bg-emerald-600 text-white',
+          divider: 'border-emerald-200/50'
+        };
+      } else if (stNameLower.includes('edion')) {
+        cardTheme = {
+          border: 'border-purple-200/80 bg-purple-50/40',
+          header: 'bg-purple-100/70 border-purple-200/60',
+          titleText: 'text-purple-950',
+          badge: 'bg-purple-600 text-white',
+          divider: 'border-purple-200/50'
+        };
+      } else if (stNameLower.includes('fuji')) {
+        cardTheme = {
+          border: 'border-indigo-200/80 bg-indigo-50/40',
+          header: 'bg-indigo-100/70 border-indigo-200/60',
+          titleText: 'text-indigo-950',
+          badge: 'bg-indigo-600 text-white',
+          divider: 'border-indigo-200/50'
+        };
+      }
+
+      const storeCooldowns = (window.TAB5_DATA && window.TAB5_DATA.storeCooldowns) ? window.TAB5_DATA.storeCooldowns : { Fuji: 30, Yodo: 13, Joshin: 30 };
+      let stCdDays = 30;
+      if (stNameLower.includes('yodo')) stCdDays = storeCooldowns.Yodo !== undefined ? storeCooldowns.Yodo : 13;
+      else if (stNameLower.includes('fuji')) stCdDays = storeCooldowns.Fuji !== undefined ? storeCooldowns.Fuji : 30;
+      else if (stNameLower.includes('joshin')) stCdDays = storeCooldowns.Joshin !== undefined ? storeCooldowns.Joshin : 30;
+      else stCdDays = 0;
+
+      html += `
+        <div class="border ${cardTheme.border} rounded-2xl overflow-hidden shadow-2xs">
+          <div class="${cardTheme.header} p-1.5 px-2.5 flex justify-between items-center border-b">
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs">🏬</span>
+              <span class="font-extrabold text-xs ${cardTheme.titleText}">${st.store}</span>
+              <button onclick="event.stopPropagation(); t5_openSingleStoreCooldownModal('${st.store}', ${stCdDays})" class="text-[10px] font-bold text-slate-700 bg-white hover:bg-slate-100 active:scale-95 px-2 py-0.5 rounded-lg border border-slate-300 shadow-2xs cursor-pointer transition flex items-center gap-1" title="Bấm để sửa số ngày Cooldown của tiệm ${st.store}">
+                <span>⏱️ ${stCdDays} ngày</span> <span class="text-indigo-600 text-[10px]">✏️</span>
+              </button>
+            </div>
+            <span class="text-[9px] font-bold ${cardTheme.badge} px-2 py-0.5 rounded-full shadow-2xs">${uniqueCount} TK</span>
+          </div>
+
+          <div class="p-1.5 px-2 space-y-1 text-xs">
+            <!-- DÒNG TRẮNG -->
+            <div class="flex items-start gap-1.5">
+              <span class="w-3.5 h-3.5 rounded-full border border-slate-400 bg-white flex items-center justify-center shrink-0 text-[8px] font-bold text-slate-600 shadow-2xs mt-1" title="Film Trắng">⚪</span>
+              <div class="flex flex-wrap gap-x-2 gap-y-2 flex-1 pt-1 pb-0.5 pr-1">
+                ${whiteAccs.length === 0 ? `<span class="text-slate-400 italic text-[10px] my-0.5">Chưa có TK</span>` : whiteAccs.map((acc) => `
+                  <button onclick="t5_clickAccBadge('${st.store}', '${acc.account}', '${acc.category}')" 
+                          class="${acc.isCooldown ? 'bg-rose-50 text-rose-950 border border-rose-300 hover:bg-rose-100 relative pl-1.5 pr-3.5' : 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 px-2'} py-0.5 rounded-full text-[10px] font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1">
+                    ${acc.isCooldown ? `<span class="w-2 h-2 rounded-full bg-rose-600 shrink-0"></span>` : ''}
+                    <span>${acc.shortName || acc.account}</span> 
+                    ${acc.isCooldown ? `<span class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white border-1.5 border-white rounded-full min-w-4 h-4 px-0.5 text-[8px] font-black flex items-center justify-center shadow-2xs leading-none">${acc.daysLeft}n</span>` : ''}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="border-t ${cardTheme.divider} my-1"></div>
+
+            <!-- DÒNG MÀU -->
+            <div class="flex items-start gap-2">
+              <span class="w-3.5 h-3.5 rounded-full border border-amber-400 bg-amber-300 flex items-center justify-center shrink-0 text-[8px] font-bold text-amber-950 shadow-2xs mt-1" title="Film Màu">🟡</span>
+              <div class="flex flex-wrap gap-x-2 gap-y-2 flex-1 pt-1 pb-0.5 pr-1">
+                ${colorAccs.length === 0 ? `<span class="text-slate-400 italic text-[10px] my-0.5">Chưa có TK</span>` : colorAccs.map((acc) => `
+                  <button onclick="t5_clickAccBadge('${st.store}', '${acc.account}', '${acc.category}')" 
+                          class="${acc.isCooldown ? 'bg-rose-50 text-rose-950 border border-rose-300 hover:bg-rose-100 relative pl-1.5 pr-3.5' : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 px-2'} py-0.5 rounded-full text-[10px] font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1">
+                    ${acc.isCooldown ? `<span class="w-2 h-2 rounded-full bg-rose-600 shrink-0"></span>` : ''}
+                    <span>${acc.shortName || acc.account}</span> 
+                    ${acc.isCooldown ? `<span class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white border-1.5 border-white rounded-full min-w-4 h-4 px-0.5 text-[8px] font-black flex items-center justify-center shadow-2xs leading-none">${acc.daysLeft}n</span>` : ''}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    containers.forEach(c => {
+      c.innerHTML = html;
+    });
+  }
+
+  // BẤM VÀO NÚT NHÃN TÀI KHOẢN ➔ MỞ POPUP CHI TIẾT
+  function t5_clickAccBadge(storeName, accountName, category = '') {
+    const matrix = (window.TAB5_DATA && window.TAB5_DATA.matrix) ? window.TAB5_DATA.matrix : [];
+    let foundAcc = null;
+
+    matrix.forEach(st => {
+      if (st.store === storeName) {
+        (st.accountsStatus || []).forEach(acc => {
+          if (acc.account === accountName) {
+            if (category) {
+              if (acc.category === category) foundAcc = acc;
+            } else {
+              if (!foundAcc || acc.isCooldown || (acc.lastPurchaseDate && acc.lastPurchaseDate !== "Chưa từng mua")) {
+                foundAcc = acc;
+              }
+            }
+          }
+        });
+      }
+    });
+
+    if (!foundAcc) {
+      foundAcc = {
+        account: accountName,
+        store: storeName,
+        category: category || "Film MINI Trắng",
+        lastPurchaseDate: "Chưa từng mua",
+        lastProduct: "",
+        lastPrice: 6200,
+        isCooldown: false,
+        daysLeft: 0
+      };
+    }
+
+    window.T5_CURRENT_ACC = foundAcc;
+
+    const catBadge = foundAcc.category ? ` (${foundAcc.category.includes('Màu') ? '🟡 Film Màu' : '⚪ Film Trắng'})` : '';
+    document.getElementById('t5-md-acc-name').innerText = foundAcc.account + catBadge;
+    document.getElementById('t5-md-last-date').innerText = foundAcc.lastPurchaseDate || "Chưa từng mua";
+    document.getElementById('t5-md-last-product').innerText = foundAcc.lastProduct || "Chưa có đơn";
+
+    const btnCancel = document.getElementById('t5-btn-cancel-cooldown');
+    if (foundAcc.isCooldown) {
+      btnCancel.classList.remove('hidden');
+    } else {
+      btnCancel.classList.add('hidden');
+    }
+
+    openModal('modal-t5-acc-detail');
+  }
+
+  // MỞ FORM GHI NHẬN MUA MỚI TỪ POPUP CHI TIẾT
+  function t5_openQuickBuyFromDetailModal() {
+    closeModal('modal-t5-acc-detail');
+    const accObj = window.T5_CURRENT_ACC;
+    if (accObj) {
+      t5_openQuickBuyModal(accObj.store, accObj.account, accObj.lastProduct, accObj.lastPrice);
+    }
+  }
+
+  function t5_handleCancelCooldownFromModal() {
+    const accObj = window.T5_CURRENT_ACC;
+    if (accObj) {
+      t5_cancelAccountCooldown(accObj.account, accObj.store);
+      closeModal('modal-t5-acc-detail');
+    }
+  }
+
+  function t5_openQuickBuyModal(storeName = '', accountName = '', lastProduct = '', lastPrice = '') {
+    if (typeof resetPurchaseForm === 'function') {
+      resetPurchaseForm();
+    }
+
+    const storeEl = document.getElementById('mua-noi');
+    if (storeEl) storeEl.value = storeName || '';
+
+    const accEl = document.getElementById('mua-taikhoan');
+    if (accEl) accEl.value = accountName || '';
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dateEl = document.getElementById('mua-ngay');
+    if (dateEl) dateEl.value = todayStr;
+
+    if (lastProduct) {
+      const firstRowInput = document.querySelector('#mua-items-container .mua-sp-input');
+      if (firstRowInput) firstRowInput.value = lastProduct;
+    }
+    if (lastPrice) {
+      const firstRowPrice = document.querySelector('#mua-items-container .mua-price-input');
+      if (firstRowPrice) firstRowPrice.value = lastPrice;
+    }
+
+    openModal('modal-biz-mua');
+  }
+
+  function t5_cancelAccountCooldown(accountName, storeName) {
+    const items = (window.TAB5_DATA && window.TAB5_DATA.items) ? window.TAB5_DATA.items : [];
+    const activeOrder = items.find(it => 
+      String(it.cuaHang || '').trim().toLowerCase() === String(storeName || '').trim().toLowerCase() &&
+      String(it.taiKhoan || '').trim().toLowerCase() === String(accountName || '').trim().toLowerCase() &&
+      it.trangThai === "THANH_CONG"
+    );
+
+    if (activeOrder && activeOrder.id) {
+      showConfirmModal("⚠️ Xác Nhận Hủy Cooldown", `Bạn có chắc muốn HỦY cooldown cho tài khoản '${accountName}' (${storeName})?`, function() {
+        t5_updateStatus(activeOrder.id, 'DA_HUY');
+      });
+    } else {
+      showToast("⚠️ Không tìm thấy đơn hàng đang cooldown của tài khoản này!", true);
+    }
+  }
+
+  function t5_updateStatus(id, newStatus) {
+    const isCancel = (newStatus === 'DA_HUY');
+    if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updatePurchaseLimitStatus === 'function') {
+      google.script.run.withSuccessHandler(function(res) {
+        if (res && res.success) {
+          showToast(isCancel ? "✅ Đã giải phóng Cooldown thành công!" : "✅ Đã khôi phục trạng thái Cooldown!");
+          t5_loadData();
+        } else {
+          showToast("❌ Lỗi: " + (res.error || "Không thể đổi trạng thái"), true);
+        }
+      }).updatePurchaseLimitStatus(id, newStatus);
+    }
+  }
+
+  function t5_openAddAccModal() {
+    const storeSel = document.getElementById('t5-add-acc-store');
+    if (storeSel && window.TAB5_DATA && window.TAB5_DATA.matrix) {
+      const uniqueStores = [...new Set(window.TAB5_DATA.matrix.map(st => st.store))].filter(Boolean);
+      if (uniqueStores.length > 0) {
+        storeSel.innerHTML = uniqueStores.map(s => `<option value="${s}">${s}</option>`).join('');
+      }
+    }
+    const accNameEl = document.getElementById('t5-add-acc-name');
+    if (accNameEl) accNameEl.value = '';
+    openModal('modal-t5-add-acc');
+  }
+
+  function t5_handleAddAccount() {
+    const storeName = document.getElementById('t5-add-acc-store').value.trim();
+    const accountName = document.getElementById('t5-add-acc-name').value.trim();
+
+    if (!storeName || !accountName) {
+      showToast("❌ Vui lòng nhập Tên Tiệm và Tên Tài Khoản!", true);
+      return;
+    }
+
+    const btn = document.getElementById('btn-t5-save-acc');
+    if (btn) btn.disabled = true;
+
+    if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.addTab5Account === 'function') {
+      google.script.run.withSuccessHandler(function(res) {
+        if (btn) btn.disabled = false;
+        if (res && res.success) {
+          closeModal('modal-t5-add-acc');
+          showToast(`✅ Đã thêm tài khoản '${res.account}'!`);
+          t5_loadData();
+        } else {
+          showToast("❌ Lỗi: " + (res.error || "Không thể lưu tài khoản"), true);
+        }
+      }).addTab5Account(storeName, accountName);
+    }
+  }
+
+  function t5_openSingleStoreCooldownModal(storeName, currentDays) {
+    const cdData = (window.TAB5_DATA && window.TAB5_DATA.storeCooldowns) ? window.TAB5_DATA.storeCooldowns : { Fuji: 30, Yodo: 13, Joshin: 30 };
+    let matchKey = 'Fuji';
+    const stLower = String(storeName || '').toLowerCase();
+    if (stLower.includes('yodo')) matchKey = 'Yodo';
+    else if (stLower.includes('joshin')) matchKey = 'Joshin';
+    else matchKey = 'Fuji';
+
+    const daysVal = currentDays !== undefined ? currentDays : (cdData[matchKey] !== undefined ? cdData[matchKey] : 30);
+
+    const keyEl = document.getElementById('t5-single-cd-store-key');
+    const nameEl = document.getElementById('t5-single-cd-store-name');
+    const daysEl = document.getElementById('t5-single-cd-days');
+
+    if (keyEl) keyEl.value = matchKey;
+    if (nameEl) nameEl.innerText = storeName || matchKey;
+    if (daysEl) daysEl.value = daysVal;
+
+    const modal = document.getElementById('modal-t5-store-cooldown');
+    if (modal) {
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
+  }
+
+  function t5_closeStoreCooldownModal() {
+    const modal = document.getElementById('modal-t5-store-cooldown');
+    if (modal) {
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
+  }
+
+  if (typeof window.closeModal === 'undefined') {
+    window.closeModal = function(id) {
+      const modal = document.getElementById(id);
+      if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+      }
+    };
+  }
+
+  window.t5_openSingleStoreCooldownModal = t5_openSingleStoreCooldownModal;
+  window.t5_closeStoreCooldownModal = t5_closeStoreCooldownModal;
+  window.t5_handleSaveSingleStoreCooldown = t5_handleSaveSingleStoreCooldown;
+
+  function t5_handleSaveSingleStoreCooldown() {
+    const storeKey = document.getElementById('t5-single-cd-store-key').value;
+    const daysVal = parseInt(document.getElementById('t5-single-cd-days').value, 10);
+
+    if (isNaN(daysVal) || daysVal < 0) {
+      showToast("❌ Số ngày cooldown không hợp lệ!", true);
+      return;
+    }
+
+    const currentCdData = (window.TAB5_DATA && window.TAB5_DATA.storeCooldowns) ? Object.assign({}, window.TAB5_DATA.storeCooldowns) : { Fuji: 30, Yodo: 13, Joshin: 30 };
+    currentCdData[storeKey] = daysVal;
+
+    const btn = document.getElementById('btn-t5-save-store-cd');
+    if (btn) btn.disabled = true;
+
+    if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveStoreCooldownSettings === 'function') {
+      google.script.run.withSuccessHandler(function(res) {
+        if (btn) btn.disabled = false;
+        if (res && res.success) {
+          showToast(`✅ Đã đổi Cooldown tiệm ${storeKey} thành ${daysVal} ngày!`);
+          t5_closeStoreCooldownModal();
+          t5_loadData();
+        } else {
+          showToast((res && res.message) || "❌ Lỗi lưu cấu hình!", true);
+        }
+      }).withFailureHandler(function(err) {
+        if (btn) btn.disabled = false;
+        showToast("❌ Lỗi kết nối server: " + err, true);
+      }).saveStoreCooldownSettings(currentCdData);
+    } else {
+      if (btn) btn.disabled = false;
+      showToast("⚠️ Môi trường local / offline", false);
+      if (window.TAB5_DATA) window.TAB5_DATA.storeCooldowns = currentCdData;
+      t5_closeStoreCooldownModal();
+      t5_renderMatrix();
+    }
+  }
+
+  // Tự động nạp dữ liệu tức thì 0ms từ preloaded initial data
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab5) {
+      window.TAB5_DATA = window.SERVER_INITIAL_DATA.tab5;
+      t5_renderMatrix();
+    } else if (window.TAB5_DATA && window.TAB5_DATA.items && window.TAB5_DATA.items.length > 0) {
+      t5_renderMatrix();
+    } else {
+      t5_loadData();
+    }
+  });
+</script>

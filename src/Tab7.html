@@ -1654,11 +1654,16 @@
           const normKey = cleanName.toLowerCase();
           if (!normKey) return;
 
-          const isMMe = Boolean(m.isMe || m.is_me || rawName.toLowerCase().includes('tôi') || rawName.toLowerCase().includes('chủ ví'));
+          const isMRep = Boolean(m.isRep || m.isMe || m.is_me || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
 
           if (memberDedupeMap.has(normKey)) {
             const existing = memberDedupeMap.get(normKey);
-            if (isMMe) existing.isMe = true;
+            if (isMRep) {
+              existing.isMe = true;
+              existing.isRep = true;
+              existing.sort_order = 1;
+              existing.sortOrder = 1;
+            }
           } else {
             memberDedupeMap.set(normKey, {
               id: m.member_id || m.id,
@@ -1667,9 +1672,11 @@
               type: m.member_type || m.type || 'ADULT',
               member_type: m.member_type || m.type || 'ADULT',
               weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
-              sortOrder: m.sort_order,
+              sort_order: isMRep ? 1 : "",
+              sortOrder: isMRep ? 1 : "",
               status: m.status,
-              isMe: isMMe
+              isMe: isMRep,
+              isRep: isMRep
             });
           }
         });
@@ -1709,7 +1716,7 @@
                     if (normKey) {
                       const existing = existingFam.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
                       if (existing) {
-                        if (m.isMe || m.is_me || rawName.toLowerCase().includes('tôi')) existing.isMe = true;
+                        if (m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1") existing.isMe = true;
                       } else {
                         existingFam.members.push({
                           id: m.id || m.member_id || '',
@@ -1718,7 +1725,7 @@
                           type: m.type || m.member_type || 'ADULT',
                           member_type: m.type || m.member_type || 'ADULT',
                           weight: m.weight !== undefined ? m.weight : 1.0,
-                          isMe: Boolean(m.isMe || m.is_me || rawName.toLowerCase().includes('tôi'))
+                          isMe: Boolean(m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1")
                         });
                       }
                     }
@@ -1752,7 +1759,7 @@
           if (normKey) {
             const existing = famObj.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
             if (existing) {
-              if (m.isMe || m.is_me || rawName.toLowerCase().includes('tôi')) existing.isMe = true;
+              if (m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1") existing.isMe = true;
             } else {
               famObj.members.push({
                 id: m.id || m.member_id || '',
@@ -1761,7 +1768,7 @@
                 type: m.type || m.member_type || 'ADULT',
                 member_type: m.type || m.member_type || 'ADULT',
                 weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-                isMe: Boolean(m.isMe || m.is_me || rawName.toLowerCase().includes('tôi'))
+                isMe: Boolean(m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1")
               });
             }
           }
@@ -1853,7 +1860,8 @@
 
       const memberNamesStr = members.map(m => {
         const icon = m.type === 'CHILD' ? '🧒' : (m.type === 'BABY' ? '🍼' : '👤');
-        return `${icon} ${m.name}${m.isMe ? ' (Tôi)' : ''}`;
+        const isRep = Boolean(m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.isRep);
+        return `${icon} ${m.name}${isRep ? ' 👑' : ''}`;
       }).join(' • ');
 
       card.innerHTML = `
@@ -1910,12 +1918,9 @@
           name: m.name || m.member_name || ''
         }));
 
-        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep));
+        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1"));
         if (repIdx < 0) {
           repIdx = famObj.members.findIndex(m => Boolean(m.isMe || m.is_me));
-        }
-        if (repIdx < 0) {
-          repIdx = famObj.members.findIndex(m => Number(m.sort_order || m.sortOrder) === 1);
         }
         if (repIdx < 0) repIdx = 0;
 
@@ -2005,7 +2010,7 @@
       else if (mType === 'BABY') w = 0.0;
 
       if (mName) {
-        rawMembers.push({ id: mId, member_id: mId, name: mName, member_name: mName, type: mType, member_type: mType, weight: w, isMe: mIsRep, isRep: mIsRep });
+        rawMembers.push({ id: mId, member_id: mId, name: mName, member_name: mName, type: mType, member_type: mType, weight: w, isMe: mIsRep, isRep: mIsRep, is_me: mIsRep });
       }
     });
 
@@ -2017,12 +2022,13 @@
     if (!rawMembers.some(m => m.isRep)) {
       rawMembers[0].isRep = true;
       rawMembers[0].isMe = true;
+      rawMembers[0].is_me = true;
     }
 
-    const members = rawMembers.map((m, idx) => ({
+    const members = rawMembers.map((m) => ({
       ...m,
-      sort_order: idx + 1,
-      sortOrder: idx + 1
+      sort_order: m.isRep ? 1 : "",
+      sortOrder: m.isRep ? 1 : ""
     }));
 
     // Find removed members for deactivation

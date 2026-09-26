@@ -107,14 +107,11 @@ function getSplitFamilies(ssTarget) {
       var memType = String(row[4] || "ADULT").trim().toUpperCase();
       var weight = Number(row[5]);
       if (isNaN(weight)) weight = (memType === "CHILD" ? 0.5 : (memType === "BABY" ? 0 : 1.0));
-      var sortOrder = Number(row[6]) || 99;
+      var rawSort = row[6];
+      var isRep = (rawSort === 1 || rawSort === "1" || Number(rawSort) === 1);
+      var sortOrder = isRep ? 1 : "";
       var status = String(row[7] || "ACTIVE").trim().toUpperCase();
-      var mNameLower = memName.toLowerCase();
-      var mFamLower = famName.toLowerCase();
-      var isMeVal = Boolean(row[8]);
-      if (row[8] === undefined || row[8] === null || row[8] === "") {
-        isMeVal = (mNameLower.includes("tôi") || mNameLower.includes("chủ ví") || mFamLower === "2f" || mFamLower.includes("2f") || mNameLower.includes("quậy") || mNameLower.includes("chi") || mNameLower.includes("chít"));
-      }
+      var isMeVal = isRep || (row[8] === true || String(row[8]).toLowerCase() === "true");
 
       if (!famId || !memId || status === "INACTIVE" || status === "DELETED") return;
 
@@ -128,7 +125,8 @@ function getSplitFamilies(ssTarget) {
         sort_order: sortOrder,
         status: status,
         isMe: isMeVal,
-        is_me: isMeVal
+        is_me: isMeVal,
+        isRep: isRep
       };
 
       rawMembers.push(memObj);
@@ -145,7 +143,8 @@ function getSplitFamilies(ssTarget) {
 
       if (isMeVal) familyMap[famId].isMe = true;
       familyMap[famId].members.push(memObj);
-      if (sortOrder < (familyMap[famId].repMember.sort_order || 99)) {
+
+      if (isRep || (!familyMap[famId].repMember.isRep && (isMeVal || familyMap[famId].members.length === 1))) {
         familyMap[famId].repMember = memObj;
       }
     });
@@ -194,7 +193,8 @@ function saveSplitFamilyMember(memberData, ssTarget) {
     var memType = String(memberData.member_type || memberData.type || "ADULT").trim().toUpperCase();
     var weight = Number(memberData.default_weight !== undefined ? memberData.default_weight : memberData.weight);
     if (isNaN(weight)) weight = (memType === "CHILD" ? 0.5 : (memType === "BABY" ? 0 : 1.0));
-    var sortOrder = Number(memberData.sort_order) || 1;
+    var isMeMember = Boolean(memberData.is_me || memberData.isMe || memberData.isRep || memberData.sort_order === 1 || memberData.sort_order === "1" || memberData.sortOrder === 1 || memberData.sortOrder === "1");
+    var sortOrder = isMeMember ? 1 : "";
     var famId = String(memberData.family_id || "").trim();
     if (!famId) famId = famName ? ("FAM_" + famName.replace(/[^a-zA-Z0-9]/g, "")) : "FAM_001";
     var memId = String(memberData.member_id || memberData.id || "").trim();
@@ -239,7 +239,7 @@ function saveSplitFamilyMember(memberData, ssTarget) {
     }
 
     // 3. Fallback match by family_id/family_name AND sort_order
-    if (existingRowIdx < 0 && (famName || famId) && sortOrder) {
+    if (existingRowIdx < 0 && (famName || famId) && sortOrder === 1) {
       var normFamName2 = famName.toLowerCase();
       var normFamId2 = famId.toLowerCase();
 
@@ -249,7 +249,7 @@ function saveSplitFamilyMember(memberData, ssTarget) {
         var rSortOrder = Number(data[k][6]) || 0;
         var rStatus2 = String(data[k][7] || "ACTIVE").trim().toUpperCase();
 
-        if (rStatus2 !== "DELETED" && (rFamName2 === normFamName2 || rFamId2 === normFamId2) && rSortOrder === sortOrder) {
+        if (rStatus2 !== "DELETED" && (rFamName2 === normFamName2 || rFamId2 === normFamId2) && rSortOrder === 1) {
           existingRowIdx = k + 2;
           memId = String(data[k][2]).trim(); // Preserve existing member_id
           break;
@@ -257,7 +257,30 @@ function saveSplitFamilyMember(memberData, ssTarget) {
       }
     }
 
-    var isMeMember = Boolean(memberData.is_me || memberData.isMe);
+    // If making this member representative, clear sort_order & is_me for other members of the same family
+    if (isMeMember && sheet && (famId || famName)) {
+      var lastR = sheet.getLastRow();
+      if (lastR >= 2) {
+        var existingRange = sheet.getRange(2, 1, lastR - 1, 9);
+        var existingVals = existingRange.getValues();
+        var normFId = famId ? famId.toLowerCase() : "";
+        var normFName = famName ? famName.toLowerCase() : "";
+        var normTargetMId = memId ? memId.toLowerCase() : "";
+        var normTargetMName = memName ? memName.toLowerCase() : "";
+
+        for (var r = 0; r < existingVals.length; r++) {
+          var rFId = String(existingVals[r][0] || "").trim().toLowerCase();
+          var rFName = String(existingVals[r][1] || "").trim().toLowerCase();
+          var rMId = String(existingVals[r][2] || "").trim().toLowerCase();
+          var rMName = String(existingVals[r][3] || "").trim().toLowerCase();
+
+          if ((rFId === normFId || rFName === normFName) && rMId !== normTargetMId && rMName !== normTargetMName) {
+            sheet.getRange(r + 2, 7).setValue("");
+            sheet.getRange(r + 2, 9).setValue(false);
+          }
+        }
+      }
+    }
 
     if (existingRowIdx > 0) {
       sheet.getRange(existingRowIdx, 1).setValue(famId);
@@ -289,7 +312,8 @@ function saveSplitFamilyMember(memberData, ssTarget) {
         sort_order: sortOrder,
         status: "ACTIVE",
         isMe: isMeMember,
-        is_me: isMeMember
+        is_me: isMeMember,
+        isRep: isMeMember
       }
     };
   } catch (err) {
@@ -346,6 +370,12 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
       return false;
     });
 
+    // Find index of the representative member in members list
+    var repIdx = members.findIndex(function(m) {
+      return Boolean(m.isRep || m.isMe || m.is_me || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
+    });
+    if (repIdx < 0 && members.length > 0) repIdx = 0;
+
     // Build new rows for active members
     members.forEach(function(m, idx) {
       var mType = String(m.type || m.member_type || "ADULT").trim().toUpperCase();
@@ -354,7 +384,10 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
       var mName = String(m.name || m.member_name || "").trim();
       var mId = String(m.id || m.member_id || "").trim();
       if (!mId) mId = "MBR_" + famName.replace(/[^a-zA-Z0-9]/g, "") + "_" + (mName.replace(/[^a-zA-Z0-9]/g, "") || (idx + 1));
-      var isMe = Boolean(m.isMe || m.is_me);
+      
+      var isRepMem = (idx === repIdx);
+      var sortOrder = isRepMem ? 1 : "";
+      var isMe = isRepMem;
 
       cleanedData.push([
         famId,
@@ -363,14 +396,17 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
         mName,
         mType,
         weight,
-        idx + 1,
+        sortOrder,
         "ACTIVE",
         isMe
       ]);
     });
 
     // Write back in ONE atomic operation
-    sheet.getRange(2, 1, Math.max(existingData.length, cleanedData.length), 9).clearContent();
+    var targetRange = sheet.getRange(2, 1, Math.max(existingData.length, cleanedData.length), 9);
+    if (typeof targetRange.clearContent === 'function') {
+      targetRange.clearContent();
+    }
     if (cleanedData.length > 0) {
       sheet.getRange(2, 1, cleanedData.length, 9).setValues(cleanedData);
     }
@@ -2080,6 +2116,7 @@ if (typeof module !== 'undefined' && module.exports) {
     reopenSplitGroup: reopenSplitGroup,
     getSplitFamilies: getSplitFamilies,
     saveSplitFamilyMember: saveSplitFamilyMember,
+    saveSplitFamilyBatch: saveSplitFamilyBatch,
     deleteSplitFamilyMember: deleteSplitFamilyMember,
     deleteSplitFamilyEntirely: deleteSplitFamilyEntirely
   };

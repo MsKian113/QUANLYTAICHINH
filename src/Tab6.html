@@ -1,0 +1,136 @@
+<!-- HEADER: THỐNG KÊ TÀI SẢN -->
+<div class="pt-3 pb-3 px-4 text-white bg-indigo-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
+  <h1 class="text-base font-bold">📊 Thống Kê</h1>
+</div>
+
+<div class="flex-1 overflow-y-auto pb-6 p-4 space-y-4">
+  <!-- BÁO CÁO TỔNG QUAN TÀI SẢN (BALANCE SHEET) -->
+  <div class="bg-gradient-to-br from-indigo-600 to-purple-800 text-white p-4 rounded-2xl shadow-lg relative overflow-hidden">
+    <p class="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">💎 Vốn Thực Có (Tài Sản Ròng)</p>
+    <h2 id="t6-net-worth" class="text-3xl font-bold mt-1 mb-1">0 ¥</h2>
+    
+    <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-indigo-400/50">
+         <div class="space-y-3">
+             <p class="text-[11px] text-emerald-300 uppercase font-bold border-b border-indigo-400/50 pb-1.5">💰 Tổng Tài Sản <br><span id="t6-total-assets" class="text-base text-white">0 ¥</span></p>
+             <div>
+                 <p class="text-[10px] text-indigo-200 uppercase font-bold mb-0.5">Tiền Mặt & Ví</p>
+                 <p id="t6-cash-balance" class="text-xs font-bold text-white">0 ¥</p>
+             </div>
+             <div>
+                 <p class="text-[10px] text-indigo-200 uppercase font-bold mb-0.5">Tồn Kho</p>
+                 <p id="t6-inventory-value" class="text-xs font-bold text-white">0 ¥</p>
+             </div>
+             <div>
+                 <p class="text-[10px] text-indigo-200 uppercase font-bold mb-0.5">Khách nợ / Cho mượn</p>
+                 <p id="t6-receivables" class="text-xs font-bold text-white">0 ¥</p>
+             </div>
+         </div>
+         
+         <div class="space-y-3 border-l border-indigo-400/50 pl-3">
+             <p class="text-[11px] text-rose-300 uppercase font-bold border-b border-indigo-400/50 pb-1.5">💳 Tổng Nợ <br><span id="t6-total-liabilities" class="text-base text-white">0 ¥</span></p>
+             <div>
+                 <p class="text-[10px] text-indigo-200 uppercase font-bold mb-0.5">💳 Nợ Thẻ Credit</p>
+                 <p id="t6-credit-debt" class="text-xs font-bold text-white">0 ¥</p>
+             </div>
+             <div>
+                 <p class="text-[10px] text-indigo-200 uppercase font-bold mb-0.5">Nợ Đối tác / Vay mượn</p>
+                 <p id="t6-payables" class="text-xs font-bold text-white">0 ¥</p>
+             </div>
+         </div>
+    </div>
+  </div>
+
+  <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+     <h3 class="text-xs font-bold text-slate-800 mb-3 flex items-center gap-1.5">📈 Hoạt Động Kinh Doanh (Tất Cả)</h3>
+     <div class="space-y-2.5">
+         <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+             <span class="text-[11px] font-bold text-slate-500 uppercase">Tổng Doanh Thu</span>
+             <span id="t6-total-sales" class="text-sm font-bold text-blue-600">0 ¥</span>
+         </div>
+         <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+             <span class="text-[11px] font-bold text-slate-500 uppercase">Chi Phí (Dòng tiền xuất)</span>
+             <span id="t6-total-cogs" class="text-sm font-bold text-rose-500">0 ¥</span>
+         </div>
+         <div class="flex justify-between items-center pt-0.5">
+             <span class="text-[11px] font-bold text-slate-700 uppercase">Dòng Tiền Kinh Doanh</span>
+             <span id="t6-net-profit" class="text-base font-bold text-emerald-600">0 ¥</span>
+         </div>
+     </div>
+  </div>
+</div>
+
+<script>
+    function renderTab6Data() {
+        let totalCash = 0;
+        let totalCredit = 0;
+        let inventoryValue = 0;
+        let receivables = 0;
+        let payables = 0;
+        let totalSales = 0;
+        let totalCogs = 0;
+        let netProfit = 0;
+
+        const wallets = window.t1_walletsData || (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.wallets) || [];
+        wallets.forEach(w => {
+            const rawBal = Number(w.current_balance) || 0;
+            if (w.type === 'CREDIT') {
+                const limit = Number(w.credit_limit || w.limit || 0);
+                if (rawBal < 0) totalCredit += Math.abs(rawBal);
+                else if (rawBal > 0 && limit > 0 && rawBal > limit / 2 && rawBal <= limit) {
+                    totalCredit += Math.max(0, limit - rawBal);
+                } else if (rawBal > 0) {
+                    totalCredit += rawBal;
+                }
+            } else {
+                totalCash += rawBal;
+            }
+        });
+
+        if (window.SERVER_INITIAL_DATA) {
+            if (window.SERVER_INITIAL_DATA.tab3 && window.SERVER_INITIAL_DATA.tab3.summary) {
+                inventoryValue = window.SERVER_INITIAL_DATA.tab3.summary.stockValue || 0;
+                totalSales = window.SERVER_INITIAL_DATA.tab3.summary.sales || 0;
+                totalCogs = window.SERVER_INITIAL_DATA.tab3.summary.cogs || 0;
+                netProfit = window.SERVER_INITIAL_DATA.tab3.summary.net || 0;
+            }
+            if (window.SERVER_INITIAL_DATA.tab4 && window.SERVER_INITIAL_DATA.tab4.summary) {
+                receivables = window.SERVER_INITIAL_DATA.tab4.summary.receivables || 0;
+                payables = window.SERVER_INITIAL_DATA.tab4.summary.payables || 0;
+            }
+        }
+
+        const totalAssets = totalCash + inventoryValue + receivables;
+        const totalLiabilities = totalCredit + payables;
+        const netWorth = totalAssets - totalLiabilities;
+
+        const setText = (id, val, colorClass = '') => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = val.toLocaleString() + ' ¥';
+                if (colorClass) {
+                    el.className = el.className.replace(/text-(emerald|rose|blue)-[0-9]+/g, '');
+                    if (val > 0) el.classList.add(colorClass);
+                    else if (val < 0) el.classList.add('text-rose-500');
+                    else el.classList.add('text-slate-600');
+                }
+            }
+        };
+
+        setText('t6-net-worth', netWorth);
+        setText('t6-total-assets', totalAssets);
+        setText('t6-total-liabilities', totalLiabilities);
+        setText('t6-cash-balance', totalCash);
+        setText('t6-inventory-value', inventoryValue);
+        setText('t6-receivables', receivables);
+        setText('t6-credit-debt', totalCredit);
+        setText('t6-payables', payables);
+
+        setText('t6-total-sales', totalSales);
+        setText('t6-total-cogs', totalCogs);
+        setText('t6-net-profit', netProfit, 'text-emerald-600');
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        setTimeout(renderTab6Data, 500);
+    });
+</script>

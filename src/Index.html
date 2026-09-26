@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <base target="_top" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script id="init-data-json" type="application/json"><?!= initialDataJson ?></script>
+  <script>
+    try {
+      var _elem = document.getElementById('init-data-json');
+      var _rawText = _elem ? _elem.textContent : null;
+      var _rawInit = _rawText ? JSON.parse(_rawText) : null;
+      if (_rawInit && typeof _rawInit === 'string') {
+        try { _rawInit = JSON.parse(_rawInit); } catch(e2) {}
+      }
+      window.SERVER_INITIAL_DATA = _rawInit;
+    } catch(e) {
+      window.SERVER_INITIAL_DATA = null;
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f8fafc; font-family: sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+    ::-webkit-scrollbar { display: none; }
+    
+    /* BỘ KHUNG ĐIỆN THOẠI FIX CỐ ĐỊNH CHIỀU CAO THEO MÀN HÌNH */
+    .app-container { 
+      width: 100%; 
+      max-width: 420px; 
+      height: 760px; 
+      max-height: 92vh;
+      background: white; 
+      border-radius: 40px; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+      border: 8px solid #1e293b; 
+      position: relative; 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      margin: 5px auto;
+    }
+    
+    @media (max-width: 480px) {
+      body { padding: 0; background-color: white; }
+      .app-container { 
+        width: 100vw; 
+        height: 100vh; 
+        max-height: 100vh; 
+        border-radius: 0; 
+        border: none; 
+        margin: 0; 
+        box-shadow: none;
+      }
+      .notch { display: none; }
+    }
+    
+    .notch { 
+      position: absolute; 
+      top: 0; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      width: 140px; 
+      height: 25px; 
+      background: #1e293b; 
+      border-bottom-left-radius: 16px; 
+      border-bottom-right-radius: 16px; 
+      z-index: 50; 
+    }
+    
+    .modal-overlay { 
+      position: fixed !important; 
+      top: 0 !important; 
+      left: 0 !important; 
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important; 
+      height: 100vh !important; 
+      background: rgba(0,0,0,0.5); 
+      z-index: 200 !important; 
+      display: none; 
+      justify-content: center !important; 
+      align-items: center !important; 
+      padding: 16px !important; 
+      backdrop-filter: blur(2px); 
+    }
+    .modal-overlay.active { display: flex !important; }
+    
+    /* KHẮC PHỤC LỖI TRÀN KHUNG NATIVE DATE INPUT TRÊN iOS / WEBKIT */
+    input[type="date"] {
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      box-sizing: border-box !important;
+      margin: 0 !important;
+    }
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: center;
+      margin: 0 !important;
+      padding: 0 !important;
+      height: auto !important;
+      min-height: 1.2em !important;
+    }
+    
+    .modal-content { 
+      background: white; 
+      width: 100%; 
+      max-width: 420px; 
+      border-radius: 20px; 
+      padding: 16px; 
+      max-height: 85vh; 
+      overflow-y: auto; 
+      animation: modalPop 0.2s ease-out; 
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2); 
+    }
+    @keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    .suggest-box {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: contain !important;
+    }
+    .suggest-box::-webkit-scrollbar { display: block; width: 4px; }
+    .suggest-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* CẤU HÌNH LƯỚT MƯỢT TRÊN ĐIỆN THOẠI (SMOOTH TOUCH SCROLLING & MOMENTUM) */
+    .scroll-touch {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: contain !important;
+    }
+
+    .custom-scroll::-webkit-scrollbar { display: block !important; width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    #quick-fixed-list {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: contain !important;
+    }
+    #quick-fixed-list::-webkit-scrollbar { display: block !important; width: 5px; }
+    #quick-fixed-list::-webkit-scrollbar-track { background: #fffbebf5; border-radius: 4px; }
+    #quick-fixed-list::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 4px; }
+    #quick-fixed-list::-webkit-scrollbar-thumb:hover { background: #d97706; }
+
+    /* NGUYÊN TẮC FLEXBOX CHUẨN: BẮT BUỘC KHÔNG CHO NỘI DUNG ĐẨY MENU BOTTOM XUỐNG DƯỚI */
+    .app-tab-view { 
+      display: none; 
+      flex-direction: column; 
+      flex: 1 1 0%; 
+      min-height: 0 !important; 
+      overflow: hidden; 
+      position: relative; 
+    }
+    .app-tab-view.active-tab { display: flex !important; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  
+  <script>
+    // ==========================================
+    // INSTANT SERVER-SIDE PRE-LOADED DATA (0ms DELAY)
+    // ==========================================
+    if (typeof window.SERVER_INITIAL_DATA === 'undefined') {
+        window.SERVER_INITIAL_DATA = null;
+    }
+
+    // ==========================================
+    // SHARED GLOBAL STATE & AUTO-SUGGEST ENGINE
+    // ==========================================
+    window.CATEGORIES_RAW = [];
+    window.DESC_LIST = ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"];
+    window.NGUON_LIST = window.NGUON_LIST || [];
+    window.JAR_LIST = ["Đầu tư", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi"];
+    window.GLOBAL_JARS_DATA = [];
+    window.suggestTimeouts = {};
+
+    window.bizSuggestData = window.bizSuggestData || {
+        sp: ["Iphone 13 Pro Max cũ", "Iphone 15 Pro", "Mỹ phẩm Amazon", "Áo khoác Uniqlo", "Giày Nike", "Vitamin E", "Thực phẩm chức năng"],
+        spKho: ["Iphone 13 Pro Max (Kho Nhật - Tồn: 3)", "Iphone 13 Pro Max (Kho VN - Tồn: 2)", "Vitamin E (Kho Nhật - Tồn: 10)", "Mỹ phẩm Amazon (Chờ Ship - Tồn: 5)"],
+        nguon: window.NGUON_LIST || [],
+        doitac: ["Anh A (Cty Logistics)", "Chị B (Shop xách tay)", "Công ty C", "Đại lý D"],
+        noimua: ["Amazon", "Mercari", "Yahoo Auctions", "Don Quijote", "Rakuten", "Cửa hàng vật lý"]
+    };
+
+    window.debtSuggestData = window.debtSuggestData || {
+        nguon: window.NGUON_LIST || []
+    };
+
+    function removeAccents(str) {
+        if (!str) return "";
+        return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+    }
+
+    function getItemName(item) {
+        if (item === null || item === undefined) return "";
+        if (typeof item === 'object') {
+            return item.tenSP || item.name || item.tên || item.id || String(item);
+        }
+        return String(item);
+    }
+
+    function filterItems(query, list) {
+        if (!list || !Array.isArray(list)) return [];
+        const rawQ = (query || "").toString().trim();
+        if (!rawQ) return list;
+        const qClean = removeAccents(rawQ.toLowerCase());
+        return list.filter(item => {
+            const name = getItemName(item);
+            return removeAccents(name.toLowerCase()).includes(qClean);
+        });
+    }
+
+    function fetchCategories() {
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getInitialData === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    if (res.categories && res.categories.length > 0) {
+                        window.CATEGORIES_RAW = res.categories;
+                        window.DESC_LIST = res.categories.map(item => item.name).filter(Boolean);
+                    }
+                    if (res.wallets && res.wallets.length > 0) {
+                        window.NGUON_LIST = res.wallets;
+                        if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;
+                        if (window.debtSuggestData) window.debtSuggestData.nguon = res.wallets;
+                    }
+                    if (res.accounts && res.accounts.length > 0) {
+                        window.CATEGORIES_ACCOUNTS = res.accounts;
+                        if (!window.bizSuggestData) window.bizSuggestData = {};
+                        window.bizSuggestData.account = res.accounts;
+                    }
+                }
+            }).getInitialData();
+        }
+    }
+
+    window._suggestTouchY = 0;
+    window._inSuggestBox = false;
+
+    function handleSuggestTouchStart(e) {
+        window._inSuggestBox = true; // tay đang trong box → chặn blur ẩn box
+        if (e && e.touches && e.touches[0]) {
+            window._suggestTouchY = e.touches[0].clientY;
+        }
+    }
+    function handleSuggestTouchEnd(e, callback) {
+        let endY = window._suggestTouchY;
+        if (e && e.changedTouches && e.changedTouches[0]) {
+            endY = e.changedTouches[0].clientY;
+        }
+        window._inSuggestBox = false;
+        if (Math.abs(endY - window._suggestTouchY) < 10) {
+            if (e && e.cancelable) e.preventDefault();
+            callback();
+        }
+    }
+
+    function renderSuggest(inputId, type, showAllOnFocus = false) {
+        if (window.suggestTimeouts[inputId]) {
+            clearTimeout(window.suggestTimeouts[inputId]);
+            window.suggestTimeouts[inputId] = null;
+        }
+
+        const input = document.getElementById(inputId);
+        const box = document.getElementById('box-' + inputId);
+        if (!input || !box) return;
+
+        let dataList = [];
+        if (type === 'jar') {
+            dataList = window.JAR_LIST || [];
+        } else if (type === 'noimua' || type === 'store' || type === 'cuahang') {
+            const s1 = (window.bizSuggestData && window.bizSuggestData.purchasePlaces && window.bizSuggestData.purchasePlaces.length > 0) ? window.bizSuggestData.purchasePlaces : [];
+            const s2 = (window.bizSuggestData && window.bizSuggestData.noimua && window.bizSuggestData.noimua.length > 0) ? window.bizSuggestData.noimua : [];
+            const sDefault = ["Amazon", "Mercari", "Yahoo Auctions", "Don Quijote", "Rakuten", "Yodo", "Bic Camera"];
+            dataList = Array.from(new Set([...s1, ...s2, ...sDefault].map(getItemName).filter(Boolean)));
+        } else if (type === 'partner' || type === 'ten' || type === 'doituong') {
+            const p1 = (window.PARTNER_LIST && window.PARTNER_LIST.length > 0) ? window.PARTNER_LIST : [];
+            const p2 = (window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) ? window.TAB4_DEBTS.map(d => d ? (d.doituong || d.partner || d.name) : '') : [];
+            const p3 = (window.bizSuggestData && window.bizSuggestData.doitac && window.bizSuggestData.doitac.length > 0) ? window.bizSuggestData.doitac : [];
+            dataList = Array.from(new Set([...p1, ...p2, ...p3].map(getItemName).filter(Boolean)));
+            if (dataList.length === 0) dataList = ["Anh Hiếu", "Chị Kẹo", "Anh A", "Chị B"];
+        } else if (type === 'source' || type === 'nguon' || type === 'wallet' || type === 'debit') {
+            const w1 = (window.NGUON_LIST && window.NGUON_LIST.length > 0) ? window.NGUON_LIST : [];
+            const w2 = (window.bizSuggestData && window.bizSuggestData.nguon && window.bizSuggestData.nguon.length > 0) ? window.bizSuggestData.nguon : [];
+            const w3 = (window.t1_walletsData && window.t1_walletsData.length > 0) ? window.t1_walletsData : [];
+            const w4 = (window.TAB1_WALLETS && window.TAB1_WALLETS.length > 0) ? window.TAB1_WALLETS : [];
+            dataList = Array.from(new Set([...w1, ...w2, ...w3, ...w4].map(getItemName).filter(Boolean)));
+        } else if (type === 'account' || type === 'taikhoan') {
+            const accs = (window.bizSuggestData && window.bizSuggestData.account && window.bizSuggestData.account.length > 0) 
+              ? window.bizSuggestData.account 
+              : ((window.CATEGORIES_ACCOUNTS && window.CATEGORIES_ACCOUNTS.length > 0) 
+                ? window.CATEGORIES_ACCOUNTS 
+                : ((window.TAB5_DATA && window.TAB5_DATA.accounts && window.TAB5_DATA.accounts.length > 0) 
+                  ? window.TAB5_DATA.accounts 
+                  : []));
+            dataList = Array.from(new Set([...accs].map(getItemName).filter(Boolean)));
+        } else if (type === 'desc' || type === 'template') {
+            dataList = (window.DESC_LIST && window.DESC_LIST.length > 0) ? window.DESC_LIST.map(getItemName).filter(Boolean) : ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"];
+        } else {
+            dataList = (window.bizSuggestData && window.bizSuggestData[type]) || (window.debtSuggestData && window.debtSuggestData[type]) || [];
+            dataList = dataList.map(getItemName).filter(Boolean);
+        }
+
+        if (type === 'sp' || type === 'product' || type === 'tenSP') {
+            dataList = dataList.filter(item => String(item).trim().toLowerCase().startsWith('film'));
+        }
+
+        let queryText = input.value || "";
+        if (inputId === 'add-debt-name' || input.getAttribute('data-multi') === 'true') {
+            const lastCommaIdx = queryText.lastIndexOf(',');
+            if (lastCommaIdx !== -1) {
+                queryText = queryText.substring(lastCommaIdx + 1);
+            }
+        }
+        const queryTrimmed = queryText.trim();
+        const matches = (showAllOnFocus && !queryTrimmed) ? dataList : (queryTrimmed ? filterItems(queryTrimmed, dataList) : dataList);
+
+        box.innerHTML = '';
+
+        if (!matches || matches.length === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+
+        const jarIcons = {
+            "Đầu tư": "📈",
+            "Thiết yếu": "🏠",
+            "Tiết kiệm": "💰",
+            "Giáo dục": "📚",
+            "Giải trí": "☕",
+            "Cho đi": "❤️"
+        };
+
+        box.innerHTML = matches.map(item => {
+            const itemName = getItemName(item);
+            const safeItem = String(itemName || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            if (type === 'jar') {
+                const jarObj = (window.GLOBAL_JARS_DATA || []).find(j => j && j.name && removeAccents(String(j.name).toLowerCase()) === removeAccents(itemName.toLowerCase()));
+                const icon = jarIcons[itemName] || "🍯";
+                const remainVal = jarObj ? Number(jarObj.remain || 0) : 0;
+                const remainText = typeof formatMoney === 'function' ? formatMoney(remainVal) : (remainVal.toLocaleString() + " ¥");
+                const badgeHtml = `<span class="text-[9px] font-bold ${remainVal > 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-2 py-0.5 rounded-md border">Còn: ${remainText}</span>`;
+                return `<div class="px-3.5 py-2.5 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                             ontouchstart="handleSuggestTouchStart(event);"
+                             ontouchend="handleSuggestTouchEnd(event, function(){ selectSuggest('${inputId}', '${safeItem}', '${type}'); });"
+                             onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                            <span class="text-slate-800 flex items-center gap-1.5">
+                                <span class="text-sm">${icon}</span> <span>${itemName}</span>
+                            </span>
+                            ${badgeHtml}
+                        </div>`;
+            }
+            if (type === 'sp') {
+                const stockVal = (typeof item === 'object' && item.qty !== undefined) ? item.qty : null;
+                const badgeHtml = stockVal !== null 
+                    ? `<span class="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">Tồn: ${stockVal}</span>` 
+                    : '';
+                return `<div class="px-3.5 py-2.5 hover:bg-amber-50 active:bg-amber-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                             ontouchstart="handleSuggestTouchStart(event);"
+                             ontouchend="handleSuggestTouchEnd(event, function(){ selectSuggest('${inputId}', '${safeItem}', '${type}'); });"
+                             onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                            <span class="text-slate-800 flex items-center gap-1.5">
+                                <span class="text-sm">📦</span> <span>${itemName}</span>
+                            </span>
+                            ${badgeHtml}
+                        </div>`;
+            }
+            const typeBadge = (typeof item === 'object' && item.type) ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ml-1 ${item.type === 'CREDIT' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'}">${item.type}</span>` : '';
+            return `<div class="px-2.5 py-2 hover:bg-pink-50 active:bg-pink-100 cursor-pointer text-xs font-bold text-slate-700 border-b border-slate-100 last:border-0 flex justify-between items-center whitespace-nowrap"
+                         ontouchstart="handleSuggestTouchStart(event);"
+                         ontouchend="handleSuggestTouchEnd(event, function(){ selectSuggest('${inputId}', '${safeItem}', '${type}'); });"
+                         onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                        <span class="truncate flex-1 min-w-0 mr-1">${itemName}</span>
+                        ${typeBadge}
+                    </div>`;
+        }).join('');
+        
+        box.style.position = '';
+        box.style.top = '';
+        box.style.bottom = '';
+        box.style.left = '';
+        box.style.right = '';
+        box.style.width = '';
+        box.style.maxHeight = '';
+        box.style.zIndex = '';
+        box.classList.remove('hidden');
+    }
+
+    function positionSuggestBox(inputId) {
+        // Safe no-op to maintain backwards compatibility
+    }
+
+    function selectSuggest(inputId, value, type) {
+        if (window.suggestTimeouts[inputId]) {
+            clearTimeout(window.suggestTimeouts[inputId]);
+            window.suggestTimeouts[inputId] = null;
+        }
+
+        const input = document.getElementById(inputId);
+        if (input) {
+            if (inputId === 'add-debt-name' || input.getAttribute('data-multi') === 'true') {
+                const currentVal = input.value;
+                const lastCommaIdx = currentVal.lastIndexOf(',');
+                if (lastCommaIdx !== -1) {
+                    const prefix = currentVal.substring(0, lastCommaIdx + 1).trim();
+                    input.value = prefix + ' ' + value;
+                } else {
+                    input.value = value;
+                }
+            } else {
+                input.value = value;
+            }
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        if (type === 'desc' || type === 'template') {
+            let mode = inputId.split('-')[0];
+            checkAutoFill(value, mode);
+        }
+
+        if (inputId.startsWith('tf-jar') && typeof validateTransferAmount === 'function') {
+            validateTransferAmount();
+        }
+
+        const box = document.getElementById('box-' + inputId);
+        if (box) box.classList.add('hidden');
+    }
+
+    function hideSuggest(inputId) {
+        if (window.suggestTimeouts[inputId]) {
+            clearTimeout(window.suggestTimeouts[inputId]);
+        }
+        window.suggestTimeouts[inputId] = setTimeout(() => {
+            // Nếu tay đang scroll trong box → không ẩn
+            if (window._inSuggestBox) return;
+            const input = document.getElementById(inputId);
+            if (input && document.activeElement === input) return;
+            const box = document.getElementById('box-' + inputId);
+            if (box) {
+                box.classList.add('hidden');
+                // Reset lại fixed style để không bị lệch lần sau
+                box.style.position = '';
+                box.style.top = '';
+                box.style.bottom = '';
+                box.style.left = '';
+                box.style.right = '';
+                box.style.width = '';
+                box.style.maxHeight = '';
+                box.style.zIndex = '';
+            }
+        }, 600); // tăng lên 600ms để đủ thời gian chọn item cuối
+    }
+
+    function checkAutoFill(val, mode) {
+        const inputMoney = document.getElementById(mode + '-money');
+        const selSource = document.getElementById(mode + '-source');
+        const selJar = document.getElementById(mode + '-jar');
+        const msg = document.getElementById(mode + '-autofill-msg');
+        let filled = false;
+
+        const qVal = removeAccents(String(val || "").trim().toLowerCase());
+        if (!qVal) {
+            if (msg) msg.classList.add('hidden');
+            return;
+        }
+
+        let matched = (window.CATEGORIES_RAW || []).find(c => c && removeAccents(String(c.name || "").trim().toLowerCase()) === qVal);
+        if (!matched) {
+            matched = (window.CATEGORIES_RAW || []).find(c => c && c.name && removeAccents(String(c.name).toLowerCase()).includes(qVal));
+        }
+
+        if (matched) {
+            if (matched.source && selSource) { selSource.value = matched.source; filled = true; }
+            if (matched.jar && selJar) { selJar.value = matched.jar; filled = true; }
+        } else {
+            if (qVal.includes('xang') || qVal.includes('eneos')) {
+                if(selSource) selSource.value = 'Thẻ Rakuten';
+                if(selJar) selJar.value = 'Thiết yếu';
+                filled = true;
+            } else if (qVal.includes('sieu thi') || qVal.includes('aeon')) {
+                if(selSource) selSource.value = 'Ví Tiền Mặt';
+                if(selJar) selJar.value = 'Thiết yếu';
+                filled = true;
+            } else if (qVal.includes('tien nha') || qVal.includes('nha leo')) {
+                if(inputMoney && !inputMoney.value) inputMoney.value = '50000';
+                if(selSource) selSource.value = 'Thẻ Ufj';
+                if(selJar) selJar.value = 'Thiết yếu';
+                filled = true;
+            }
+        }
+
+        if (msg) {
+            if(filled) {
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3500);
+            } else {
+                msg.classList.add('hidden');
+            }
+        }
+    }
+
+    function applyAppData(res) {
+        if (!res || !res.success) return;
+        
+        // CẬP NHẬT GLOBAL DATA CHO TAB 6 VÀ CÁC TAB KHÁC
+        window.SERVER_INITIAL_DATA = res;
+
+        if (res.categories && res.categories.length > 0) {
+            window.CATEGORIES_RAW = res.categories;
+            window.DESC_LIST = res.categories.map(item => item.name).filter(Boolean);
+        }
+        if (res.wallets && res.wallets.length > 0) {
+            window.NGUON_LIST = res.wallets;
+            if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;
+            if (window.debtSuggestData) window.debtSuggestData.nguon = res.wallets;
+            window.t1_walletsData = res.wallets;
+            if (typeof renderTab1Wallets === 'function') renderTab1Wallets();
+        }
+        
+        if (res.quickFixed && res.quickFixed.length > 0) {
+            window.QUICK_FIXED_ITEMS = res.quickFixed;
+        }
+        if (res.tab2) {
+            const t2 = res.tab2;
+            if (t2.summary) {
+                const netVal = t2.summary.net ?? t2.summary.netBalance ?? 0;
+                const incVal = t2.summary.income ?? t2.summary.totalIncome ?? 0;
+                const expVal = t2.summary.expense ?? t2.summary.totalExpense ?? 0;
+                const netSign = netVal >= 0 ? '+' : '';
+                
+                const netEl = document.getElementById('dashboard-net');
+                const incEl = document.getElementById('dashboard-income');
+                const expEl = document.getElementById('dashboard-expense');
+
+                if (netEl) netEl.innerText = netSign + (typeof formatMoney === 'function' ? formatMoney(netVal) : netVal + " ¥");
+                if (incEl) incEl.innerText = '+' + (typeof formatMoney === 'function' ? formatMoney(incVal) : incVal + " ¥");
+                if (expEl) expEl.innerText = '-' + (typeof formatMoney === 'function' ? formatMoney(expVal) : expVal + " ¥");
+            }
+            if (t2.transactions && typeof renderTransactionList === 'function') {
+                renderTransactionList(t2.transactions);
+            }
+            if (t2.jars && t2.jars.length > 0) {
+                window.GLOBAL_JARS_DATA = t2.jars;
+                if (typeof renderJarCards === 'function') renderJarCards(t2.jars);
+            }
+            window.t2_initialLoaded = true;
+        }
+        if (res.tab3 && typeof applyTab3Data === 'function') {
+            applyTab3Data(res.tab3);
+        }
+        if (res.tab4 && typeof applyTab4Data === 'function') {
+            applyTab4Data(res.tab4);
+        }
+        if (typeof renderTab6Data === 'function') {
+            renderTab6Data();
+        }
+    }
+
+    function loadAppData() {
+        // 1. Instant 0ms pre-render from browser LocalStorage
+        try {
+            const cachedStr = localStorage.getItem("APP_LOCAL_CACHE_V18");
+            if (cachedStr) {
+                const cachedData = JSON.parse(cachedStr);
+                if (cachedData && cachedData.success) {
+                    applyAppData(cachedData);
+                }
+            }
+        } catch (e) {}
+
+        // 2. If server-side preloaded data exists
+        if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.success) {
+            applyAppData(window.SERVER_INITIAL_DATA);
+            try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(window.SERVER_INITIAL_DATA)); } catch(e) {}
+        }
+
+        // 3. Background RPC sync for guaranteed fresh data across all tabs
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    applyAppData(res);
+                    try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(res)); } catch(e) {}
+                }
+            }).withFailureHandler(function(err) {
+                console.error("Error fetching app data:", err);
+            }).getAppData("ALL", "ALL");
+        } else {
+            fetchCategories();
+        }
+    }
+
+    window.openModal = function(id) {
+        const el = typeof id === 'string' ? document.getElementById(id) : id;
+        if (el) {
+            el.classList.remove('hidden');
+            el.classList.add('active');
+        }
+    };
+
+    window.closeModal = function(id) {
+        const el = typeof id === 'string' ? document.getElementById(id) : id;
+        if (el) {
+            el.classList.remove('active');
+            el.classList.add('hidden');
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadAppData();
+    });
+  </script>
+
+  <div class="app-container">
+    <div class="notch"></div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: NGÂN HÀNG -->
+    <!-- ========================================================================= -->
+    <div id="view-tab1" class="app-tab-view active-tab bg-slate-50">
+        <?!= include('Tab1'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: THU / CHI & QUẢN LÝ HŨ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab2" class="app-tab-view bg-white">
+        <?!= include('Tab2'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: KINH DOANH -->
+    <!-- ========================================================================= -->
+    <div id="view-tab3" class="app-tab-view bg-slate-50">
+        <?!= include('Tab3'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: CÔNG NỢ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab4" class="app-tab-view bg-slate-50">
+        <?!= include('Tab4'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 7: CHIA TIỀN CHUYẾN ĐÍ (TRICOUNT & FAMILY WEIGHT SPLIT) -->
+    <!-- ========================================================================= -->
+    <div id="view-tab7" class="app-tab-view bg-slate-50">
+        <?!= include('Tab7'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- BOTTOM NAV (THANH ĐIỀU HƯỚNG CỐ ĐỊNH Ở ĐÁY ĐIỆN THOẠI) -->
+    <!-- ========================================================================= -->
+    <div class="bg-white border-t border-slate-200 px-3 py-2.5 flex justify-around items-center z-50 shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div onclick="switchAppTab('tab1', 'text-blue-600')" class="nav-item tab1 flex flex-col items-center cursor-pointer text-blue-600 scale-110 transition">
+            <span class="text-xl mb-0.5">🏦</span><span class="text-[9px] font-bold">Ngân Hàng</span>
+        </div>
+        <div onclick="switchAppTab('tab2', 'text-pink-600')" class="nav-item tab2 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-xl mb-0.5">🏠</span><span class="text-[9px] font-bold text-slate-600">Thu / Chi</span>
+        </div>
+        <div onclick="switchAppTab('tab3', 'text-amber-500')" class="nav-item tab3 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-xl mb-0.5">🛒</span><span class="text-[9px] font-bold text-slate-600">Kinh Doanh</span>
+        </div>
+        <div onclick="switchAppTab('tab4', 'text-indigo-600')" class="nav-item tab4 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-xl mb-0.5">🤝</span><span class="text-[9px] font-bold text-slate-600">Công Nợ</span>
+        </div>
+        <div onclick="switchAppTab('tab7', 'text-teal-600')" class="nav-item tab7 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-xl mb-0.5">✈️</span><span class="text-[9px] font-bold text-slate-600">Chia Tiền</span>
+        </div>
+    </div>
+
+    <!-- GLOBAL TOAST NOTIFICATION CONTAINER -->
+    <div id="global-toast" class="absolute top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 hidden -translate-y-2 opacity-0 flex items-center gap-2 max-w-[90%] text-center"></div>
+
+    <!-- GLOBAL CONFIRM MODAL (THAY THẾ BROWSER CONFIRM) -->
+    <div id="modal-global-confirm" class="modal-overlay" style="z-index: 290;" onclick="if(event.target === this) closeModal('modal-global-confirm')">
+      <div class="modal-content rounded-2xl border-t-4 border-rose-500 max-w-[320px] w-full p-3.5 shadow-2xl bg-white">
+        <div class="flex justify-between items-center mb-2 border-b pb-1.5">
+          <h3 id="global-confirm-title" class="text-xs font-bold text-slate-900">⚠️ Xác Nhận</h3>
+          <button onclick="closeModal('modal-global-confirm')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        </div>
+        <div class="space-y-4">
+          <p id="global-confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+          <div class="flex gap-2 pt-1">
+              <button onclick="closeModal('modal-global-confirm')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+              <button id="btn-global-confirm-submit" onclick="executeGlobalConfirm()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: XUẤT BÁO CÁO CÔNG NỢ DẠNG ẢNH chuẩn MẪU (GLOBAL) -->
+    <div id="modal-export-debt-image" class="modal-overlay hidden" style="z-index: 295;" onclick="if(event.target===this) closeModal('modal-export-debt-image')">
+      <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[390px] w-full p-3.5 shadow-2xl bg-white overflow-hidden">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-1.5 mb-2.5">
+              <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>📸</span> <span>Báo Cáo Công Nợ Ảnh</span>
+              </h3>
+              <button onclick="closeModal('modal-export-debt-image')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+          </div>
+
+          <!-- PREVIEW WRAPPER FOR HTML2CANVAS -->
+          <div id="debt-report-preview-container" class="overflow-y-auto max-h-[65vh] border border-slate-200 rounded-xl p-1.5 bg-slate-100 scroll-touch custom-scroll">
+              <div id="debt-report-preview" class="bg-white p-3.5 rounded-xl shadow-xs text-slate-800 space-y-2.5 max-w-[320px] mx-auto font-sans" style="background-color: #ffffff;">
+                  <!-- HEADER (Tên bên trái - Ngày bên phải) -->
+                  <div class="flex justify-between items-baseline border-b border-blue-900/20 pb-1">
+                      <h2 id="rpt-partner-name" class="text-base font-black text-blue-800 uppercase tracking-tight text-left truncate max-w-[65%]">C KẸO</h2>
+                      <p class="text-[10px] font-bold text-slate-500 flex items-center justify-end gap-1 whitespace-nowrap shrink-0">
+                          <span>📅</span> <span id="rpt-date-str">2026-09-10</span>
+                      </p>
+                  </div>
+
+                  <!-- TABLE -->
+                  <div class="border border-blue-900/30 rounded-lg overflow-hidden">
+                      <div class="bg-blue-900 text-white font-bold text-[10px] grid grid-cols-12 px-2 py-1.5 text-center">
+                          <span class="col-span-3">Ngày</span>
+                          <span class="col-span-5">Tên Mặt Hàng</span>
+                          <span class="col-span-4 text-right pr-1">Số Tiền</span>
+                      </div>
+                      <div id="rpt-table-body" class="divide-y divide-slate-100 text-[10px] bg-emerald-50/20">
+                          <!-- Dynamic Rows -->
+                      </div>
+                  </div>
+
+                  <!-- SUMMARY BOX -->
+                  <div class="border-2 border-blue-900 rounded-xl p-2.5 bg-white space-y-1 text-[11px] shadow-xs">
+                      <div class="flex justify-between items-center font-bold text-slate-800">
+                          <span class="flex items-center gap-1"><span>🟢</span> <span>Tổng Cần Thu:</span></span>
+                          <span id="rpt-sum-thu" class="text-emerald-600 font-extrabold">+0 ¥</span>
+                      </div>
+                      <div class="flex justify-between items-center font-bold text-slate-800">
+                          <span class="flex items-center gap-1"><span>🔴</span> <span>Tổng Cần Trả:</span></span>
+                          <span id="rpt-sum-tra" class="text-rose-600 font-extrabold">-0 ¥</span>
+                      </div>
+                      <div class="border-t border-slate-200 pt-1 flex justify-between items-center font-bold text-xs text-blue-900">
+                          <span class="flex items-center gap-1"><span>⚖️</span> <span>Bù Trừ Tất Toán:</span></span>
+                          <span id="rpt-sum-net" class="font-black text-sm text-blue-800">+0 ¥</span>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="flex gap-1.5 pt-2.5">
+              <button onclick="copyDebtReportImageToClipboard()" id="btn-copy-rpt-img" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer text-xs flex items-center justify-center gap-1">
+                  <span>📋</span> <span>Sao Chép Ảnh</span>
+              </button>
+              <button onclick="downloadDebtReportImage()" id="btn-download-rpt-img" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer text-xs flex items-center justify-center gap-1">
+                  <span>📥</span> <span>Tải File</span>
+              </button>
+          </div>
+      </div>
+    </div>
+
+    <!-- MODAL CHỌN NGÀY TRỪ THẺ THỰC TẾ PRE-ORDER (GLOBAL) -->
+    <div id="modal-confirm-preorder-date" class="modal-overlay hidden" style="z-index: 285;" onclick="if(event.target===this) closeConfirmPreorderDateModal()">
+      <div class="modal-content rounded-2xl border-t-4 border-blue-600 max-w-[360px] w-full p-4 shadow-2xl bg-white flex flex-col">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💳</span>
+            <div>
+              <h3 class="font-bold text-xs text-slate-800">Xác Nhận Đã Trừ Thẻ</h3>
+              <p id="preorder-date-modal-sub" class="text-[10px] text-blue-600 font-medium">Chọn ngày đã trừ thẻ thực tế</p>
+            </div>
+          </div>
+          <button onclick="closeConfirmPreorderDateModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        </div>
+        
+        <div class="space-y-2.5 text-xs">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">📅 Ngày Đã Trừ Thẻ Thực Tế:</label>
+            <input type="date" id="preorder-confirm-date-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition" />
+          </div>
+        </div>
+        
+        <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-1.5 shrink-0">
+          <button onclick="closeConfirmPreorderDateModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer transition text-center">Hủy</button>
+          <button onclick="submitPreorderCancelFromModal()" class="flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold py-2 rounded-xl text-xs cursor-pointer transition text-center flex items-center justify-center gap-0.5">❌ Hủy Đơn</button>
+          <button id="btn-submit-preorder-date" onclick="submitPreorderConfirmWithDate()" class="flex-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2 rounded-xl text-xs cursor-pointer transition shadow-xs flex items-center justify-center gap-0.5">✅ Đã Trừ Thẻ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL XEM & THAO TÁC CHI TIẾT CÁC ĐƠN PRE-ORDER GOM NHÓM (GLOBAL) -->
+    <div id="modal-preorder-detail" class="modal-overlay hidden" style="z-index: 280;" onclick="if(event.target===this) closePreorderDetailModal()">
+      <div class="modal-content rounded-2xl border-t-4 border-blue-600 max-w-[420px] w-full p-3.5 shadow-2xl bg-white overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-2">
+          <div>
+            <h3 id="preorder-detail-title" class="font-bold text-xs text-slate-800">Chi Tiết Đơn Pre-order</h3>
+            <p id="preorder-detail-sub" class="text-[9px] text-blue-600">Danh sách các đơn chờ trừ thẻ</p>
+          </div>
+          <button onclick="closePreorderDetailModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        </div>
+        
+        <div id="preorder-detail-body" class="space-y-1.5 overflow-y-auto flex-1 text-xs pr-1">
+          <!-- Danh sách đơn con sẽ tự động đổ vào đây -->
+        </div>
+        
+        <div class="pt-2 border-t mt-2 flex justify-end gap-2 shrink-0">
+          <button onclick="closePreorderDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg text-[11px] cursor-pointer">Đóng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL CHỌN VÍ & NGÀY NHẬN HOÀN TIỀN (GLOBAL) -->
+    <div id="modal-confirm-refund-date" class="modal-overlay hidden" style="z-index: 280;" onclick="if(event.target===this) closeConfirmRefundModal()">
+      <div class="modal-content rounded-2xl border-t-4 border-amber-500 max-w-[340px] w-full p-4 shadow-2xl bg-white flex flex-col space-y-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💰</span>
+            <div>
+              <h3 class="font-bold text-xs text-slate-800">Xác Nhận Đã Nhận Hoàn Tiền</h3>
+            </div>
+          </div>
+          <button onclick="closeConfirmRefundModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        </div>
+        
+        <div class="space-y-2.5 text-xs">
+          <input type="hidden" id="refund-target-id" value="" />
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">📅 Ngày Nhận Tiền Thực Tế:</label>
+            <input type="date" id="refund-date-input" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-500" />
+          </div>
+          <div class="relative z-40">
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">💳 Ví / Thẻ Nhận Tiền Hoàn:</label>
+            <input type="text" id="refund-wallet-input" autocomplete="off" placeholder="Gõ chọn ví nhận tiền..." 
+                   oninput="renderSuggest('refund-wallet-input', 'nguon', false)" onfocus="renderSuggest('refund-wallet-input', 'nguon', true)" onclick="renderSuggest('refund-wallet-input', 'nguon', true)" onmousedown="renderSuggest('refund-wallet-input', 'nguon', true)" onblur="hideSuggest('refund-wallet-input')"
+                   class="w-full bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 shadow-inner" />
+            <div id="box-refund-wallet-input" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl hidden max-h-36 overflow-y-auto z-50"></div>
+          </div>
+        </div>
+        
+        <div class="pt-2 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+          <button onclick="closeConfirmRefundModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer transition">Hủy</button>
+          <button id="btn-submit-confirm-refund" onclick="submitConfirmRefundWithWallet()" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold px-4 py-1.5 rounded-xl text-xs cursor-pointer transition shadow-xs flex items-center gap-1">
+            <span>💰 Xác Nhận Nhận Tiền</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL THU TIỀN KHÁCH NỢ TAB 3 (GLOBAL) -->
+    <div id="modal-pay-debt-t3" class="modal-overlay hidden" style="z-index: 280;" onclick="if(event.target === this) closeModal('modal-pay-debt-t3')">
+      <div class="modal-content !overflow-visible bg-white rounded-2xl border-t-4 border-emerald-500 p-4 max-w-md w-full shadow-2xl relative transform transition-all">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+          <h3 id="t3-pay-debt-title" class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+            <span>💰</span> <span>Nhận Tiền Thu Nợ</span>
+          </h3>
+          <button onclick="closeModal('modal-pay-debt-t3')" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none cursor-pointer px-1">&times;</button>
+        </div>
+
+        <p class="text-[10px] text-slate-500 my-2">Tiền sẽ được tự động cập nhật vào Ví/Thẻ tương ứng và gạch nợ thành công.</p>
+
+        <div class="space-y-2.5 text-xs">
+          <div class="bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-200/80 flex justify-between items-center">
+            <div>
+              <p class="text-[8px] font-bold text-slate-400 uppercase">Sản phẩm / Đơn nợ</p>
+              <p id="t3-pay-debt-name" class="text-xs font-extrabold text-slate-800 truncate max-w-[200px]">Mặt hàng</p>
+            </div>
+            <div class="text-right">
+              <p class="text-[8px] font-bold text-slate-400 uppercase">Tổng tiền thu</p>
+              <p id="t3-pay-debt-total" class="text-xs font-extrabold text-emerald-600">0 ¥</p>
+            </div>
+          </div>
+
+          <div class="min-w-0">
+            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">1. Ngày thu tiền</label>
+            <input type="date" id="t3-pay-debt-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-emerald-500" />
+          </div>
+
+          <div class="relative z-10">
+            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Số tiền thanh toán (¥)</label>
+            <input type="number" id="t3-pay-debt-amount" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-600 outline-none focus:border-emerald-500" readonly />
+          </div>
+
+          <div class="relative z-40 min-w-0">
+            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Nhận tiền vào Ví/Thẻ nào?</label>
+            <input type="text" id="t3-pay-debt-source" autocomplete="off" placeholder="Gõ chọn ví..." 
+                   oninput="renderSuggest('t3-pay-debt-source', 'nguon', false)" 
+                   onclick="renderSuggest('t3-pay-debt-source', 'nguon', true)" 
+                   onmousedown="renderSuggest('t3-pay-debt-source', 'nguon', true)" 
+                   onblur="hideSuggest('t3-pay-debt-source')" 
+                   class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 shadow-inner" />
+            <div id="box-t3-pay-debt-source" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-36 overflow-y-auto z-50"></div>
+          </div>
+          
+          <button onclick="submitT3PayDebt()" id="btn-t3-pay-debt-submit" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-98 text-white rounded-xl text-xs font-extrabold cursor-pointer transition shadow-md relative z-10 mt-1">Xác Nhận Nhận Tiền</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let globalConfirmCallback = null;
+    let pendingPreorderConfirmContext = null;
+
+    function openConfirmPreorderDateModal(context, subTitleText) {
+        pendingPreorderConfirmContext = context;
+        const modal = document.getElementById('modal-confirm-preorder-date');
+        const dateInput = document.getElementById('preorder-confirm-date-input');
+        const subEl = document.getElementById('preorder-date-modal-sub');
+        
+        if (dateInput) {
+            dateInput.value = new Date().toISOString().split('T')[0];
+        }
+        if (subEl && subTitleText) {
+            subEl.innerText = subTitleText;
+        }
+        if (modal) {
+            modal.classList.add('active');
+            modal.classList.remove('hidden');
+        }
+    }
+
+    function closeConfirmPreorderDateModal() {
+        const modal = document.getElementById('modal-confirm-preorder-date');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.classList.add('hidden');
+        }
+        pendingPreorderConfirmContext = null;
+    }
+
+    function submitPreorderConfirmWithDate() {
+        const dateInput = document.getElementById('preorder-confirm-date-input');
+        const customDate = (dateInput && dateInput.value) ? dateInput.value.trim() : new Date().toISOString().split('T')[0];
+        
+        const ctx = pendingPreorderConfirmContext;
+        closeConfirmPreorderDateModal();
+
+        if (!ctx) return;
+
+        if (ctx.type === 'single') {
+            if (typeof doConfirmPreOrderPayment === 'function') {
+                doConfirmPreOrderPayment(ctx.orderId, ctx.itemName, ctx.rowId, ctx.btnElem, customDate);
+            }
+        } else if (ctx.type === 'batch') {
+            if (typeof doConfirmBatchPreOrdersPayment === 'function') {
+                doConfirmBatchPreOrdersPayment(ctx.itemIds, ctx.btnElem, customDate);
+            }
+        }
+    }
+
+    function submitPreorderCancelFromModal() {
+        const ctx = pendingPreorderConfirmContext;
+        closeConfirmPreorderDateModal();
+
+        if (!ctx) return;
+
+        if (ctx.type === 'single') {
+            if (typeof handleCancelPreOrder === 'function') {
+                handleCancelPreOrder(ctx.orderId, ctx.itemName, ctx.rowId);
+            }
+        } else if (ctx.type === 'batch') {
+            if (typeof saveBatchCancelPreOrders === 'function') {
+                saveBatchCancelPreOrders(ctx.btnElem);
+            }
+        }
+    }
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('global-toast') || document.getElementById('t1-toast');
+        if (!toast) return;
+        toast.innerText = msg;
+        toast.className = `absolute top-14 left-1/2 -translate-x-1/2 z-[300] px-3.5 py-2 rounded-2xl text-xs font-bold text-white shadow-2xl transition-all duration-300 flex items-center justify-center text-center max-w-[85%] w-auto whitespace-normal break-words leading-tight ${isError ? 'bg-rose-600 border border-rose-400' : 'bg-emerald-600 border border-emerald-400'}`;
+        toast.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            toast.classList.remove('-translate-y-2', 'opacity-0');
+        });
+        setTimeout(() => {
+            toast.classList.add('-translate-y-2', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3200);
+    }
+
+    function showConfirmModal(title, msg, onConfirm, btnText = "Xác Nhận") {
+        const titleEl = document.getElementById('global-confirm-title');
+        const msgEl = document.getElementById('global-confirm-msg');
+        const btnEl = document.getElementById('btn-global-confirm-submit');
+        if (titleEl) titleEl.innerText = title || "⚠️ Xác Nhận Hành Động";
+        if (msgEl) msgEl.innerText = msg || "Bạn có chắc chắn muốn thực hiện?";
+        if (btnEl) btnEl.innerText = btnText;
+        globalConfirmCallback = onConfirm;
+        openModal('modal-global-confirm');
+    }
+
+    function executeGlobalConfirm() {
+        closeModal('modal-global-confirm');
+        if (typeof globalConfirmCallback === 'function') {
+            globalConfirmCallback();
+            globalConfirmCallback = null;
+        }
+    }
+
+    function switchAppTab(tabId, activeColorClass) {
+        ['tab1', 'tab2', 'tab3', 'tab4', 'tab5', 'tab7'].forEach(id => {
+            const el = document.getElementById('view-' + id);
+            if (el) el.classList.remove('active-tab');
+        });
+        
+        const activeView = document.getElementById('view-' + tabId);
+        if (activeView) activeView.classList.add('active-tab');
+
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.className = item.className.replace(/text-(blue|pink|amber|indigo|purple|teal|emerald)-\d+/g, '');
+            item.classList.remove('scale-110', 'opacity-100');
+            item.classList.add('opacity-50');
+            const label = item.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-[9px] font-bold text-slate-600";
+        });
+
+        const activeNav = document.querySelector('.nav-item.' + tabId);
+        if (activeNav) {
+            activeNav.classList.remove('opacity-50');
+            activeNav.classList.add('scale-110', 'opacity-100');
+            if (activeColorClass) activeNav.classList.add(activeColorClass);
+            const label = activeNav.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-[9px] font-bold";
+        }
+
+        if (tabId === 'tab2' && typeof reloadTab2Data === 'function') {
+            reloadTab2Data();
+        } else if (tabId === 'tab3' && typeof reloadTab3Data === 'function') {
+            reloadTab3Data();
+        } else if (tabId === 'tab4' && typeof reloadTab4Data === 'function') {
+            reloadTab4Data();
+        } else if (tabId === 'tab5' && typeof t5_loadData === 'function') {
+            t5_loadData();
+        } else if (tabId === 'tab1' && typeof reloadTab1Data === 'function') {
+            reloadTab1Data();
+        } else if (tabId === 'tab7' && typeof t7_loadAllData === 'function') {
+            t7_loadAllData();
+        }
+    }
+  </script>
+
+<!-- MODAL MÁY TÍNH TIỀN TỰ ĐỘNG -->
+<div id="modal-mini-calc" class="modal-overlay">
+<div class="modal-content rounded-2xl border-t-4 border-indigo-600 !p-4 max-w-[320px] w-full flex flex-col shadow-2xl">
+  <div class="flex justify-between items-center mb-2 border-b pb-1.5 shrink-0">
+    <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">🧮 Máy Tính Số Tiền</h3>
+    <button onclick="closeModal('modal-mini-calc')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+  </div>
+
+  <div class="bg-slate-900 text-right p-3 rounded-xl mb-3 shadow-inner">
+    <div id="calc-display-expr" class="text-[10px] text-slate-400 font-mono h-4 overflow-hidden truncate">0</div>
+    <div id="calc-display-val" class="text-xl font-bold text-emerald-400 font-mono tracking-wider overflow-x-auto truncate">0</div>
+  </div>
+
+  <!-- BÀN PHÍM MÁY TÍNH -->
+  <div class="grid grid-cols-4 gap-1.5 mb-3 font-mono text-xs font-bold">
+    <button onclick="calcPress('C')" class="p-2.5 bg-rose-100 text-rose-700 hover:bg-rose-200 rounded-lg shadow-2xs transition">C</button>
+    <button onclick="calcPress('(')" class="p-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg shadow-2xs transition">(</button>
+    <button onclick="calcPress(')')" class="p-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg shadow-2xs transition">)</button>
+    <button onclick="calcPress('/')" class="p-2.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg shadow-2xs transition">÷</button>
+
+    <button onclick="calcPress('7')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">7</button>
+    <button onclick="calcPress('8')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">8</button>
+    <button onclick="calcPress('9')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">9</button>
+    <button onclick="calcPress('*')" class="p-2.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg shadow-2xs transition">×</button>
+
+    <button onclick="calcPress('4')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">4</button>
+    <button onclick="calcPress('5')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">5</button>
+    <button onclick="calcPress('6')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">6</button>
+    <button onclick="calcPress('-')" class="p-2.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg shadow-2xs transition">-</button>
+
+    <button onclick="calcPress('1')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">1</button>
+    <button onclick="calcPress('2')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">2</button>
+    <button onclick="calcPress('3')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">3</button>
+    <button onclick="calcPress('+')" class="p-2.5 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg shadow-2xs transition">+</button>
+
+    <button onclick="calcPress('0')" class="col-span-2 p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">0</button>
+    <button onclick="calcPress('.')" class="p-2.5 bg-white text-slate-800 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-2xs transition">.</button>
+    <button onclick="calcPress('=')" class="p-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg shadow-2xs transition">=</button>
+  </div>
+
+  <div class="flex gap-2">
+    <button onclick="applyCalcResult()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-sm">
+      ✅ Áp Dụng Cho Ô Đang Nhập
+    </button>
+    <button onclick="closeModal('modal-mini-calc')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer transition">
+      Đóng
+    </button>
+  </div>
+</div>
+</div>
+
+<script>
+    function evaluateMathExpression(str) {
+        if (str === null || str === undefined) return NaN;
+        let clean = String(str)
+            .replace(/,/g, '')
+            .replace(/¥/g, '')
+            .replace(/￥/g, '')
+            .replace(/x/gi, '*')
+            .replace(/÷/g, '/')
+            .trim();
+        if (!clean) return NaN;
+        if (/^-?\d+(\.\d+)?$/.test(clean)) {
+            return parseFloat(clean);
+        }
+        if (!/^[0-9+\-*/().\s]+$/.test(clean)) {
+            return NaN;
+        }
+        try {
+            const res = new Function("'use strict'; return (" + clean + ")")();
+            if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
+                return Math.round(res);
+            }
+        } catch (e) {
+            return NaN;
+        }
+        return NaN;
+    }
+
+    var activeCalcTargetId = null;
+    var calcExpression = "";
+
+    function openMiniCalc(targetInputId) {
+        activeCalcTargetId = targetInputId || null;
+        const input = targetInputId ? document.getElementById(targetInputId) : null;
+        calcExpression = input && input.value ? String(input.value).trim() : "";
+        updateCalcDisplay();
+        openModal('modal-mini-calc');
+    }
+
+    function updateCalcDisplay() {
+        const exprEl = document.getElementById('calc-display-expr');
+        const valEl = document.getElementById('calc-display-val');
+        if (exprEl) exprEl.innerText = calcExpression || "0";
+        if (valEl) {
+            if (!calcExpression) {
+                valEl.innerText = "0";
+            } else {
+                const evalRes = evaluateMathExpression(calcExpression);
+                if (!isNaN(evalRes)) {
+                    valEl.innerText = evalRes.toLocaleString() + " ¥";
+                } else {
+                    valEl.innerText = calcExpression;
+                }
+            }
+        }
+    }
+
+    function calcPress(key) {
+        if (key === 'C') {
+            calcExpression = "";
+        } else if (key === '=') {
+            const evalRes = evaluateMathExpression(calcExpression);
+            if (!isNaN(evalRes)) {
+                calcExpression = String(evalRes);
+            }
+        } else {
+            calcExpression += key;
+        }
+        updateCalcDisplay();
+    }
+
+    function applyCalcResult() {
+        const evalRes = evaluateMathExpression(calcExpression);
+        const finalVal = !isNaN(evalRes) ? evalRes : 0;
+        if (activeCalcTargetId) {
+            const input = document.getElementById(activeCalcTargetId);
+            if (input) {
+                input.value = finalVal;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+        closeModal('modal-mini-calc');
+        if (typeof showToast === 'function') {
+            showToast("✅ Đã tính: " + (finalVal || 0).toLocaleString() + " ¥");
+        }
+    }
+
+    document.addEventListener('blur', function(e) {
+        const target = e.target;
+        if (target && (target.type === 'number' || target.type === 'text') && target.value) {
+            const val = String(target.value).trim();
+            if (/[+\-*/]/.test(val)) {
+                const res = evaluateMathExpression(val);
+                if (!isNaN(res)) {
+                    target.value = res;
+                    target.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        }
+    }, true);
+</script>
+<!-- MÀN HÌNH KHÓA APP -->
+<div id="app-lock-screen" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 hidden">
+  <div class="bg-white p-5 rounded-3xl shadow-2xl w-full max-w-[320px] text-center transform transition-all space-y-3">
+    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
+      🔒
+    </div>
+    <div>
+      <h2 class="text-base font-bold text-slate-800">Ứng Dụng Đã Khóa</h2>
+      <p id="app-lock-subtitle" class="text-xs text-slate-500 mt-0.5">Mở khóa ứng dụng để tiếp tục</p>
+    </div>
+
+    <!-- Toggle Buttons: Vẽ Mật Khẩu / Nhập Mật Khẩu -->
+    <div class="flex bg-slate-100 p-1 rounded-xl">
+      <button id="btn-app-lock-mode-pattern" onclick="switchAppLockMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-2xs">✍️ Vẽ Mật Khẩu</button>
+      <button id="btn-app-lock-mode-pin" onclick="switchAppLockMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
+    </div>
+
+    <!-- Mode 1: VẼ MẬT KHẨU (3x3 PATTERN LOCK GRID) -->
+    <div id="app-lock-pattern-container" class="space-y-2">
+      <div class="relative w-[210px] h-[210px] mx-auto bg-slate-900 rounded-2xl shadow-inner border border-slate-700 flex items-center justify-center touch-none select-none">
+        <canvas id="app-pattern-canvas" width="210" height="210" class="cursor-pointer rounded-2xl"></canvas>
+      </div>
+      <div class="flex justify-between items-center px-1 text-[10px]">
+        <button onclick="resetAppPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
+        <span class="text-slate-400 font-medium">Nối từ 3 điểm trở lên</span>
+      </div>
+    </div>
+
+    <!-- Mode 2: NHẬP MẬT KHẨU CHỮ / SỐ (PIN) -->
+    <div id="app-lock-pin-container" class="space-y-2.5 hidden">
+      <input type="password" id="app-password-input" placeholder="Nhập mật khẩu..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center text-sm font-bold text-slate-800 tracking-widest outline-none focus:border-blue-500 focus:bg-white transition" />
+      <button onclick="unlockAppWithPin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer">
+        Mở Khóa
+      </button>
+    </div>
+
+    <p id="app-lock-error" class="text-xs text-rose-500 font-bold hidden">❌ Mật khẩu hoặc hình vẽ không chính xác!</p>
+  </div>
+</div>
+<!-- MODAL CHUYỂN KHO HÀNG LOẠT -->
+<div id="modal-transfer-warehouse" class="modal-overlay hidden" onclick="if(event.target === this) closeModal('modal-transfer-warehouse')">
+  <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-amber-500 p-4 max-w-sm w-full bg-white shadow-2xl space-y-3 text-xs">
+    <div class="flex justify-between items-center border-b pb-2">
+      <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+        <span>📦</span> <span>Chuyển Kho Hàng Loạt</span>
+      </h3>
+      <button onclick="closeModal('modal-transfer-warehouse')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <div class="flex justify-between items-center bg-amber-50/80 p-2 px-2.5 rounded-xl border border-amber-200 text-slate-700">
+      <span class="font-bold text-xs text-amber-900">Đã chọn: <span id="transfer-modal-count" class="text-teal-700 font-extrabold">0 Mục</span></span>
+    </div>
+
+    <div>
+      <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Chuyển đến kho:</label>
+      <select id="transfer-modal-target-wh" class="w-full bg-white border border-amber-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-teal-500 shadow-xs cursor-pointer">
+        <option value="Kho 1F">🔵 Kho 1F</option>
+        <option value="Kho 2F">🟢 Kho 2F</option>
+        <option value="Chusen">🟡 Chusen</option>
+        <option value="Hủy">🔴 Hủy</option>
+      </select>
+    </div>
+
+    <!-- DANH SÁCH CÁC ĐƠN HÀNG ĐƯỢC CHỌN VỚI Ô NHẬP SỐ LƯỢNG CHUYỂN -->
+    <div>
+      <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Chi tiết số lượng chuyển từng đơn:</label>
+      <div id="transfer-modal-items-container" class="space-y-2 max-h-48 overflow-y-auto pr-0.5 custom-scroll"></div>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+      <button onclick="closeModal('modal-transfer-warehouse')" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy</button>
+      <button id="btn-submit-modal-transfer" onclick="submitBatchWarehouseTransferModal(this)" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition cursor-pointer shadow-xs flex items-center gap-1">📦 Chuyển</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // App Lock Logic
+  let idleTimeout = null;
+  const IDLE_LIMIT = 3600000; // 1 hour in ms
+  const CORRECT_PIN = "25100311";
+
+  let appPatternSelectedNodes = [];
+  let appIsPatternDrawing = false;
+  let appPatternCurrentTouch = { x: 0, y: 0 };
+  let appPatternCanvasInited = false;
+  let appLockMode = 'PATTERN';
+
+  function resetIdleTimer() {
+    const lockScreen = document.getElementById('app-lock-screen');
+    if (!lockScreen || !lockScreen.classList.contains('hidden')) return;
+    
+    clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => {
+      lockApp();
+    }, IDLE_LIMIT);
+  }
+
+  function switchAppLockMode(mode) {
+    appLockMode = mode;
+    const btnPattern = document.getElementById('btn-app-lock-mode-pattern');
+    const btnPin = document.getElementById('btn-app-lock-mode-pin');
+    const containerPattern = document.getElementById('app-lock-pattern-container');
+    const containerPin = document.getElementById('app-lock-pin-container');
+    const errText = document.getElementById('app-lock-error');
+    if (errText) errText.classList.add('hidden');
+
+    if (mode === 'PATTERN') {
+      if (btnPattern) btnPattern.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-2xs";
+      if (btnPin) btnPin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+      if (containerPattern) containerPattern.classList.remove('hidden');
+      if (containerPin) containerPin.classList.add('hidden');
+      initAppPatternLockCanvas();
+    } else {
+      if (btnPattern) btnPattern.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+      if (btnPin) btnPin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-2xs";
+      if (containerPattern) containerPattern.classList.add('hidden');
+      if (containerPin) containerPin.classList.remove('hidden');
+      const passInput = document.getElementById('app-password-input');
+      if (passInput) setTimeout(() => passInput.focus(), 100);
+    }
+  }
+
+  function getAppPatternNodeCoords() {
+    const canvas = document.getElementById('app-pattern-canvas');
+    if (!canvas) return [];
+    const w = canvas.width;
+    const h = canvas.height;
+    const padding = 38;
+    const stepX = (w - padding * 2) / 2;
+    const stepY = (h - padding * 2) / 2;
+    return [
+      { id: '1', x: padding, y: padding },
+      { id: '2', x: padding + stepX, y: padding },
+      { id: '3', x: padding + stepX * 2, y: padding },
+      { id: '4', x: padding, y: padding + stepY },
+      { id: '5', x: padding + stepX, y: padding + stepY },
+      { id: '6', x: padding + stepX * 2, y: padding + stepY },
+      { id: '7', x: padding, y: padding + stepY * 2 },
+      { id: '8', x: padding + stepX, y: padding + stepY * 2 },
+      { id: '9', x: padding + stepX * 2, y: padding + stepY * 2 }
+    ];
+  }
+
+  function drawAppPatternCanvas() {
+    const canvas = document.getElementById('app-pattern-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const nodes = getAppPatternNodeCoords();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (appPatternSelectedNodes.length > 0) {
+      ctx.beginPath();
+      ctx.strokeStyle = '#3b82f6';
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      appPatternSelectedNodes.forEach((nodeId, idx) => {
+        const n = nodes.find(item => item.id === nodeId);
+        if (!n) return;
+        if (idx === 0) ctx.moveTo(n.x, n.y);
+        else ctx.lineTo(n.x, n.y);
+      });
+
+      if (appIsPatternDrawing && appPatternSelectedNodes.length > 0) {
+        ctx.lineTo(appPatternCurrentTouch.x, appPatternCurrentTouch.y);
+      }
+      ctx.stroke();
+    }
+
+    nodes.forEach(n => {
+      const isSelected = appPatternSelectedNodes.includes(n.id);
+      if (isSelected) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 20, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.3)';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 9, 0, Math.PI * 2);
+        ctx.fillStyle = '#60a5fa';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 9, 0, Math.PI * 2);
+        ctx.strokeStyle = '#2563eb';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#334155';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fill();
+      }
+    });
+  }
+
+  function resetAppPatternCanvas() {
+    appPatternSelectedNodes = [];
+    appIsPatternDrawing = false;
+    const errText = document.getElementById('app-lock-error');
+    if (errText) errText.classList.add('hidden');
+    drawAppPatternCanvas();
+  }
+
+  function initAppPatternLockCanvas() {
+    const canvas = document.getElementById('app-pattern-canvas');
+    if (!canvas) return;
+
+    resetAppPatternCanvas();
+    if (appPatternCanvasInited) return;
+    appPatternCanvasInited = true;
+
+    function getCanvasPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : (e.clientX || 0);
+      const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : (e.clientY || 0);
+      return {
+        x: (clientX - rect.left) * (canvas.width / rect.width),
+        y: (clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function checkNodeHit(pos) {
+      const nodes = getAppPatternNodeCoords();
+      const hitRadius = 28;
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        const dx = pos.x - n.x;
+        const dy = pos.y - n.y;
+        if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) {
+          return n.id;
+        }
+      }
+      return null;
+    }
+
+    function handleStart(e) {
+      if (e.type === 'touchstart') e.preventDefault();
+      const pos = getCanvasPos(e);
+      const nodeId = checkNodeHit(pos);
+      if (nodeId) {
+        appIsPatternDrawing = true;
+        appPatternSelectedNodes = [nodeId];
+        appPatternCurrentTouch = pos;
+        drawAppPatternCanvas();
+      }
+    }
+
+    function handleMove(e) {
+      if (!appIsPatternDrawing) return;
+      if (e.type === 'touchmove') e.preventDefault();
+      const pos = getCanvasPos(e);
+      appPatternCurrentTouch = pos;
+
+      const nodeId = checkNodeHit(pos);
+      if (nodeId && !appPatternSelectedNodes.includes(nodeId)) {
+        appPatternSelectedNodes.push(nodeId);
+      }
+      drawAppPatternCanvas();
+    }
+
+    function handleEnd(e) {
+      if (!appIsPatternDrawing) return;
+      if (e.type === 'touchend') e.preventDefault();
+      appIsPatternDrawing = false;
+
+      if (appPatternSelectedNodes.length >= 3) {
+        const codeDash = appPatternSelectedNodes.join('-');
+        const codeClean = appPatternSelectedNodes.join('');
+        verifyAndUnlockApp(codeDash, codeClean);
+      } else {
+        resetAppPatternCanvas();
+      }
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+
+    canvas.addEventListener('touchstart', handleStart, { passive: false });
+    canvas.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd, { passive: false });
+
+    drawAppPatternCanvas();
+  }
+
+  function verifyAndUnlockApp(codeDash, codeClean) {
+    const validCodes = [
+      "25100311", "kichukian",
+      "12369", "1-2-3-6-9",
+      "1235789", "1-2-3-5-7-8-9",
+      "14789", "1-4-7-8-9",
+      "7412369", "7-4-1-2-3-6-9",
+      "123456789", "1-2-3-4-5-6-7-8-9"
+    ];
+
+    let isSuccess = false;
+    const clean1 = (codeClean || '').replace(/-/g, '').toLowerCase();
+    const clean2 = (codeDash || '').replace(/-/g, '').toLowerCase();
+
+    if (validCodes.includes(clean1) || validCodes.includes(clean2)) {
+      isSuccess = true;
+    }
+
+    const savedPass = (localStorage.getItem('card_custom_pwd') || localStorage.getItem('CARD_CUSTOM_PWD') || localStorage.getItem('APP_CUSTOM_PWD') || '').replace(/-/g, '').toLowerCase();
+    if (savedPass && (clean1 === savedPass || clean2 === savedPass)) {
+      isSuccess = true;
+    }
+
+    if (isSuccess) {
+      performUnlock();
+    } else {
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.t1_isValidCardPassword === 'function') {
+        google.script.run.withSuccessHandler(function(res) {
+          if (res === true) performUnlock();
+          else showLockError();
+        }).withFailureHandler(function() {
+          showLockError();
+        }).t1_isValidCardPassword(codeClean);
+      } else {
+        showLockError();
+      }
+    }
+  }
+
+  function showLockError() {
+    const errText = document.getElementById('app-lock-error');
+    if (errText) errText.classList.remove('hidden');
+    setTimeout(() => resetAppPatternCanvas(), 1200);
+  }
+
+  function performUnlock() {
+    const lockScreen = document.getElementById('app-lock-screen');
+    const errText = document.getElementById('app-lock-error');
+    if (lockScreen) lockScreen.classList.add('hidden');
+    if (errText) errText.classList.add('hidden');
+    localStorage.setItem('APP_UNLOCKED', 'true');
+    resetIdleTimer();
+    if (typeof loadAppData === 'function') loadAppData();
+    if (typeof renderTab6Data === 'function') renderTab6Data();
+    if (typeof loadTab2Data === 'function') loadTab2Data(false);
+  }
+
+  function lockApp() {
+    const lockScreen = document.getElementById('app-lock-screen');
+    const passInput = document.getElementById('app-password-input');
+    const errText = document.getElementById('app-lock-error');
+    
+    if (lockScreen) lockScreen.classList.remove('hidden');
+    if (passInput) passInput.value = '';
+    if (errText) errText.classList.add('hidden');
+    
+    localStorage.removeItem('APP_UNLOCKED');
+    clearTimeout(idleTimeout);
+    switchAppLockMode('PATTERN');
+  }
+
+  function unlockAppWithPin() {
+    const passInput = document.getElementById('app-password-input');
+    const val = passInput ? passInput.value.trim() : '';
+    if (val) {
+      verifyAndUnlockApp(val, val);
+    } else {
+      showLockError();
+    }
+  }
+
+  function unlockApp() {
+    unlockAppWithPin();
+  }
+
+  // Setup idle listeners
+  ['mousemove', 'mousedown', 'keypress', 'touchmove', 'touchstart', 'click'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer, true);
+  });
+
+  // Check initial state
+  window.addEventListener('DOMContentLoaded', () => {
+    const passInput = document.getElementById('app-password-input');
+    if (passInput) {
+        passInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') unlockAppWithPin();
+        });
+    }
+
+    if (localStorage.getItem('APP_UNLOCKED') !== 'true') {
+      lockApp();
+    } else {
+      resetIdleTimer();
+    }
+  });
+</script>
+</body>
+</html>

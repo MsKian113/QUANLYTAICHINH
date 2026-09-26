@@ -1,0 +1,1069 @@
+<!-- HEADER TAB 4 (Tông Chàm) -->
+<div class="pt-3 pb-3 px-4 text-white bg-indigo-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
+  <h1 class="text-base font-bold flex items-center gap-1.5">🤝 <span>Công Nợ</span></h1>
+  <div class="flex gap-2 items-center">
+      <select id="t4-filter-month" onchange="reloadTab4Data()" class="bg-indigo-700/80 border border-indigo-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      <select id="t4-filter-year" onchange="reloadTab4Data()" class="bg-indigo-700/80 border border-indigo-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+  </div>
+</div>
+
+<!-- KHU VỰC CUỘN CHÍNH -->
+<div class="flex-1 overflow-y-auto p-3 pb-24 flex flex-col relative z-0 min-h-0 custom-scroll scroll-touch">
+  
+  <!-- DASHBOARD CÔNG NỢ -->
+  <div class="bg-gradient-to-br from-indigo-500 to-violet-700 text-white p-3.5 sm:p-4 rounded-2xl shadow-md relative overflow-hidden mb-2.5 shrink-0">
+    <p class="text-[10px] uppercase tracking-wider text-indigo-200 font-bold">Dư Nợ Ròng (Thu - Trả)</p>
+    <h2 id="debt-dashboard-net" class="text-2xl font-bold mt-0.5 text-emerald-300">0 ¥</h2>
+    <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-indigo-400/50">
+         <div class="flex-1">
+             <p class="text-[9px] text-indigo-200 uppercase font-bold mb-0.5">Tổng Phải Thu</p>
+             <p id="debt-dashboard-receivables" class="text-xs font-bold text-white">0 ¥</p>
+         </div>
+         <div class="flex-1 border-l border-indigo-400/50 pl-2">
+             <p class="text-[9px] text-indigo-200 uppercase font-bold mb-0.5">Tổng Phải Trả</p>
+             <p id="debt-dashboard-payables" class="text-xs font-bold text-rose-300">0 ¥</p>
+         </div>
+    </div>
+  </div>
+
+  <!-- 3 SUBTABS CHÍNH CỦA TAB 4 -->
+  <div class="flex p-1 bg-slate-200 rounded-xl mb-2.5 shrink-0 overflow-x-auto gap-1">
+      <button onclick="switchTab4Subtab('congno')" id="btn-t4-subtab-congno" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold bg-white text-indigo-600 rounded-lg shadow-2xs cursor-pointer transition text-center whitespace-nowrap">1. Công nợ</button>
+      <button onclick="switchTab4Subtab('choxuly')" id="btn-t4-subtab-choxuly" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">2. Chờ xử lý</button>
+      <button onclick="switchTab4Subtab('datt')" id="btn-t4-subtab-datt" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">3. Đã TT</button>
+  </div>
+
+  <!-- SUBTAB 1: 1. CÔNG NỢ -->
+  <div id="t4-section-congno" class="space-y-2 shrink-0">
+    <!-- DÒNG 1: Tiêu đề CÔNG NỢ + Badge + 2 nút Cho vay / Đi vay -->
+    <div class="flex justify-between items-center bg-white p-1.5 px-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex-wrap gap-1">
+        <div class="flex items-center gap-1.5">
+            <label class="flex items-center gap-1 cursor-pointer select-none">
+                <input type="checkbox" id="chk-select-all-debts" onchange="toggleSelectAllDebts(this)" class="accent-indigo-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-800">🤝 CÔNG NỢ</span>
+            </label>
+            <span id="debt-list-count" class="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-1.5 py-0.2 rounded-full">0 Mục</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <button onclick="openAddDebtModal('THU')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5">💰 Cho vay</button>
+            <button onclick="openAddDebtModal('TRA')" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5">💸 Đi vay</button>
+        </div>
+    </div>
+
+    <!-- DÒNG 2: Tìm kiếm + Dropdown tìm kiếm theo: Tất cả / Phải thu / Phải trả -->
+    <div class="flex items-center gap-1.5">
+        <div class="relative flex-1">
+            <input type="text" id="search-list-all" onkeyup="filterDebtCards()" placeholder="🔍 Gõ tìm tên đối tác hoặc nội dung..." class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-indigo-500 shadow-inner font-medium text-slate-800" />
+        </div>
+        <select id="t4-debt-type-filter" onchange="filterDebtCardsByType(this.value)" class="bg-white border border-slate-200 text-indigo-700 text-[11px] px-2 py-1 rounded-xl font-bold outline-none cursor-pointer shrink-0 shadow-2xs">
+            <option value="all">Tất cả</option>
+            <option value="thu">Phải thu</option>
+            <option value="tra">Phải trả</option>
+        </select>
+    </div>
+
+    <!-- Dynamic Container Single List (Công Nợ Đang Hoạt Động) -->
+    <div id="debt-all-cards" class="space-y-1"></div>
+  </div>
+
+  <!-- SUBTAB 2: 2. CHỜ XỬ LÝ (Gom 3 mục từ Tab 3: Pre-order, Chờ hoàn tiền, Chờ thu tiền) -->
+  <div id="t4-section-choxuly" class="space-y-3 shrink-0 hidden">
+    <!-- 1. PRE-ORDER / GOM ĐƠN CHỜ TRỪ THẺ -->
+    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center border-b pb-1">
+            <h4 class="text-[11px] font-bold text-blue-600 uppercase flex items-center gap-1">💳 Pre-order (Chờ Trừ Thẻ)</h4>
+            <div class="flex items-center gap-1">
+                <span id="pre-order-checked-sum" class="text-[9px] font-bold bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200/80">Tổng: 0 ¥</span>
+                <span id="pre-order-count" class="text-[9px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200/60">0 Đơn</span>
+            </div>
+        </div>
+
+        <!-- Hàng Thao Tác Nhanh Pre-Order: Checkbox Tất cả + Tìm kiếm -->
+        <div class="flex items-center gap-1.5">
+            <label class="flex items-center gap-1.5 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                <input type="checkbox" id="chk-select-all-pre-orders" onchange="toggleSelectAllPreOrders(this)" class="accent-blue-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
+                <span id="pre-order-checked-count" class="text-[9px] font-bold bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded-md">0 Mục</span>
+            </label>
+            <div class="relative flex-1">
+                <input type="text" id="search-pre-orders" onkeyup="filterPreOrderList()" placeholder="🔍 Tìm pre-order..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-blue-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
+            </div>
+        </div>
+
+        <div id="pre-order-container" class="space-y-1"></div>
+    </div>
+
+    <!-- 2. ĐƠN HỦY CHỜ HOÀN TIỀN -->
+    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center border-b pb-1">
+            <h4 class="text-[11px] font-bold text-amber-600 uppercase flex items-center gap-1">🔄 Đơn Hủy Chờ Hoàn Tiền</h4>
+            <div class="flex items-center gap-1">
+                <span id="cancelled-refund-count" class="text-[9px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200/80">0 Đơn</span>
+            </div>
+        </div>
+
+        <!-- Hàng Thao Tác Nhanh Hoàn Tiền: Checkbox Tất cả + Tìm kiếm -->
+        <div class="flex items-center gap-1.5">
+            <label class="flex items-center gap-1 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                <input type="checkbox" id="chk-select-all-cancelled-refunds" onchange="toggleSelectAllCancelledRefunds(this)" class="accent-amber-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
+                <span id="cancelled-refund-checked-count" class="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-md">0 Mục</span>
+            </label>
+            <div class="relative flex-1">
+                <input type="text" id="search-cancelled-refunds" onkeyup="filterCancelledRefundsList()" placeholder="🔍 Tìm đơn hoàn tiền..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-amber-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
+            </div>
+        </div>
+
+        <div id="cancelled-refund-container" class="space-y-1">
+            <div class="text-center py-2 text-[11px] text-slate-400">Không có đơn hủy chờ hoàn tiền.</div>
+        </div>
+    </div>
+
+    <!-- 3. KHÁCH NỢ TIỀN (CHỜ THU) -->
+    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center border-b pb-1">
+            <h4 class="text-xs font-bold text-rose-600 uppercase flex items-center gap-1">💸 Khách Nợ Tiền (Chờ Thu)</h4>
+            <div class="flex items-center gap-1">
+                <span id="debt-sales-count" class="text-[9px] font-bold bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md border border-rose-200/60">0 Đơn</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1.5 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                <input type="checkbox" id="chk-select-all-debt-sales" onchange="toggleSelectAllDebtSales(this)" class="accent-rose-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
+                <span id="t3-debt-sales-checked-count" class="text-[9px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded-md">0 Mục</span>
+            </label>
+            <div class="relative flex-1">
+                <input type="text" id="search-debt-sales" onkeyup="filterDebtSalesList()" placeholder="🔍 Gõ tìm tên mặt hàng hoặc tên khách..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-rose-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
+            </div>
+        </div>
+
+        <div id="debt-sales-container" class="space-y-1 mt-1"></div>
+    </div>
+  </div>
+
+  <!-- SUBTAB 3: 3. ĐÃ TT (Công Nợ Đã Thanh Toán Hoàn Tất) -->
+  <div id="t4-section-datt" class="space-y-2 shrink-0 hidden">
+    <div class="bg-white p-2 px-3 rounded-xl border border-slate-200/80 shadow-2xs flex justify-between items-center">
+        <span class="text-[11px] font-bold text-slate-700">✓ DANH SÁCH CÔNG NỢ ĐÃ THANH TOÁN HOÀN TẤT</span>
+    </div>
+    <div id="debt-done-cards" class="space-y-1"></div>
+  </div>
+</div>
+
+<!-- THANH NỔI (FLOATING BAR) THANH TOÁN HÀNG LOẠT & XUẤT ẢNH -->
+<div id="bulk-pay-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-indigo-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-indigo-700/50 gap-2">
+    <!-- DÒNG 1: Đơn hàng đã chọn: xx mục - số tiền -->
+    <div class="flex items-center justify-between text-xs font-bold border-b border-indigo-800/60 pb-1.5 px-0.5">
+        <span class="text-slate-200">Đơn hàng đã chọn: <span id="bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="bulk-total" class="text-emerald-400 font-black text-xs">0 ¥</span></span>
+    </div>
+    <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Xuất BC - Thanh Toán - X) -->
+    <div class="flex items-center justify-between gap-1.5">
+        <button onclick="openExportDebtReportModal()" class="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-1 shadow-xs">
+            📸 Xuất BC
+        </button>
+        <button onclick="openBulkPayModal()" class="flex-[1.5] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1">
+            💰 Thanh Toán
+        </button>
+        <button onclick="resetDebtSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
+            ✕
+        </button>
+    </div>
+</div>
+
+<!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN ĐƠN KHÁCH NỢ TAB 4 SUBTAB 2 -->
+<div id="t3-debt-sales-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-indigo-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-indigo-700/50 gap-2">
+    <!-- DÒNG 1: Đơn hàng đã chọn: xx mục - số tiền -->
+    <div class="flex items-center justify-between text-xs font-bold border-b border-indigo-800/60 pb-1.5 px-0.5">
+        <span class="text-slate-200">Đơn hàng đã chọn: <span id="t3-bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="t3-bulk-total" class="text-emerald-400 font-black text-xs">0 ¥</span></span>
+    </div>
+    <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Xuất BC - Thanh Toán - X) -->
+    <div class="flex items-center justify-between gap-1.5">
+        <button onclick="openT3ExportDebtReportModal()" class="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-1 shadow-xs">
+            📸 Xuất BC
+        </button>
+        <button onclick="saveBatchDebtSalesPayment()" class="flex-[1.5] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1">
+            💰 Thanh Toán
+        </button>
+        <button onclick="resetDebtSalesSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
+            ✕
+        </button>
+    </div>
+</div>
+
+<!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN PRE-ORDER TAB 4 SUBTAB 2 -->
+<div id="pre-order-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-blue-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-blue-700/50 gap-2">
+    <!-- DÒNG 1: Pre order: xxx mục - số tiền -->
+    <div class="flex items-center justify-between text-xs font-bold border-b border-blue-800/60 pb-1.5 px-0.5">
+        <span class="text-slate-200">Pre order: <span id="pre-order-bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="pre-order-bulk-total" class="text-blue-300 font-black text-xs">0 ¥</span></span>
+    </div>
+    <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Hủy đơn - Đã trừ thẻ - X) -->
+    <div class="flex items-center justify-between gap-1.5">
+        <button onclick="saveBatchCancelPreOrders(this)" class="flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-0.5">
+            ❌ Hủy Đơn
+        </button>
+        <button onclick="saveBatchConfirmPreOrders(this)" class="flex-[1.5] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-0.5">
+            ✅ Đã Trừ Thẻ
+        </button>
+        <button onclick="resetPreOrderSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
+            ✕
+        </button>
+    </div>
+</div>
+
+<!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN ĐƠN HỦY CHỜ HOÀN TIỀN TAB 4 SUBTAB 2 -->
+<div id="cancelled-refund-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-amber-950/95 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl shadow-2xl hidden items-center z-[90] w-[92%] max-w-[390px] justify-between transition-all border border-amber-700/50">
+    <div>
+        <p class="text-[9px] font-bold opacity-80 uppercase tracking-wider mb-0.5">Hoàn tiền đã chọn <span id="cancelled-refund-bulk-count" class="text-white text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-bold">0</span> mục</p>
+        <p class="text-sm font-extrabold text-amber-300" id="cancelled-refund-bulk-total">0 ¥</p>
+    </div>
+    <div class="flex items-center gap-1.5">
+        <button onclick="openBatchRefundModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-3 py-1.5 rounded-xl text-[11px] font-extrabold shadow-md transition cursor-pointer flex items-center gap-1">
+            💰 Hoàn Tiền
+        </button>
+        <button onclick="resetCancelledRefundSelection()" class="text-slate-400 hover:text-white font-bold text-lg leading-none cursor-pointer px-1 transition active:scale-90 ml-0.5" title="Đóng & Hủy Chọn">&times;</button>
+    </div>
+</div>
+
+<!-- MODAL: GHI THÊM / SỬA KHOẢN NỢ -->
+<div id="modal-add-debt" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-add-debt')">
+<div class="modal-content !overflow-visible rounded-b-2xl border-t-4 border-indigo-500 !p-4 max-w-md w-full">
+  <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+    <h3 id="add-debt-title" class="text-xs font-bold text-slate-900">Ghi Nợ Mới</h3>
+    <button onclick="closeModal('modal-add-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+  </div>
+  
+  <div class="space-y-2.5 text-xs">
+    <input type="hidden" id="add-debt-id" value="" />
+    <input type="hidden" id="add-debt-loai" value="THU" />
+
+    <div>
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">1. Ngày giao dịch</label>
+        <input type="date" id="add-debt-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400" />
+    </div>
+
+    <div class="relative z-50">
+        <label id="lbl-add-debt-name" class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Tên Đối Tượng / Khách Nợ</label>
+        <input type="text" id="add-debt-name" autocomplete="off" placeholder="Tên người mượn / chủ nợ..." oninput="renderSuggest('add-debt-name', 'partner', false)" onclick="renderSuggest('add-debt-name', 'partner', true)" onmousedown="renderSuggest('add-debt-name', 'partner', true)" onblur="hideSuggest('add-debt-name')" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400" />
+        <div id="box-add-debt-name" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-36 overflow-y-auto z-50"></div>
+    </div>
+
+    <div>
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Số tiền (¥)</label>
+        <input type="number" id="add-debt-amount" placeholder="¥..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600 outline-none focus:border-indigo-400" />
+    </div>
+
+    <div class="relative z-40">
+        <label id="lbl-add-debt-source" class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">4. Nguồn tiền (Ví/Thẻ)</label>
+        <input type="text" id="add-debt-source" autocomplete="off" placeholder="Ví Tiền Mặt, Thẻ..." oninput="renderSuggest('add-debt-source', 'nguon', false)" onclick="renderSuggest('add-debt-source', 'nguon', true)" onmousedown="renderSuggest('add-debt-source', 'nguon', true)" onblur="hideSuggest('add-debt-source')" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-indigo-400" />
+        <div id="box-add-debt-source" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+    </div>
+
+    <div>
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">5. Nội dung / Ghi chú</label>
+        <input type="text" id="add-debt-note" placeholder="Lý do cho vay / mượn..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400" />
+    </div>
+
+    <button onclick="submitAddDebt()" id="btn-add-debt-submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Lưu Khoản Nợ</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL: THANH TOÁN NỢ -->
+<div id="modal-pay-debt" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-pay-debt')">
+<div class="modal-content !overflow-visible rounded-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full mb-16 shadow-2xl">
+  <div class="flex justify-between items-center mb-1 border-b pb-1.5">
+    <h3 id="pay-debt-title" class="text-xs font-bold text-slate-900">Thanh Toán Nợ</h3>
+    <button onclick="closeModal('modal-pay-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+  </div>
+  <p class="text-[10px] text-slate-500 mb-2">Tiền sẽ được tự động cập nhật vào Ví/Thẻ tương ứng và gạch nợ.</p>
+
+  <div class="space-y-2.5 text-xs">
+    <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 flex justify-between items-center">
+        <div>
+            <p class="text-[8px] font-bold text-slate-400 uppercase">Đối tượng</p>
+            <p id="pay-debt-name" class="text-xs font-bold text-slate-800">Tên Đối Tác</p>
+        </div>
+        <div class="text-right">
+            <p class="text-[8px] font-bold text-slate-400 uppercase">Dư Nợ Còn Lại</p>
+            <p id="pay-debt-total" class="text-xs font-bold text-slate-800">0 ¥</p>
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">1. Ngày thanh toán</label>
+        <input type="date" id="pay-debt-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-emerald-400" />
+    </div>
+
+    <div class="relative z-10">
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Số tiền thanh toán (¥)</label>
+        <input type="number" id="pay-debt-amount" placeholder="0" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-400" />
+    </div>
+
+    <div class="relative z-40">
+        <label id="lbl-pay-debt-source" class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Chọn Ví/Thẻ Giao Dịch</label>
+        <input type="text" id="pay-debt-source" autocomplete="off" placeholder="Ví Tiền Mặt, Thẻ..." oninput="renderSuggest('pay-debt-source', 'nguon', false)" onclick="renderSuggest('pay-debt-source', 'nguon', true)" onmousedown="renderSuggest('pay-debt-source', 'nguon', true)" onblur="hideSuggest('pay-debt-source')" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-emerald-400" />
+        <div id="box-pay-debt-source" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+    </div>
+    
+    <button onclick="submitPayDebt()" id="btn-pay-debt-submit" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Xác Nhận</button>
+  </div>
+</div>
+</div>
+
+
+
+<script>
+  window.TAB4_DEBTS = window.TAB4_DEBTS || [];
+  window.CURRENT_DEBT_TAB = 'all';
+  let currentPayContext = { ids: [], name: '', amount: 0, type: 'THU' };
+
+  function t4_initDateFilters() {
+      const monthSelect = document.getElementById('t4-filter-month');
+      const yearSelect = document.getElementById('t4-filter-year');
+      if(!monthSelect || !yearSelect) return;
+      
+      const d = new Date();
+      const currYear = d.getFullYear();
+
+      // MẶC ĐỊNH MỞ MÀN HÌNH LUÔN LÀ CẢ NĂM
+      let monthHTML = '<option value="ALL" selected>All</option>';
+      for (let i = 1; i <= 12; i++) {
+          monthHTML += `<option value="${i}">Tháng ${i}</option>`;
+      }
+      monthSelect.innerHTML = monthHTML;
+
+      let yearHTML = '<option value="ALL" selected>All</option>';
+      for (let y = 2024; y <= 2030; y++) {
+          yearHTML += `<option value="${y}">Năm ${y}</option>`;
+      }
+      yearSelect.innerHTML = yearHTML;
+  }
+
+  function getTodayString() {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function reloadTab4Data() {
+      const monthSelect = document.getElementById('t4-filter-month');
+      const yearSelect = document.getElementById('t4-filter-year');
+      const month = monthSelect ? monthSelect.value : 'ALL';
+      const year = yearSelect ? yearSelect.value : 'ALL';
+
+      if (typeof reloadTab3Data === 'function') {
+          reloadTab3Data();
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab4Data === 'function') {
+          google.script.run.withSuccessHandler(function(res) {
+              if (res && res.success) {
+                  if (res.summary) {
+                      const net = res.summary.net || 0;
+                      document.getElementById('debt-dashboard-net').innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
+                      document.getElementById('debt-dashboard-receivables').innerText = (res.summary.receivables || 0).toLocaleString() + ' ¥';
+                      document.getElementById('debt-dashboard-payables').innerText = (res.summary.payables || 0).toLocaleString() + ' ¥';
+                  }
+                  if (res.partners) {
+                      window.PARTNER_LIST = res.partners;
+                  }
+                  window.TAB4_DEBTS = res.debts || [];
+                  renderDebtCardsList(window.TAB4_DEBTS);
+              } else if (res && res.message) {
+                  showToast("❌ " + res.message, true);
+              }
+          }).getTab4Data(month, year);
+      }
+  }
+
+  function hideAllFloatingBars() {
+      ['bulk-pay-bar', 't3-debt-sales-bulk-bar', 'pre-order-bulk-bar', 'cancelled-refund-bulk-bar'].forEach(id => {
+          const bar = document.getElementById(id);
+          if (bar) {
+              bar.classList.add('hidden');
+              bar.classList.remove('flex');
+          }
+      });
+  }
+
+  function switchTab4Subtab(subtab) {
+      window.CURRENT_TAB4_SUBTAB = subtab;
+      hideAllFloatingBars();
+      const secCongno = document.getElementById('t4-section-congno');
+      const secChoxuly = document.getElementById('t4-section-choxuly');
+      const secDatt = document.getElementById('t4-section-datt');
+      const btnCongno = document.getElementById('btn-t4-subtab-congno');
+      const btnChoxuly = document.getElementById('btn-t4-subtab-choxuly');
+      const btnDatt = document.getElementById('btn-t4-subtab-datt');
+
+      const inactiveClass = "flex-1 min-w-[85px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap";
+      const activeClass = "flex-1 min-w-[85px] py-1.5 text-[11px] font-bold bg-white text-indigo-600 rounded-lg shadow-2xs cursor-pointer transition text-center whitespace-nowrap";
+
+      if (btnCongno) btnCongno.className = subtab === 'congno' ? activeClass : inactiveClass;
+      if (btnChoxuly) btnChoxuly.className = subtab === 'choxuly' ? activeClass : inactiveClass;
+      if (btnDatt) btnDatt.className = subtab === 'datt' ? activeClass : inactiveClass;
+
+      if (secCongno) secCongno.classList.toggle('hidden', subtab !== 'congno');
+      if (secChoxuly) secChoxuly.classList.toggle('hidden', subtab !== 'choxuly');
+      if (secDatt) secDatt.classList.toggle('hidden', subtab !== 'datt');
+
+      if (subtab === 'congno') {
+          const filterVal = document.getElementById('t4-debt-type-filter')?.value || 'all';
+          window.CURRENT_DEBT_TAB = filterVal;
+          renderDebtCardsList(window.TAB4_DEBTS);
+      } else if (subtab === 'datt') {
+          window.CURRENT_DEBT_TAB = 'done';
+          renderDebtCardsList(window.TAB4_DEBTS);
+      } else if (subtab === 'choxuly') {
+          if (typeof reloadTab3Data === 'function') {
+              reloadTab3Data();
+          }
+      }
+  }
+
+  function filterDebtCardsByType(typeVal) {
+      window.CURRENT_DEBT_TAB = typeVal;
+      renderDebtCardsList(window.TAB4_DEBTS);
+  }
+
+  function renderDebtCardsList(debts) {
+      const activeTab = window.CURRENT_DEBT_TAB || 'all';
+      const isDoneTab = (activeTab === 'done');
+      const container = isDoneTab ? (document.getElementById('debt-done-cards') || document.getElementById('debt-all-cards')) : document.getElementById('debt-all-cards');
+      const countEl = document.getElementById('debt-list-count');
+      const chkSelectAll = document.getElementById('chk-select-all-debts');
+      if (!container) return;
+
+      if (chkSelectAll) chkSelectAll.checked = false;
+
+      let filtered = (debts || []).filter(item => {
+          const lUp = String(item.loai || '').toUpperCase();
+          const tUp = (String(item.ten || '') + ' ' + String(item.noidung || '')).toUpperCase();
+          const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+          const isDone = (item.trangThai === 'HOAN_TAT' || item.duNo <= 0);
+
+          if (activeTab === 'done') return isDone;
+          if (activeTab === 'thu') return isThu && !isDone;
+          if (activeTab === 'tra') return !isThu && !isDone;
+          return !isDone; // 'all' in Subtab 1 shows active unpaid debts
+      });
+
+      if (countEl) countEl.innerText = `${filtered.length} Mục`;
+
+      if (filtered.length === 0) {
+          container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">${isDoneTab ? 'Chưa có khoản công nợ nào hoàn tất.' : 'Không có khoản công nợ nào đang hoạt động.'}</div>`;
+          calcBulkPay();
+          return;
+      }
+
+      // VẼ DANH SÁCH THẺ TÔ MÀU TRỰC TIẾP
+      container.innerHTML = filtered.map(item => {
+          const lUp = String(item.loai || '').toUpperCase();
+          const tUp = (String(item.ten || '') + ' ' + String(item.noidung || '')).toUpperCase();
+          const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+          const isDone = (item.trangThai === 'HOAN_TAT' || item.duNo <= 0);
+
+          let cardStyle = isDone 
+              ? 'bg-slate-50 border-slate-200/80 opacity-60 text-slate-600'
+              : (isThu 
+                  ? 'bg-emerald-50/70 border-emerald-200/90 hover:border-emerald-400 text-emerald-950'
+                  : 'bg-rose-50/70 border-rose-200/90 hover:border-rose-400 text-rose-950');
+
+          const amtColor = isDone 
+              ? 'text-slate-400 line-through' 
+              : (isThu ? 'text-emerald-700 font-extrabold' : 'text-rose-700 font-extrabold');
+
+          const amtSign = isThu ? '+' : '-';
+          const payBtnText = isThu ? '💰 Nhận' : '💸 Trả';
+          const payBtnBg = isThu ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white';
+
+          return `
+              <div class="debt-card p-1.5 px-2 rounded-xl border transition text-xs space-y-0.5 cursor-pointer shadow-2xs ${cardStyle}" id="card-debt-${item.id}" onclick="toggleCheckbox('chk-debt-${item.id}')">
+                  <div class="flex justify-between items-center gap-1.5">
+                      <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                          <input type="checkbox" id="chk-debt-${item.id}" class="chk-debt-item accent-indigo-600 w-3.5 h-3.5 cursor-pointer shrink-0" 
+                                 data-id="${item.id}" data-amount="${item.duNo}" data-name="${(item.ten || '').replace(/"/g, '&quot;')}" 
+                                 data-loai="${item.loai}" data-noidung="${(item.noidung || '').replace(/"/g, '&quot;')}" data-ngay="${item.ngay || ''}" 
+                                 onchange="calcBulkPay()" onclick="event.stopPropagation()" />
+                          <span class="card-name font-bold text-[11px] truncate flex-1 min-w-0">
+                              ${item.ten || 'Không tên'} 
+                              <span class="text-[9px] opacity-75 font-normal">(${item.noidung || 'Ghi nợ'})</span>
+                          </span>
+                      </div>
+                      <div class="text-right shrink-0">
+                          <span class="font-bold ${amtColor} text-[11px]">${amtSign}${(item.duNo || 0).toLocaleString()} ¥</span>
+                      </div>
+                  </div>
+                  <div class="flex justify-between items-center pt-0.5 border-t border-slate-200/50 text-[9px] opacity-80 flex-wrap gap-1">
+                      <span>Ngày: <b>${item.ngay || 'N/A'}</b> | Nguồn: <b>${item.nguon || '—'}</b> | Đã trả: <b>${(item.daTra || 0).toLocaleString()} ¥</b></span>
+                      <div class="flex gap-1 items-center shrink-0">
+                          ${!isDone ? `<button onclick="event.stopPropagation(); openPayModal('${item.id}', '${(item.ten || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', ${item.duNo}, '${item.loai}')" class="px-1.5 py-0.2 ${payBtnBg} rounded font-bold transition cursor-pointer text-[9px] shadow-2xs">${payBtnText}</button>` : ''}
+                          <button onclick="event.stopPropagation(); openEditDebtModal('${item.id}')" class="bg-white/80 hover:bg-white text-slate-700 border border-slate-300/80 px-1 py-0.2 rounded font-bold transition cursor-pointer text-[9px]">✏️</button>
+                          <button onclick="event.stopPropagation(); confirmDeleteDebt('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-1 py-0.2 rounded font-bold transition cursor-pointer text-[9px]">🗑️</button>
+                      </div>
+                  </div>
+              </div>
+          `;
+      }).join('');
+
+      calcBulkPay();
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+      t4_initDateFilters();
+      reloadTab4Data();
+  });
+
+  function filterDebtCards() {
+      const input = document.getElementById('search-list-all');
+      if (!input) return;
+      const query = input.value.toLowerCase().trim();
+      const cards = document.querySelectorAll('#debt-all-cards .debt-card');
+      cards.forEach(card => {
+          const text = card.innerText.toLowerCase();
+          if (!query || text.includes(query)) {
+              card.style.display = 'block';
+          } else {
+              card.style.display = 'none';
+          }
+      });
+  }
+
+  function switchDebtTab(tab) {
+      window.CURRENT_DEBT_TAB = tab;
+      ['all', 'thu', 'tra', 'done'].forEach(t => {
+          const btn = document.getElementById('btn-debt-' + t);
+          if (btn) btn.className = "flex-1 min-w-[65px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap";
+      });
+
+      const activeBtn = document.getElementById('btn-debt-' + tab);
+      if (activeBtn) activeBtn.className = "flex-1 min-w-[65px] py-1.5 text-[11px] font-bold bg-white text-indigo-600 rounded-lg shadow-2xs cursor-pointer transition text-center whitespace-nowrap";
+
+      renderDebtCardsList(window.TAB4_DEBTS);
+  }
+
+  function toggleSelectAllDebts(chkElem) {
+      const isChecked = chkElem ? chkElem.checked : false;
+      const visibleCards = document.querySelectorAll('#debt-all-cards .debt-card');
+      visibleCards.forEach(card => {
+          if (card.style.display !== 'none') {
+              const chk = card.querySelector('.chk-debt-item');
+              if (chk) chk.checked = isChecked;
+          }
+      });
+      calcBulkPay();
+  }
+
+  function resetDebtSelection() {
+      const chkAll = document.getElementById('chk-select-all-debts');
+      if (chkAll) chkAll.checked = false;
+      document.querySelectorAll('.chk-debt-item').forEach(c => c.checked = false);
+      calcBulkPay();
+  }
+
+  function toggleCheckbox(id) {
+      const chk = document.getElementById(id);
+      if (!chk) return;
+      chk.checked = !chk.checked;
+      calcBulkPay();
+  }
+
+  let currentBulkAmount = 0;
+  let currentBulkCount = 0;
+  let currentBulkIds = [];
+  let currentBulkItems = [];
+
+  function calcBulkPay() {
+      let sumThu = 0;
+      let sumTra = 0;
+      let count = 0;
+      let selectedIds = [];
+      let selectedItems = [];
+      const chks = document.querySelectorAll('.chk-debt-item:checked');
+
+      chks.forEach(c => {
+          const amt = parseInt(c.getAttribute('data-amount')) || 0;
+          const loai = c.getAttribute('data-loai');
+          const isThu = (loai === 'THU' || loai === 'CHO_VAY');
+          if (isThu) sumThu += amt;
+          else sumTra += amt;
+
+          count++;
+          selectedIds.push(c.getAttribute('data-id'));
+          selectedItems.push({
+              id: c.getAttribute('data-id'),
+              name: c.getAttribute('data-name'),
+              loai: loai,
+              amount: amt,
+              noidung: c.getAttribute('data-noidung'),
+              ngay: c.getAttribute('data-ngay')
+          });
+      });
+
+      const netBalance = sumThu - sumTra;
+      const netSign = netBalance >= 0 ? '+' : '';
+
+      const bar = document.getElementById('bulk-pay-bar');
+      if (!bar) return;
+
+      currentBulkAmount = Math.abs(netBalance);
+      currentBulkCount = count;
+      currentBulkIds = selectedIds;
+      currentBulkItems = selectedItems;
+
+      if (count > 0) {
+          bar.classList.remove('hidden');
+          bar.classList.add('flex');
+          document.getElementById('bulk-count').innerText = count;
+          document.getElementById('bulk-total').innerText = netSign + netBalance.toLocaleString() + ' ¥';
+      } else {
+          bar.classList.add('hidden');
+          bar.classList.remove('flex');
+      }
+  }
+
+  function openAddDebtModal(type) {
+      const modal = document.getElementById('modal-add-debt');
+      if(!modal) return;
+      const modalContent = modal.querySelector('.modal-content');
+      
+      document.getElementById('add-debt-id').value = '';
+      document.getElementById('add-debt-loai').value = type;
+      document.getElementById('add-debt-date').value = getTodayString();
+      document.getElementById('add-debt-name').value = '';
+      document.getElementById('add-debt-amount').value = '';
+      document.getElementById('add-debt-source').value = '';
+      document.getElementById('add-debt-note').value = '';
+
+      const submitBtn = document.getElementById('btn-add-debt-submit');
+      if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('opacity-50', 'pointer-events-none');
+      }
+
+      if(type === 'THU') {
+          document.getElementById('add-debt-title').innerText = "💰 Ghi Khoản Cho Mượn (Phải Thu)";
+          document.getElementById('lbl-add-debt-name').innerText = "2. Tên Đối Tượng / Khách Nợ";
+          document.getElementById('lbl-add-debt-source').innerText = "4. Tiền xuất ra từ Ví nào?";
+          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full";
+          if(submitBtn) {
+              submitBtn.className = "w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
+              submitBtn.innerText = "Lưu Khoản Cho Mượn";
+          }
+      } else {
+          document.getElementById('add-debt-title').innerText = "💸 Ghi Khoản Mượn Nợ (Phải Trả)";
+          document.getElementById('lbl-add-debt-name').innerText = "2. Tên Đối Tượng / Chủ Nợ";
+          document.getElementById('lbl-add-debt-source').innerText = "4. Tiền nhận vào Ví nào?";
+          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-rose-500 !p-4 max-w-md w-full";
+          if(submitBtn) {
+              submitBtn.className = "w-full py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
+              submitBtn.innerText = "Lưu Khoản Mượn Nợ";
+          }
+      }
+      
+      openModal('modal-add-debt');
+      setTimeout(() => {
+          const input = document.getElementById('add-debt-name');
+          if (input) {
+              input.focus();
+          }
+      }, 150);
+  }
+
+  function openEditDebtModal(id) {
+      const item = (window.TAB4_DEBTS || []).find(d => String(d.id) === String(id));
+      if (!item) {
+          showToast("⚠️ Không tìm thấy bản ghi công nợ!", true);
+          return;
+      }
+
+      openAddDebtModal(item.loai || 'THU');
+      document.getElementById('add-debt-title').innerText = `✏️ Sửa Công Nợ (${item.id})`;
+      document.getElementById('add-debt-id').value = item.id;
+      document.getElementById('add-debt-date').value = item.ngay || getTodayString();
+      document.getElementById('add-debt-name').value = item.ten || '';
+      document.getElementById('add-debt-amount').value = item.tongNo || 0;
+      document.getElementById('add-debt-source').value = item.nguon || '';
+      document.getElementById('add-debt-note').value = item.noidung || '';
+      const submitBtn = document.getElementById('btn-add-debt-submit');
+      if (submitBtn) submitBtn.innerText = "Cập Nhật Công Nợ";
+  }
+
+  function submitAddDebt() {
+      const btn = document.getElementById('btn-add-debt-submit');
+      if (btn && btn.disabled) return;
+
+      const id = document.getElementById('add-debt-id').value.trim();
+      const loai = document.getElementById('add-debt-loai').value;
+      const ngay = document.getElementById('add-debt-date').value;
+      const ten = document.getElementById('add-debt-name').value.trim();
+      const sotien = Number(document.getElementById('add-debt-amount').value) || 0;
+      const nguon = document.getElementById('add-debt-source').value.trim();
+      const noidung = document.getElementById('add-debt-note').value.trim();
+
+      if(!ten) {
+          showToast("⚠️ Vui lòng nhập tên đối tượng!", true);
+          return;
+      }
+      if(sotien <= 0) {
+          showToast("⚠️ Vui lòng nhập số tiền lớn hơn 0!", true);
+          return;
+      }
+
+      const origText = btn ? btn.innerText : 'Lưu Khoản Nợ';
+      if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'pointer-events-none');
+          btn.innerText = "⏳ Đang lưu...";
+      }
+
+      function restoreAddBtn() {
+          if (btn) {
+              btn.disabled = false;
+              btn.classList.remove('opacity-50', 'pointer-events-none');
+              btn.innerText = origText;
+          }
+      }
+
+      const payload = {
+          id: id,
+          ngay: ngay,
+          ten: ten,
+          loai: loai,
+          sotien: sotien,
+          nguon: nguon,
+          noidung: noidung
+      };
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveDebtTransaction === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  restoreAddBtn();
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã lưu khoản công nợ!");
+                      closeModal('modal-add-debt');
+                      reloadTab4Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Lỗi lưu dữ liệu"), true);
+                  }
+              })
+              .withFailureHandler(function(err) {
+                  restoreAddBtn();
+                  showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Không thể gửi dữ liệu"), true);
+              })
+              .saveDebtTransaction(payload);
+      } else {
+          restoreAddBtn();
+          showToast("✅ Đã ghi nhận khoản công nợ (Demo)!");
+          closeModal('modal-add-debt');
+      }
+  }
+
+  function openBulkPayModal() {
+      if (currentBulkIds.length === 0) return;
+      openPayModal(currentBulkIds, `Hàng loạt (${currentBulkCount} đơn)`, currentBulkAmount, 'THU');
+  }
+
+  function openPayModal(idsOrId, name, amount, type) {
+      const ids = Array.isArray(idsOrId) ? idsOrId : [idsOrId];
+      currentPayContext = {
+          ids: ids,
+          name: name,
+          amount: amount,
+          type: type
+      };
+      window.currentPayContext = currentPayContext;
+
+      const modal = document.getElementById('modal-pay-debt');
+      if(!modal) return;
+      const modalContent = modal.querySelector('.modal-content');
+      
+      document.getElementById('pay-debt-name').innerText = name;
+      document.getElementById('pay-debt-total').innerText = (amount || 0).toLocaleString() + " ¥";
+      document.getElementById('pay-debt-date').value = getTodayString();
+      document.getElementById('pay-debt-amount').value = amount || 0;
+      document.getElementById('pay-debt-source').value = '';
+
+      const btn = document.getElementById('btn-pay-debt-submit');
+      if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('opacity-50', 'pointer-events-none');
+      }
+
+      if(type === 'THU' || type === 'THU_TAB3') {
+          document.getElementById('pay-debt-title').innerText = "💰 Nhận Tiền Thu Nợ";
+          document.getElementById('lbl-pay-debt-source').innerText = "3. Nhận tiền vào Ví/Thẻ nào?";
+          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full";
+          if(btn) {
+              btn.className = "w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
+              btn.innerText = "Xác Nhận Nhận Tiền";
+          }
+      } else {
+          document.getElementById('pay-debt-title').innerText = "💸 Trả Tiền Nợ";
+          document.getElementById('lbl-pay-debt-source').innerText = "3. Trừ tiền từ Ví/Thẻ nào?";
+          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-rose-500 !p-4 max-w-md w-full";
+          if(btn) {
+              btn.className = "w-full py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
+              btn.innerText = "Xác Nhận Trả Nợ";
+          }
+      }
+      
+      openModal('modal-pay-debt');
+  }
+  window.openPayModal = openPayModal;
+  window.openPayDebtModal = openPayModal;
+
+  function submitPayDebt() {
+      const btn = document.getElementById('btn-pay-debt-submit');
+      if (btn && btn.disabled) return;
+
+      const source = document.getElementById('pay-debt-source').value.trim();
+      const dateStr = document.getElementById('pay-debt-date').value;
+      const amtVal = Number(document.getElementById('pay-debt-amount').value) || 0;
+
+      if(!source) {
+          showToast("⚠️ Vui lòng chọn Ví/Thẻ để ghi nhận dòng tiền!", true);
+          return;
+      }
+      if(amtVal <= 0) {
+          showToast("⚠️ Số tiền thanh toán phải lớn hơn 0!", true);
+          return;
+      }
+
+      const origText = btn ? btn.innerText : 'Xác Nhận';
+      if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'pointer-events-none');
+          btn.innerText = "⏳ Đang xử lý...";
+      }
+
+      const payload = {
+          ids: currentPayContext.ids,
+          name: currentPayContext.name,
+          amount: amtVal,
+          date: dateStr,
+          sourceWallet: source
+      };
+
+      if (currentPayContext.type === 'THU_TAB3') {
+          if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.confirmBatchDebtSalesPayment === 'function') {
+              google.script.run
+                  .withSuccessHandler(function(res) {
+                      restorePayBtn();
+                      if (res && res.success) {
+                          showToast(res.message || "✅ Đã thu tiền đơn khách nợ thành công!");
+                          closeModal('modal-pay-debt');
+                          if (res.freshData && typeof applyTab3Data === 'function') applyTab3Data(res.freshData);
+                          else if (typeof reloadTab3Data === 'function') reloadTab3Data();
+                      } else {
+                          showToast("❌ " + (res ? res.message : "Thu tiền thất bại"), true);
+                      }
+                  })
+                  .withFailureHandler(function(err) {
+                      restorePayBtn();
+                      showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Lỗi gửi dữ liệu"), true);
+                  })
+                  .confirmBatchDebtSalesPayment(currentPayContext.ids, source, dateStr);
+          } else {
+              restorePayBtn();
+              closeModal('modal-pay-debt');
+              showToast(`✅ [Demo] Đã thu tiền ${currentPayContext.ids.length} đơn vào ${source}!`);
+          }
+          return;
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.settleDebtPayment === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  restorePayBtn();
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã gạch nợ thành công!");
+                      closeModal('modal-pay-debt');
+                      reloadTab4Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Thanh toán thất bại"), true);
+                  }
+              })
+              .withFailureHandler(function(err) {
+                  restorePayBtn();
+                  showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Không thể gửi dữ liệu"), true);
+              })
+              .settleDebtPayment(payload);
+      } else {
+          restorePayBtn();
+          showToast(`✅ Đã thanh toán (Demo)! ${amtVal.toLocaleString()} ¥`, false);
+          closeModal('modal-pay-debt');
+      }
+
+      function restorePayBtn() {
+          if (btn) {
+              btn.disabled = false;
+              btn.classList.remove('opacity-50', 'pointer-events-none');
+              btn.innerText = origText;
+          }
+      }
+  }
+
+  function openExportDebtReportModal() {
+      if (currentBulkItems.length === 0) {
+          showToast("⚠️ Vui lòng chọn ít nhất 1 khoản nợ để tạo báo cáo ảnh!", true);
+          return;
+      }
+
+      const firstPartner = currentBulkItems[0].name || 'ĐỐI TÁC';
+      const allSamePartner = currentBulkItems.every(it => (it.name || '').trim().toLowerCase() === firstPartner.trim().toLowerCase());
+      const partnerDisplayName = allSamePartner ? firstPartner : 'BÁO CÁO TỔNG HỢP';
+
+      document.getElementById('rpt-partner-name').innerText = partnerDisplayName;
+      document.getElementById('rpt-date-str').innerText = getTodayString();
+
+      let sumThu = 0;
+      let sumTra = 0;
+
+      const rowsHtml = currentBulkItems.map(it => {
+          const isThu = (it.loai === 'THU' || it.loai === 'CHO_VAY');
+          const amt = Number(it.amount) || 0;
+          if (isThu) sumThu += amt;
+          else sumTra += amt;
+
+          const amtStr = (isThu ? '+' : '-') + amt.toLocaleString() + ' ¥';
+          const amtClass = isThu ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
+
+          return `
+              <div class="grid grid-cols-12 px-2 py-1.5 text-center items-center">
+                  <span class="col-span-3 text-[10px] text-slate-500 font-medium">${it.ngay || getTodayString()}</span>
+                  <span class="col-span-5 text-[10px] font-bold text-slate-700 truncate text-left pl-1">${it.noidung || 'Ghi nợ'}</span>
+                  <span class="col-span-4 text-right ${amtClass} text-[11px] pr-1">${amtStr}</span>
+              </div>
+          `;
+      }).join('');
+
+      document.getElementById('rpt-table-body').innerHTML = rowsHtml;
+
+      const netBalance = sumThu - sumTra;
+      const netSign = netBalance >= 0 ? '+' : '';
+
+      document.getElementById('rpt-sum-thu').innerText = '+' + sumThu.toLocaleString() + ' ¥';
+      document.getElementById('rpt-sum-tra').innerText = '-' + sumTra.toLocaleString() + ' ¥';
+      document.getElementById('rpt-sum-net').innerText = netSign + netBalance.toLocaleString() + ' ¥';
+
+      openModal('modal-export-debt-image');
+  }
+
+  function copyDebtReportImageToClipboard() {
+      const el = document.getElementById('debt-report-preview');
+      const btn = document.getElementById('btn-copy-rpt-img');
+      if (!el || typeof html2canvas === 'undefined') {
+          showToast("❌ Chưa sẵn sàng thư viện chụp ảnh!", true);
+          return;
+      }
+
+      const origText = btn ? btn.innerHTML : '<span>📋</span> <span>Sao Chép Ảnh</span>';
+      if (btn) {
+          btn.disabled = true;
+          btn.innerText = "⏳ Đang tạo ảnh...";
+      }
+
+      html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
+          canvas.toBlob(blob => {
+              if (!blob) {
+                  if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+                  showToast("❌ Lỗi tạo file ảnh!", true);
+                  return;
+              }
+              if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+                  navigator.clipboard.write([
+                      new ClipboardItem({ 'image/png': blob })
+                  ]).then(() => {
+                      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+                      showToast("✅ Đã sao chép ảnh báo cáo vào Clipboard! Bạn có thể dán (Ctrl+V) gửi ngay.");
+                  }).catch(err => {
+                      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+                      downloadDebtReportImage();
+                  });
+              } else {
+                  if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+                  downloadDebtReportImage();
+              }
+          }, 'image/png');
+      }).catch(err => {
+          if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+          showToast("❌ Lỗi xuất ảnh: " + err, true);
+      });
+  }
+
+  function downloadDebtReportImage() {
+      const el = document.getElementById('debt-report-preview');
+      const btn = document.getElementById('btn-download-rpt-img');
+      if (!el || typeof html2canvas === 'undefined') {
+          showToast("❌ Chưa sẵn sàng thư viện chụp ảnh!", true);
+          return;
+      }
+
+      const origText = btn ? btn.innerHTML : '<span>📥</span> <span>Tải File</span>';
+      if (btn) {
+          btn.disabled = true;
+          btn.innerText = "⏳ Đang tạo...";
+      }
+
+      html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
+          if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = origText;
+          }
+          const link = document.createElement('a');
+          const pName = (document.getElementById('rpt-partner-name')?.innerText || 'CongNo').replace(/[^a-zA-Z0-9_\-]/g, '_');
+          link.download = `BaoCao_CongNo_${pName}_${getTodayString()}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          showToast("✅ Đã tải file ảnh báo cáo công nợ!");
+      }).catch(err => {
+          if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = origText;
+          }
+          showToast("❌ Lỗi xuất ảnh: " + err, true);
+      });
+  }
+
+  function confirmDeleteDebt(id) {
+      if (typeof showConfirmModal === 'function') {
+          showConfirmModal("⚠️ Xóa Bản Ghi Công Nợ", `Bạn có chắc chắn muốn xóa bản ghi công nợ (${id}) không?`, function() {
+              if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.deleteDebtRecord === 'function') {
+                  showToast("⏳ Đang xóa bản ghi công nợ...");
+                  google.script.run
+                      .withSuccessHandler(function(res) {
+                          if (res && res.success) {
+                              showToast(res.message || "✅ Đã xóa bản ghi công nợ!");
+                              reloadTab4Data();
+                          } else {
+                              showToast("❌ " + (res ? res.message : "Xóa thất bại"), true);
+                          }
+                      })
+                      .withFailureHandler(function(err) {
+                          showToast("❌ Lỗi xóa bản ghi: " + (err ? (err.message || err) : "Không thể xóa"), true);
+                      })
+                      .deleteDebtRecord(id);
+              } else {
+                  showToast("✅ Đã xóa bản ghi (Demo)!");
+              }
+          }, "Xóa Ngay");
+      }
+  }
+
+  if(typeof openModal === 'undefined') {
+      window.openModal = function(id) { document.getElementById(id).classList.add('active'); };
+      window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+  }
+
+  window.copyDebtReportImageToClipboard = copyDebtReportImageToClipboard;
+  window.downloadDebtReportImage = downloadDebtReportImage;
+  window.openExportDebtReportModal = openExportDebtReportModal;
+  window.openPayModal = openPayModal;
+  window.openPayDebtModal = openPayModal;
+  window.submitPayDebt = submitPayDebt;
+</script>

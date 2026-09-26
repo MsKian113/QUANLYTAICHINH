@@ -61,6 +61,15 @@ function createMockSpreadsheet() {
                   rows[targetR][targetC] = vals[r][c];
                 }
               }
+            },
+            clearContent() {
+              for (let r = startRow - 1; r < startRow - 1 + nRows; r++) {
+                if (rows[r]) {
+                  for (let c = startCol - 1; c < startCol - 1 + nCols; c++) {
+                    rows[r][c] = "";
+                  }
+                }
+              }
             }
           };
         }
@@ -82,66 +91,56 @@ test('SplitFamilies: Sheet creation without hardcoded seed sample data', () => {
   assert.equal(res.families.length, 0); // Empty when initialized
 });
 
-test('SplitFamilies: saveSplitFamilyMember appends and updates members', () => {
+test('SplitFamilies: saveSplitFamilyBatch sets sort_order = 1 for representative member and empty string for non-representatives', () => {
   const ss = createMockSpreadsheet();
 
-  // Save initial members in FAM_001
-  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_001', family_name: '2F', member_name: 'Quậy', member_type: 'ADULT', default_weight: 1, sort_order: 1 }, ss);
-  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_001', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, sort_order: 2 }, ss);
-
-  // Save new member in 2F
-  const saveRes = Server_Tab7.saveSplitFamilyMember({
-    family_id: 'FAM_001',
+  const batchRes = Server_Tab7.saveSplitFamilyBatch({
     family_name: '2F',
-    member_name: 'Bé Na',
-    member_type: 'CHILD',
-    default_weight: 0.5,
-    sort_order: 3
+    members: [
+      { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: false },
+      { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: true },
+      { name: 'Chít', type: 'CHILD', weight: 0.5, isRep: false }
+    ]
   }, ss);
 
-  assert.equal(saveRes.success, true);
-  assert.ok(saveRes.member.member_id);
+  assert.equal(batchRes.success, true);
+  const fam = batchRes.families.find(f => f.family_name === '2F');
+  assert.ok(fam);
+  assert.equal(fam.repMember.member_name, 'Chi');
 
-  // Fetch updated list
-  const getRes = Server_Tab7.getSplitFamilies(ss);
-  assert.equal(getRes.success, true);
-  const fam1 = getRes.families.find(f => f.family_id === 'FAM_001');
-  assert.equal(fam1.members.length, 3);
-  assert.equal(fam1.members.some(m => m.member_name === 'Bé Na'), true);
+  const chi = fam.members.find(m => m.member_name === 'Chi');
+  assert.equal(chi.sort_order, 1);
+  assert.equal(chi.isRep, true);
 
-  // Update member
-  const updateRes = Server_Tab7.saveSplitFamilyMember({
-    family_id: 'FAM_001',
+  const quay = fam.members.find(m => m.member_name === 'Quậy');
+  assert.equal(quay.sort_order, "");
+  assert.equal(quay.isRep, false);
+
+  const chit = fam.members.find(m => m.member_name === 'Chít');
+  assert.equal(chit.sort_order, "");
+  assert.equal(chit.isRep, false);
+
+  // Switch representative from Chi to Quậy
+  const batchRes2 = Server_Tab7.saveSplitFamilyBatch({
     family_name: '2F',
-    member_id: saveRes.member.member_id,
-    member_name: 'Bé Na (Cũi)',
-    member_type: 'BABY',
-    default_weight: 0.0,
-    sort_order: 3
+    members: [
+      { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: true },
+      { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: false },
+      { name: 'Chít', type: 'CHILD', weight: 0.5, isRep: false }
+    ]
   }, ss);
 
-  assert.equal(updateRes.success, true);
-  assert.equal(updateRes.member.member_name, 'Bé Na (Cũi)');
+  assert.equal(batchRes2.success, true);
+  const fam2 = batchRes2.families.find(f => f.family_name === '2F');
+  assert.equal(fam2.repMember.member_name, 'Quậy');
 
-  // Update existing member Chi from ADULT to CHILD without duplicating rows
-  const updateAHuanRes = Server_Tab7.saveSplitFamilyMember({
-    family_id: 'FAM_001',
-    family_name: '2F',
-    member_name: 'Chi',
-    member_type: 'CHILD',
-    default_weight: 0.5,
-    sort_order: 2
-  }, ss);
+  const quay2 = fam2.members.find(m => m.member_name === 'Quậy');
+  assert.equal(quay2.sort_order, 1);
+  assert.equal(quay2.isRep, true);
 
-  assert.equal(updateAHuanRes.success, true);
-  assert.equal(updateAHuanRes.member.member_type, 'CHILD');
-
-  const finalCheck = Server_Tab7.getSplitFamilies(ss);
-  const fam1Final = finalCheck.families.find(f => f.family_id === 'FAM_001');
-  assert.equal(fam1Final.members.length, 3); // Still 3 members, no duplicate appended!
-  const chiMember = fam1Final.members.find(m => m.member_name === 'Chi');
-  assert.equal(chiMember.member_type, 'CHILD');
-  assert.equal(chiMember.default_weight, 0.5);
+  const chi2 = fam2.members.find(m => m.member_name === 'Chi');
+  assert.equal(chi2.sort_order, "");
+  assert.equal(chi2.isRep, false);
 });
 
 test('SplitFamilies: deleteSplitFamilyMember sets status to INACTIVE', () => {

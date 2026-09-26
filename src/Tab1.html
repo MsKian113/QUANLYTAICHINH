@@ -1,0 +1,2915 @@
+    <!-- TOAST NOTIFICATION CONTAINER (REPLACES BROWSER ALERTS) -->
+    <div id="t1-toast" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 transform -translate-y-2 opacity-0 flex items-center gap-2"></div>
+
+    <!-- HEADER: BỘ LỌC TỰ ĐỘNG SINH (DYNAMIC JS) -->
+    <div class="pt-3 pb-3 px-4 text-white bg-blue-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
+      <h1 class="text-base font-bold">🏦 Ngân Hàng</h1>
+      <div class="flex gap-2 items-center">
+          <select id="t1-filter-month" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+          <select id="t1-filter-year" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pb-6 px-4 space-y-4">
+      <!-- SUB-TABS CON CỦA TAB NGÂN HÀNG (ĐẶT Ở ĐẦU TRANG) -->
+      <div id="subtab-nav-bar" class="flex p-1 bg-slate-200 rounded-xl mb-3 shrink-0">
+        <button onclick="switchSubTab('stats')" id="btn-stats" class="flex-1 py-1.5 text-[11px] font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer transition">📊 Thống Kê</button>
+        <button onclick="switchSubTab('card')" id="btn-card" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition">💳 Thẻ</button>
+        <button onclick="switchSubTab('card-info')" id="btn-card-info" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition flex items-center justify-center gap-1">
+          <span>🔒 Thông Tin Thẻ</span>
+        </button>
+      </div>
+
+      <!-- Ô TÌM KIẾM VÀ LỌC VÍ & THẺ -->
+      <div id="t1-search-container" class="flex gap-1.5 items-center hidden">
+        <div class="relative flex-1">
+          <input type="text" id="t1-search-input" oninput="renderTab1Wallets()" placeholder="Tìm kiếm ví, thẻ..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 pl-8 text-xs font-bold text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition shadow-sm" />
+          <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">🔍</span>
+        </div>
+        <select id="t1-filter-type" onchange="renderTab1Wallets()" class="bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-2 py-1.5 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none shadow-sm cursor-pointer shrink-0">
+          <option value="ALL">Tất cả</option>
+          <option value="CREDIT">Credit</option>
+          <option value="DEBIT">Debit</option>
+        </select>
+        <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl transition shadow-xs flex items-center gap-1 shrink-0 cursor-pointer">
+          ➕ Thêm
+        </button>
+      </div>
+
+      <!-- NỘI DUNG TAB: THỦY TÍNH / THỐNG KÊ TỔNG QUAN -->
+      <div id="subtab-stats" class="space-y-2.5">
+          <!-- 1. BÁO CÁO TỔNG QUAN TÀI SẢN (COMPACT CARD) -->
+          <div class="bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 text-white p-3 rounded-2xl shadow-md border border-indigo-500/30">
+            <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-indigo-400/30">
+              <div>
+                <p class="text-[9px] uppercase tracking-wider text-indigo-300 font-extrabold">💎 Vốn Thực Có (Tài Sản Ròng)</p>
+                <h2 id="t6-net-worth" class="text-2xl font-black text-white tracking-tight leading-none mt-0.5">0 ¥</h2>
+              </div>
+              <span class="text-[9px] font-bold bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded-lg border border-indigo-400/40">ALL</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                 <div class="bg-white/5 p-2 rounded-xl border border-white/10 space-y-1">
+                     <div class="flex justify-between items-center border-b border-white/10 pb-1">
+                         <span class="text-[9px] text-emerald-400 font-black uppercase">TỔNG Tài Sản</span>
+                         <span id="t6-total-assets" class="text-[11px] font-bold text-white">0 ¥</span>
+                     </div>
+                     <div class="flex justify-between text-[10px]">
+                         <span class="text-indigo-200">💵 Tiền & Ví:</span>
+                         <span id="t6-cash-balance" class="font-bold text-white">0 ¥</span>
+                     </div>
+                     <div class="flex justify-between text-[10px]">
+                         <span class="text-indigo-200">🤝 Khách Nợ:</span>
+                         <span id="t6-receivables" class="font-bold text-white">0 ¥</span>
+                     </div>
+                 </div>
+                 
+                 <div class="bg-white/5 p-2 rounded-xl border border-white/10 space-y-1">
+                     <div class="flex justify-between items-center border-b border-white/10 pb-1">
+                         <span class="text-[9px] text-rose-300 font-black uppercase">TỔNG Nợ</span>
+                         <span id="t6-total-liabilities" class="text-[11px] font-bold text-white">0 ¥</span>
+                     </div>
+                     <div class="flex justify-between text-[10px]">
+                         <span class="text-indigo-200">💳 Nợ Thẻ:</span>
+                         <span id="t6-credit-debt" class="font-bold text-white">0 ¥</span>
+                     </div>
+                     <div class="flex justify-between text-[10px]">
+                         <span class="text-indigo-200">💸 Nợ Vay:</span>
+                         <span id="t6-payables" class="font-bold text-white">0 ¥</span>
+                     </div>
+                 </div>
+            </div>
+          </div>
+
+          <!-- 2. BÁO CÁO TRẠNG THÁI ĐƠN HÀNG & CÔNG NỢ (4-GRID COMPACT) -->
+          <div class="bg-white p-2.5 px-3 rounded-2xl shadow-xs border border-slate-200/90 space-y-1.5">
+             <div class="flex justify-between items-center pb-1 border-b border-slate-100">
+                <h3 class="text-[11px] font-extrabold text-slate-800 flex items-center gap-1">📦 Trạng Thái Đơn Hàng & Công Nợ</h3>
+             </div>
+             
+             <div class="grid grid-cols-4 gap-1.5 text-center">
+                 <!-- 🚚 Đơn Đợi Ship -->
+                 <div class="bg-amber-50/80 border border-amber-200/80 p-1.5 rounded-xl">
+                     <p class="text-[9px] font-bold text-amber-700">🚚 Đợi Ship</p>
+                     <p id="t1-count-cho-ship" class="text-xs font-black text-amber-900 mt-0.5">0 đơn</p>
+                 </div>
+                 
+                 <!-- ⏳ Đơn Pre-Order -->
+                 <div class="bg-indigo-50/80 border border-indigo-200/80 p-1.5 rounded-xl">
+                     <p class="text-[9px] font-bold text-indigo-700">⏳ Pre-Order</p>
+                     <p id="t1-count-preorder" class="text-xs font-black text-indigo-900 mt-0.5">0 đơn</p>
+                 </div>
+                 
+                 <!-- 🤝 Đơn Khách Nợ -->
+                 <div class="bg-rose-50/80 border border-rose-200/80 p-1.5 rounded-xl">
+                     <p class="text-[9px] font-bold text-rose-700">🤝 Khách Nợ</p>
+                     <p id="t1-count-khach-no" class="text-xs font-black text-rose-900 mt-0.5">0 đơn</p>
+                 </div>
+                 
+                 <!-- 🔄 Đơn Chờ Hoàn -->
+                 <div class="bg-purple-50/80 border border-purple-200/80 p-1.5 rounded-xl">
+                     <p class="text-[9px] font-bold text-purple-700">🔄 Chờ Hoàn</p>
+                     <p id="t1-count-cho-hoan" class="text-xs font-black text-purple-900 mt-0.5">0 đơn</p>
+                 </div>
+             </div>
+          </div>
+
+          <!-- 3. BÁO CÁO HOẠT ĐỘNG KINH DOANH (COMPACT GRID 2x2) -->
+          <div class="bg-white p-2.5 px-3 rounded-2xl shadow-xs border border-slate-200/90">
+             <div class="flex justify-between items-center mb-1.5 pb-1 border-b border-slate-100">
+                <h3 class="text-[11px] font-extrabold text-slate-800 flex items-center gap-1">📊 Hoạt Động Kinh Doanh</h3>
+                <span id="t1-biz-summary-badge" class="text-[8px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200/60">ALL</span>
+             </div>
+             <div class="grid grid-cols-2 gap-x-2.5 gap-y-1.5 text-xs">
+                 <div class="flex justify-between items-center bg-slate-50 p-1.5 px-2 rounded-lg">
+                     <span class="text-[10px] font-bold text-slate-500 uppercase">TỔNG Doanh Thu</span>
+                     <span id="t6-total-sales" class="text-xs font-bold text-blue-600">0 ¥</span>
+                 </div>
+                 <div class="flex justify-between items-center bg-slate-50 p-1.5 px-2 rounded-lg">
+                     <span class="text-[10px] font-bold text-slate-500 uppercase">Chi Phí (Xuất)</span>
+                     <span id="t6-total-cogs" class="text-xs font-bold text-rose-500">0 ¥</span>
+                 </div>
+                 <div class="flex justify-between items-center bg-slate-50 p-1.5 px-2 rounded-lg">
+                     <span class="text-[10px] font-bold text-slate-500 uppercase">📦 Tồn Kho</span>
+                     <span id="t6-inventory-value" class="text-xs font-bold text-amber-600">0 ¥</span>
+                 </div>
+                 <div class="flex justify-between items-center bg-emerald-50 p-1.5 px-2 rounded-lg border border-emerald-200/60">
+                     <span class="text-[10px] font-bold text-emerald-800 uppercase">Dòng Tiền</span>
+                     <span id="t6-net-profit" class="text-xs font-black text-emerald-600">0 ¥</span>
+                 </div>
+             </div>
+          </div>
+      </div>
+
+      <!-- NỘI DUNG TAB: THẺ & VÍ (CREDIT / DEBIT) -->
+      <div id="subtab-card" class="space-y-3 hidden">
+        <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải danh sách thẻ & ví...</div>
+      </div>
+
+      <!-- NỘI DUNG TAB: THÔNG TIN THẺ BẢO MẬT (PASSWORD PROTECTED) -->
+      <div id="subtab-card-info" class="space-y-3 hidden">
+        <div id="card-info-locked-placeholder" class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 text-center space-y-3">
+          <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-inner">🔐</div>
+          <h3 class="text-sm font-bold text-slate-800">Thông Tin Thẻ Đã Bị Khóa</h3>
+          <p class="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">Vui lòng nhập mật khẩu để giải mã số thẻ, ngày hết hạn và mã CVV/CSV.</p>
+          <button onclick="openCardInfoAuthModal()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer">
+            🔓 Nhập Mật Khẩu Xem Thẻ
+          </button>
+        </div>
+
+        <div id="card-info-unlocked-content" class="space-y-3 hidden">
+          <div class="flex justify-between items-center bg-white p-2.5 px-3 rounded-xl border border-slate-200/90 shadow-xs">
+            <h3 class="text-xs font-black text-slate-800 flex items-center gap-1 shrink-0">💳 Thông tin thẻ</h3>
+            <div class="flex items-center gap-1 text-[10px] font-bold">
+              <button onclick="openAddCardSecurityModal()" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 border border-emerald-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
+                <span>➕</span> <span>Thẻ</span>
+              </button>
+              <button id="btn-toggle-faceid-setting" onclick="t1_changeCustomPassword()" class="px-2 py-1 bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 border border-purple-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
+                <span>🔑</span> <span id="txt-faceid-setting">Đổi Mật Khẩu</span>
+              </button>
+              <button onclick="t1_lockCardInfo()" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
+                <span>🔒</span> <span>Khóa</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- BAR TÌM KIẾM & BỘ LỌC DROPDOWN (KẾ BÊN Ô TÌM KIẾM) -->
+          <div class="flex gap-2 items-center">
+            <div class="relative flex-1">
+              <input type="text" id="t1-card-info-search" oninput="renderCardInfoList()" placeholder="🔍 Tìm tên thẻ hoặc 3-4 số đuôi..." class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 pl-8 text-xs font-bold text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition shadow-xs" />
+              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">🔍</span>
+            </div>
+            <select id="t1-card-info-type-select" onchange="renderCardInfoList()" class="bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl px-2.5 py-2 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 cursor-pointer shadow-xs shrink-0">
+              <option value="ALL">Tất Cả Thẻ</option>
+              <option value="MAIN">Thẻ Chính</option>
+              <option value="VIRTUAL">Thẻ Ảo</option>
+            </select>
+          </div>
+
+          <div id="t1-card-info-list" class="space-y-4"></div>
+        </div>
+      </div>
+      
+    </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- MODAL XÁC NHẬN (CONFIRM DIALOG - THAY THẾ BROWSER CONFIRM) -->
+  <div id="modal-confirm-dialog" class="modal-overlay" style="z-index: 280;" onclick="if(event.target === this) closeModal('modal-confirm-dialog')">
+    <div class="modal-content rounded-2xl border-t-4 border-rose-500 !p-3.5 max-w-[320px] w-full">
+      <div class="flex justify-between items-center mb-2 border-b pb-1.5">
+        <h3 id="confirm-title" class="text-xs font-bold text-slate-900">⚠️ Xác Nhận</h3>
+        <button onclick="closeModal('modal-confirm-dialog')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-3">
+        <p id="confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+        <div class="flex gap-2 pt-1">
+            <button onclick="closeModal('modal-confirm-dialog')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+            <button onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận Xoá</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM CHUYỂN TIỀN NỘI BỘ (VÍ ĐẾN VÍ) -->
+  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;" onclick="if(event.target === this) closeModal('modal-transfer-wallet')">
+    <div class="modal-content rounded-2xl border-t-4 border-indigo-500 !p-3.5 max-w-[340px] w-full">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+        <h3 class="text-xs font-bold text-slate-900">🔄 Chuyển Tiền Nội Bộ</h3>
+        <button onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-2.5">
+        <div class="grid grid-cols-2 gap-2.5 relative z-40">
+            <div class="relative">
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Từ Ví (Bị Trừ)</label>
+              <input type="text" id="tf-from-wallet" autocomplete="off" placeholder="Gõ chọn ví..." oninput="t1_renderSuggest('tf-from-wallet', 'wallet', false)" onfocus="t1_renderSuggest('tf-from-wallet', 'wallet', true)" onclick="t1_renderSuggest('tf-from-wallet', 'wallet', true)" onmousedown="t1_renderSuggest('tf-from-wallet', 'wallet', true)" onblur="t1_hideSuggest('tf-from-wallet')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-400" />
+              <div id="box-tf-from-wallet" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl hidden max-h-36 overflow-y-auto z-50"></div>
+            </div>
+            <div class="relative">
+              <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Đến Ví (Được Cộng)</label>
+              <input type="text" id="tf-to-wallet" autocomplete="off" placeholder="Gõ chọn ví..." oninput="t1_renderSuggest('tf-to-wallet', 'wallet', false)" onfocus="t1_renderSuggest('tf-to-wallet', 'wallet', true)" onclick="t1_renderSuggest('tf-to-wallet', 'wallet', true)" onmousedown="t1_renderSuggest('tf-to-wallet', 'wallet', true)" onblur="t1_hideSuggest('tf-to-wallet')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 outline-none focus:ring-1 focus:ring-indigo-400" />
+              <div id="box-tf-to-wallet" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl hidden max-h-36 overflow-y-auto z-50"></div>
+            </div>
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Số tiền (¥)</label>
+          <input type="number" id="tf-amount" placeholder="Ví dụ: 10000" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-indigo-400" />
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Ghi chú</label>
+          <input type="text" id="tf-note" placeholder="Rút tiền mặt ATM bỏ bóp..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-400 outline-none" />
+        </div>
+        <button id="btn-submit-transfer" onclick="submitWalletTransfer()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">Xác Nhận Chuyển</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM THÊM MỚI / SỬA VÍ THẺ -->
+  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;" onclick="if(event.target === this) closeModal('modal-add-wallet')">
+    <div class="modal-content rounded-2xl border-t-4 border-slate-800 !p-3.5 max-w-[340px] w-full">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+        <h3 id="wa-title" class="text-xs font-bold text-slate-900">🛠️ Thông Tin Ví / Thẻ</h3>
+        <button onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-2.5">
+        <input type="hidden" id="wa-id" value="" />
+        <div>
+            <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Tên Ví / Thẻ</label>
+            <input type="text" id="wa-name" onblur="autoPrefixCreditCardName()" placeholder="VD: Vietcom (tự đổi C- Vietcom)..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-400" />
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2.5">
+            <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Phân loại</label>
+                <select id="select-wallet-type" onchange="toggleLimitFields()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 outline-none cursor-pointer focus:ring-1 focus:ring-blue-400">
+                    <option value="CREDIT">💳 Thẻ Credit</option>
+                    <option value="DEBIT">Ví / Thẻ ATM</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Số dư hiện tại (¥)</label>
+                <input type="number" id="wa-balance" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-400" />
+            </div>
+        </div>
+
+        <div id="credit-limit-fields" class="space-y-2.5 pt-1">
+            <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Hạn mức thẻ tín dụng (¥)</label>
+                <input type="number" id="wa-limit" placeholder="Ví dụ: 500000" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-400" />
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Ngày chốt sao kê</label>
+                    <input type="number" id="wa-cut" placeholder="VD: 15" min="1" max="31" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Ngày thanh toán</label>
+                    <input type="number" id="wa-pay" placeholder="VD: 27" min="1" max="31" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                </div>
+            </div>
+        </div>
+        
+        <button id="btn-submit-wallet" onclick="handleSaveWallet()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">
+            Lưu Thay Đổi
+        </button>
+
+        <button id="btn-delete-wallet" onclick="handleDeleteWalletFromModal()" class="w-full py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition cursor-pointer hidden">
+            🗑️ Xoá Ví / Thẻ Này
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SỔ PHỤ VÍ DEBIT -->
+  <div id="modal-statement-debit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-debit')">
+    <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
+      <div class="p-3 border-b bg-blue-50 flex justify-between items-center rounded-t-2xl">
+        <div>
+            <p class="text-[9px] uppercase text-blue-500 font-bold tracking-wider">Chi Tiết Giao Dịch</p>
+            <h3 id="debit-statement-title" class="text-xs font-bold text-blue-900">Tên Thẻ</h3>
+        </div>
+        <button onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 bg-white">
+        <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
+            <div class="flex items-center gap-1.5 truncate">
+                <span class="text-xs font-medium text-slate-500">Số dư trên App:</span>
+                <span id="debit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
+            </div>
+            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+        </div>
+        <div id="debit-statement-list" class="space-y-2">
+            <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SỔ PHỤ THẺ TÍN DỤNG (CREDIT) -->
+  <div id="modal-statement-credit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-credit')">
+    <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
+      <div class="p-3 border-b bg-rose-50 flex justify-between items-center rounded-t-2xl">
+        <div>
+            <p class="text-[9px] uppercase text-rose-500 font-bold tracking-wider">Lịch Sử Giao Dịch Thẻ</p>
+            <h3 id="credit-statement-title" class="text-xs font-bold text-rose-900">Tên Thẻ</h3>
+        </div>
+        <button onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-3 bg-white">
+        <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
+            <div class="flex items-center gap-1.5 truncate">
+                <span class="text-xs font-medium text-slate-500">Dư nợ trên App:</span>
+                <span id="credit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
+            </div>
+            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+        </div>
+        <div id="credit-statement-list" class="space-y-2">
+            <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SỬA GIAO DỊCH CHI TIẾT SỔ PHỤ -->
+  <div id="modal-edit-statement-tx" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-edit-statement-tx')">
+    <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">🛠️ Sửa Giao Dịch Chi Tiết</h3>
+        <button onclick="closeModal('modal-edit-statement-tx')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-2.5 text-xs">
+        <input type="hidden" id="edit-st-id" value="" />
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Mã Giao Dịch (ID)</label>
+          <input type="text" id="edit-st-id-display" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 font-bold rounded-lg px-2 py-1 text-xs outline-none cursor-not-allowed" />
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Thời Gian</label>
+          <input type="text" id="edit-st-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Số Tiền (¥)</label>
+          <input type="number" id="edit-st-amount" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Nội Dung / Ghi Chú</label>
+          <input type="text" id="edit-st-note" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
+        </div>
+        <button id="btn-submit-edit-st" onclick="submitEditStatementTx()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
+          Lưu Thay Đổi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM ĐIỀU CHỈNH CÂN BẰNG SỔ (COMPACT UI) -->
+  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-adjust-balance')">
+    <div class="modal-content rounded-2xl border-t-4 border-amber-500 !p-3.5 max-w-[340px] w-full">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">⚠️ Chênh Lệch Số Dư Ví / Thẻ</h3>
+        <button onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-2.5 text-xs">
+        <div class="bg-amber-50/80 p-2 rounded-lg border border-amber-200 flex justify-between items-center">
+            <div>
+                <span class="text-[9px] font-bold text-amber-700 uppercase block">Ví / Thẻ:</span>
+                <span id="adj-wallet-name-txt" class="text-xs font-bold text-slate-800">--</span>
+            </div>
+            <div class="text-right">
+                <span class="text-[9px] font-bold text-amber-700 uppercase block">Số App hiện tại:</span>
+                <span id="adj-app-balance-txt" class="text-xs font-bold text-slate-800">0 ¥</span>
+            </div>
+        </div>
+        <input type="hidden" id="adj-wallet-name" value="" />
+        <input type="hidden" id="adj-app-balance" value="0" />
+
+        <div>
+            <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số dư THỰC TẾ thực cầm (¥)</label>
+            <input type="number" id="adj-actual-balance" placeholder="Nhập số tiền thực tế..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-amber-400" />
+        </div>
+        <button id="btn-submit-adjust" onclick="submitAdjustBalance()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
+            Lưu Chênh Lệch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TẤT TOÁN THẺ TÍN DỤNG -->
+  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-settle-card')">
+    <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+        <h3 class="text-xs font-bold text-slate-900">Thanh Toán Thẻ</h3>
+        <button onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-2.5">
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Thẻ cần trả</label>
+          <input type="text" id="settle-card-name" readonly class="w-full bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-lg px-2 py-1 text-xs outline-none cursor-not-allowed" />
+        </div>
+        <div class="relative z-40">
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Nguồn tiền lấy ra để trả</label>
+          <input type="text" id="settle-source-wallet" autocomplete="off" placeholder="Gõ chọn ví nguồn..." oninput="t1_renderSuggest('settle-source-wallet', 'debit', false)" onfocus="t1_renderSuggest('settle-source-wallet', 'debit', true)" onclick="t1_renderSuggest('settle-source-wallet', 'debit', true)" onmousedown="t1_renderSuggest('settle-source-wallet', 'debit', true)" onblur="t1_hideSuggest('settle-source-wallet')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:ring-1 focus:ring-blue-400 outline-none" />
+          <div id="box-settle-source-wallet" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl hidden max-h-36 overflow-y-auto z-50"></div>
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Số tiền thanh toán (¥)</label>
+          <input type="number" id="settle-amount" placeholder="Nhập số tiền..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-blue-400 outline-none" />
+        </div>
+        <button id="btn-submit-settle" onclick="submitCreditSettlement()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">Xác Nhận Thanh Toán</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XÁC THỰC MẬT KHẨU BẢO MẬT THẺ (VẼ HÌNH HOẶC NHẬP MK) -->
+  <div id="modal-card-info-auth" class="modal-overlay" style="z-index: 230;" onclick="if(event.target === this) closeModal('modal-card-info-auth')">
+    <div class="modal-content rounded-2xl border-t-4 border-blue-600 !p-4 max-w-[340px] w-full text-center">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">🔐 MỞ KHÓA BẢO MẬT</h3>
+        <button onclick="closeModal('modal-card-info-auth')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+
+      <!-- CHỌN CHẾ ĐỘ: VẼ MẬT KHẨU HOẶC NHẬP MẬT KHẨU -->
+      <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
+        <button id="btn-auth-mode-pattern" onclick="t1_switchAuthMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs">✍️ Vẽ Mật Khẩu</button>
+        <button id="btn-auth-mode-pin" onclick="t1_switchAuthMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
+      </div>
+
+      <!-- CHẾ ĐỘ 1: VẼ MẬT KHẨU (3x3 PATTERN LOCK GRID) -->
+      <div id="auth-mode-pattern-container" class="space-y-2">
+        <p id="pattern-status-msg" class="text-xs text-slate-600 font-medium">Vẽ hình mẫu để mở khóa:</p>
+        <div class="relative w-[220px] h-[220px] mx-auto bg-slate-900 rounded-2xl shadow-inner border border-slate-700 flex items-center justify-center touch-none select-none">
+          <canvas id="pattern-canvas" width="220" height="220" class="cursor-pointer rounded-2xl"></canvas>
+        </div>
+        <div class="flex justify-between items-center px-2 pt-1 text-[11px]">
+          <button onclick="t1_resetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
+          <span class="text-slate-400">Nối từ 3 điểm trở lên</span>
+        </div>
+      </div>
+
+      <!-- CHẾ ĐỘ 2: NHẬP MẬT KHẨU CHỮ / SỐ (PIN) -->
+      <div id="auth-mode-pin-container" class="space-y-3 hidden">
+        <p class="text-xs text-slate-600 font-medium">Nhập mật khẩu chữ hoặc số:</p>
+        <div>
+          <input type="password" id="card-info-pwd-input" onkeyup="if(event.key==='Enter') submitCardInfoAuth()" placeholder="Nhập Mật Khẩu..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
+        </div>
+        <button id="btn-submit-card-auth" onclick="submitCardInfoAuth()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
+          🔓 MỞ KHÓA MẬT KHẨU
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL THIẾT LẬP MẬT KHẨU HÌNH VẼ MỚI (SET PATTERN PWD MODAL) -->
+  <div id="modal-set-pattern-pwd" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-set-pattern-pwd')">
+    <div class="modal-content rounded-2xl border-t-4 border-emerald-600 !p-4 max-w-[340px] w-full text-center">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">🎨 THIẾT LẬP MẬT KHẨU MỚI</h3>
+        <button onclick="closeModal('modal-set-pattern-pwd')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+
+      <!-- CHỌN CHẾ ĐỘ THIẾT LẬP -->
+      <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
+        <button id="btn-set-mode-pattern" onclick="t1_switchSetMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs">✍️ Vẽ Hình Mẫu Mới</button>
+        <button id="btn-set-mode-pin" onclick="t1_switchSetMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Chữ / Số</button>
+      </div>
+
+      <!-- CHẾ ĐỘ 1: VẼ HÌNH MẪU MỚI (RECORD PATTERN) -->
+      <div id="set-mode-pattern-container" class="space-y-2">
+        <p id="pattern-set-status-msg" class="text-xs text-slate-600 font-medium">Vẽ hình mẫu mới của bạn (nối từ 3 điểm):</p>
+        <div class="relative w-[220px] h-[220px] mx-auto bg-slate-900 rounded-2xl shadow-inner border border-slate-700 flex items-center justify-center touch-none select-none">
+          <canvas id="pattern-set-canvas" width="220" height="220" class="cursor-pointer rounded-2xl"></canvas>
+        </div>
+        <div class="flex justify-between items-center px-2 pt-1 text-[11px]">
+          <button onclick="t1_resetSetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer">🔄 Vẽ lại</button>
+          <span id="pattern-set-code-badge" class="font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] hidden">Mã: --</span>
+        </div>
+        <button id="btn-save-set-pattern" onclick="t1_saveSetPatternPassword()" disabled class="w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5">
+          💾 LƯU HÌNH VẼ MỚI
+        </button>
+      </div>
+
+      <!-- CHẾ ĐỘ 2: NHẬP MẬT KHẨU CHỮ / SỐ -->
+      <div id="set-mode-pin-container" class="space-y-3 hidden">
+        <p class="text-xs text-slate-600 font-medium">Nhập mật khẩu cá nhân mới (chữ hoặc số):</p>
+        <div>
+          <input type="text" id="card-info-new-pwd-input" placeholder="Nhập mật khẩu mới..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 transition" />
+        </div>
+        <button onclick="t1_saveSetTextPassword()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
+          💾 LƯU MẬT KHẨU MỚI
+        </button>
+      </div>
+
+      <p class="text-[10px] text-slate-400 mt-2.5 italic">💡 Mật khẩu dự phòng mặc định vẫn luôn dùng được nếu lỡ quên.</p>
+    </div>
+  </div>
+
+  <!-- MODAL SỬA THÔNG TIN BẢO MẬT THẺ & THẺ ẢO (CỘT L->R) -->
+  <div id="modal-edit-card-security" class="modal-overlay" style="z-index: 240;" onclick="if(event.target === this) closeModal('modal-edit-card-security')">
+    <div class="modal-content rounded-2xl border-t-4 border-indigo-600 !p-4 max-w-[360px] w-full">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">✏️ Sửa Thông Tin Bảo Mật Thẻ</h3>
+        <button onclick="closeModal('modal-edit-card-security')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs max-h-[75vh] overflow-y-auto pr-1">
+        <input type="hidden" id="sec-card-id" value="" />
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Tên Thẻ / Ví (Chọn từ danh sách Database Wallets)</label>
+          <input type="text" id="sec-card-name" list="sec-card-name-suggest" oninput="t1_onSecCardNameInput()" placeholder="Gõ hoặc chọn tên thẻ từ Database Wallets..." class="w-full bg-white border border-slate-300 text-slate-800 font-bold rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-indigo-500 text-xs" />
+          <datalist id="sec-card-name-suggest"></datalist>
+        </div>
+
+        <!-- Section: Thẻ chính (Main Card: Cols L, M, N) -->
+        <div class="bg-blue-50/70 border border-blue-200 p-2.5 rounded-xl space-y-2">
+          <p class="text-[10px] font-extrabold text-blue-800 uppercase flex items-center gap-1">💳 Thẻ Chính (Cột L, M, N)</p>
+          <div>
+            <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số thẻ chính (16 số)</label>
+            <input type="text" id="sec-card-number" placeholder="XXXX XXXX XXXX XXXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">HSD (MM/YY)</label>
+              <input type="text" id="sec-card-exp" placeholder="MM/YY" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Mã CVV / CSV</label>
+              <input type="text" id="sec-card-cvv" placeholder="XXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Thẻ ảo (Virtual Card RevoChi: Cols O, P, Q, R) -->
+        <div class="bg-purple-50/70 border border-purple-200 p-2.5 rounded-xl space-y-2">
+          <p class="text-[10px] font-extrabold text-purple-800 uppercase flex items-center gap-1">✨ Thẻ Ảo (RevoChi / Virtual Card: Cột O, P, Q, R)</p>
+          <div>
+            <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Tên Thẻ Ảo</label>
+            <input type="text" id="sec-vcard-name" placeholder="VD: RevoChi Shopping..." class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+          </div>
+          <div>
+            <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số Thẻ Ảo</label>
+            <input type="text" id="sec-vcard-number" placeholder="XXXX XXXX XXXX XXXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">HSD Thẻ Ảo</label>
+              <input type="text" id="sec-vcard-exp" placeholder="MM/YY" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+            </div>
+            <div>
+              <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">CVV / CSV Thẻ Ảo</label>
+              <input type="text" id="sec-vcard-cvv" placeholder="XXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-submit-sec-details" onclick="submitCardSecurityDetails()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition">
+          💾 Lưu Thông Tin Bảo Mật
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let t1_walletsData = [];
+    let t1_activeWalletForStatement = null;
+    let t1_onConfirmCallback = null;
+
+    // HÀM HIỂN THỊ TOAST NOTIFICATION TRÊN UI (THAY THẾ BROWSER ALERT)
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('t1-toast');
+        if (!toast) return;
+        toast.innerText = msg;
+        toast.className = `fixed top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 flex items-center gap-2 ${isError ? 'bg-rose-600 border border-rose-400' : 'bg-emerald-600 border border-emerald-400'}`;
+        toast.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            toast.classList.remove('-translate-y-2', 'opacity-0');
+        });
+        setTimeout(() => {
+            toast.classList.add('-translate-y-2', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3200);
+    }
+
+    // HÀM HIỂN THỊ CONFIRM MODAL TRÊN UI (THAY THẾ BROWSER CONFIRM)
+    function showConfirmModal(title, msg, onConfirm) {
+        document.getElementById('confirm-title').innerText = title || "Xác Nhận Hành Động";
+        document.getElementById('confirm-msg').innerText = msg || "Bạn có chắc chắn muốn thực hiện?";
+        t1_onConfirmCallback = onConfirm;
+        openModal('modal-confirm-dialog');
+    }
+
+    function executeConfirmAction() {
+        closeModal('modal-confirm-dialog');
+        if (typeof t1_onConfirmCallback === 'function') {
+            t1_onConfirmCallback();
+            t1_onConfirmCallback = null;
+        }
+    }
+
+    function t1_initDateFilters() {
+        const monthSelect = document.getElementById('t1-filter-month');
+        const yearSelect = document.getElementById('t1-filter-year');
+        if(!monthSelect || !yearSelect) return;
+        
+        const d = new Date();
+        const currYear = d.getFullYear();
+
+        let monthHTML = '<option value="ALL" selected>ALL</option>';
+        for (let i = 1; i <= 12; i++) {
+            monthHTML += `<option value="${i}">Tháng ${i}</option>`;
+        }
+        monthSelect.innerHTML = monthHTML;
+
+        let yearHTML = '<option value="ALL" selected>ALL</option>';
+        for (let y = 2024; y <= currYear + 5; y++) {
+            yearHTML += `<option value="${y}">Năm ${y}</option>`;
+        }
+        yearSelect.innerHTML = yearHTML;
+    }
+
+    function initTab1() {
+        t1_initDateFilters();
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initTab1);
+    } else {
+        initTab1();
+    }
+
+    function forceReloadAllAppData() {
+      const monthSelect = document.getElementById('t1-filter-month');
+      const yearSelect = document.getElementById('t1-filter-year');
+      const month = monthSelect ? monthSelect.value : 'ALL';
+      const year = yearSelect ? yearSelect.value : 'ALL';
+      showToast("🔄 Đang làm mới dữ liệu từ Google Sheet...");
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+          google.script.run.withSuccessHandler(function(res) {
+              if (res && res.success) {
+                  window.SERVER_INITIAL_DATA = res;
+                  if (res.wallets) window.t1_walletsData = res.wallets;
+                  if (res.tab3 && res.tab3.summary) window.t1_tab3Summary = res.tab3.summary;
+                  if (res.pendingPreOrders) window.t1_pendingPreOrders = res.pendingPreOrders;
+                  if (res.orderCounts) window.t1_orderCounts = res.orderCounts;
+                  renderTab1Wallets();
+                  renderTab1PendingPreOrders();
+                  if (typeof applyTab3Data === 'function' && res.tab3) applyTab3Data(res.tab3);
+                  showToast("✅ Đã làm mới số liệu mới nhất!");
+              } else {
+                  showToast("❌ Lỗi làm mới dữ liệu", true);
+              }
+          }).withFailureHandler(function(err) {
+              showToast("❌ Lỗi kết nối: " + err, true);
+          }).getAppData(month, year, null, true);
+      } else {
+          reloadTab1Data();
+          showToast("✅ Đã làm mới số liệu (Demo Mode)!");
+      }
+  }
+
+  function t1_initMonthYearFilters() {
+      const mSel = document.getElementById('t1-filter-month');
+      const ySel = document.getElementById('t1-filter-year');
+      if (mSel && mSel.options.length === 0) {
+          let htmlM = '<option value="ALL">ALL</option>';
+          for (let i = 1; i <= 12; i++) {
+              htmlM += `<option value="${i}">Tháng ${i}</option>`;
+          }
+          mSel.innerHTML = htmlM;
+          mSel.value = "ALL";
+      }
+      if (ySel && ySel.options.length === 0) {
+          let htmlY = '<option value="ALL">ALL</option>';
+          const currentY = new Date().getFullYear();
+          for (let y = currentY - 2; y <= currentY + 2; y++) {
+              htmlY += `<option value="${y}">Năm ${y}</option>`;
+          }
+          ySel.innerHTML = htmlY;
+          ySel.value = "ALL";
+      }
+  }
+
+  function reloadTab1Data() {
+        window.t1_statementCache = {};
+        t1_initMonthYearFilters();
+        const monthSelect = document.getElementById('t1-filter-month');
+        const yearSelect = document.getElementById('t1-filter-year');
+        const month = (monthSelect && monthSelect.value && monthSelect.value !== '') ? monthSelect.value : 'ALL';
+        const year = (yearSelect && yearSelect.value && yearSelect.value !== '') ? yearSelect.value : 'ALL';
+
+        // Instant render from local cache if available
+        try {
+            const cached = localStorage.getItem('T1_CACHE_V18_' + month + '_' + year) || localStorage.getItem('T1_CACHE_V18_LATEST');
+            if (cached) {
+                const cData = JSON.parse(cached);
+                if (cData && Array.isArray(cData.wallets)) {
+                    t1_walletsData = cData.wallets;
+                    if (cData.tab3 && cData.tab3.summary) window.t1_tab3Summary = cData.tab3.summary;
+                    else if (cData.tab3Summary) window.t1_tab3Summary = cData.tab3Summary;
+                    if (cData.pendingPreOrders) window.t1_pendingPreOrders = cData.pendingPreOrders;
+                    if (cData.orderCounts) window.t1_orderCounts = cData.orderCounts;
+                    renderTab1Wallets();
+                    renderTab1PendingPreOrders();
+                }
+            }
+        } catch(e) {}
+
+        if (window.SERVER_INITIAL_DATA && Array.isArray(window.SERVER_INITIAL_DATA.wallets) && window.SERVER_INITIAL_DATA.wallets.length > 0) {
+            t1_walletsData = window.SERVER_INITIAL_DATA.wallets;
+            if (window.SERVER_INITIAL_DATA.tab3 && window.SERVER_INITIAL_DATA.tab3.summary) window.t1_tab3Summary = window.SERVER_INITIAL_DATA.tab3.summary;
+            if (window.SERVER_INITIAL_DATA.pendingPreOrders) window.t1_pendingPreOrders = window.SERVER_INITIAL_DATA.pendingPreOrders;
+            if (window.SERVER_INITIAL_DATA.orderCounts) window.t1_orderCounts = window.SERVER_INITIAL_DATA.orderCounts;
+            renderTab1Wallets();
+            renderTab1PendingPreOrders();
+        }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    window.SERVER_INITIAL_DATA = res;
+                    t1_walletsData = res.wallets || [];
+                    if (res.tab3 && res.tab3.summary) window.t1_tab3Summary = res.tab3.summary;
+                    if (res.pendingPreOrders) window.t1_pendingPreOrders = res.pendingPreOrders;
+                    if (res.orderCounts) window.t1_orderCounts = res.orderCounts;
+                    try {
+                        localStorage.setItem('T1_CACHE_V18_' + month + '_' + year, JSON.stringify(res));
+                        localStorage.setItem('T1_CACHE_V18_LATEST', JSON.stringify(res));
+                    } catch(e) {}
+                }
+                renderTab1Wallets();
+                renderTab1PendingPreOrders();
+            }).withFailureHandler(function(err) {
+                console.error("Lỗi nạp dữ liệu Tab 1:", err);
+                renderTab1Wallets();
+                renderTab1PendingPreOrders();
+            }).getAppData(month, year);
+        } else if (!t1_walletsData || t1_walletsData.length === 0) {
+            // Mock data fallback cho local dev/preview
+            t1_walletsData = [
+                { id: "W001", name: "Thẻ Rakuten (VISA)", type: "CREDIT", credit_limit: 500000, closing_date: 15, due_date: 27, current_balance: -50000 },
+                { id: "W002", name: "Thẻ Ufj (ATM)", type: "DEBIT", credit_limit: 0, closing_date: "", due_date: "", current_balance: 800000 },
+                { id: "W003", name: "Ví Tiền Mặt", type: "DEBIT", credit_limit: 0, closing_date: "", due_date: "", current_balance: 500000 }
+            ];
+            renderTab1Wallets();
+        }
+    }
+
+    function parseMoneyNumber(val) {
+        if (val === null || val === undefined || val === '') return 0;
+        if (typeof val === 'number') return isNaN(val) ? 0 : val;
+        const str = String(val).replace(/[^0-9.-]/g, '');
+        const parsed = parseFloat(str);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    function getCreditCardMetrics(w) {
+        const rawBal = parseMoneyNumber(w.current_balance);
+        const limit = parseMoneyNumber(w.credit_limit || w.limit || 0);
+
+        let debt = 0;
+        let available = limit;
+
+        if (rawBal < 0) {
+            debt = Math.abs(rawBal);
+            available = limit > 0 ? Math.max(0, limit - debt) : 0;
+        } else if (rawBal > 0) {
+            if (limit > 0 && rawBal > limit / 2 && rawBal <= limit) {
+                // If rawBal stored available credit
+                available = rawBal;
+                debt = Math.max(0, limit - available);
+            } else {
+                debt = rawBal;
+                available = limit > 0 ? Math.max(0, limit - debt) : 0;
+            }
+        } else {
+            debt = 0;
+            available = limit;
+        }
+
+        const percent = limit > 0 ? Math.min(100, Math.max(0, Math.round((debt / limit) * 100))) : 0;
+
+        return {
+            rawBal: rawBal,
+            limit: limit,
+            debt: debt,
+            available: available,
+            percent: percent
+        };
+    }
+
+        function renderTab1Wallets() {
+        const cardContainer = document.getElementById('subtab-card');
+        if (!cardContainer) return;
+
+        const searchQ = (document.getElementById('t1-search-input')?.value || '').toLowerCase().trim();
+        const filterType = document.getElementById('t1-filter-type')?.value || 'ALL';
+
+        let totalCreditDebt = 0;
+        let totalCashDebit = 0;
+        let totalCreditLimit = 0;
+
+        (t1_walletsData || []).forEach(w => {
+            const rawBal = parseMoneyNumber(w.current_balance);
+            if (w.type === 'CREDIT') {
+                const metrics = getCreditCardMetrics(w);
+                totalCreditDebt += metrics.debt;
+                totalCreditLimit += metrics.limit;
+            } else {
+                totalCashDebit += rawBal;
+            }
+        });
+
+        const netWorthCashOnly = totalCashDebit - totalCreditDebt;
+        
+        let inventoryValue = 0;
+        let receivables = 0;
+        let payables = 0;
+        let totalSales = 0;
+        let totalCogs = 0;
+        let netProfit = 0;
+
+        const monthSelect = document.getElementById('t1-filter-month');
+        const monthVal = monthSelect ? monthSelect.value : 'ALL';
+        const badgeEl = document.getElementById('t1-biz-summary-badge');
+        if (badgeEl) {
+            badgeEl.innerText = monthVal === 'ALL' ? 'ALL' : ('Tháng ' + monthVal);
+        }
+
+        const tab3Summary = window.t1_tab3Summary || (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3 ? window.SERVER_INITIAL_DATA.tab3.summary : null);
+        if (tab3Summary) {
+            inventoryValue = tab3Summary.stockValue || 0;
+            totalSales = tab3Summary.sales || 0;
+            totalCogs = tab3Summary.cogs || 0;
+            netProfit = tab3Summary.net || 0;
+        }
+
+        const initialTab4 = (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4) ? window.SERVER_INITIAL_DATA.tab4 : null;
+        if (initialTab4) {
+            // Thử lấy từ backend summary trước
+            if (initialTab4.summary) {
+                receivables = initialTab4.summary.receivables || 0;
+                payables = initialTab4.summary.payables || 0;
+            }
+            
+            // NẾU backend trả về 0, ta tính lại trên frontend hệt như Tab 4 để dự phòng
+            if (receivables === 0 && payables === 0 && Array.isArray(initialTab4.allDebts)) {
+                let sumThu = 0;
+                let sumTra = 0;
+                initialTab4.allDebts.forEach(d => {
+                    if (d.trangThai === 'DANG_NO' || d.duNo > 0) {
+                        const lUp = String(d.loai || '').toUpperCase();
+                        const tUp = (String(d.ten || '') + ' ' + String(d.noidung || '')).toUpperCase();
+                        const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+                        if (isThu) sumThu += (d.duNo || 0);
+                        else sumTra += (d.duNo || 0);
+                    }
+                });
+                receivables = sumThu;
+                payables = sumTra;
+            }
+        }
+
+        const totalAssets = totalCashDebit + receivables;
+        const totalLiabilities = totalCreditDebt + payables;
+        const netWorth = totalAssets - totalLiabilities;
+
+        const setTxt = (id, val, colorClass = '') => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.innerText = val.toLocaleString() + ' ¥';
+                if (colorClass) {
+                    el.className = el.className.replace(/text-(emerald|rose|blue)-[0-9]+/g, '');
+                    if (val > 0) el.classList.add(colorClass);
+                    else if (val < 0) el.classList.add('text-rose-500');
+                    else el.classList.add('text-slate-600');
+                }
+            }
+        };
+
+        setTxt('t6-net-worth', netWorth);
+        setTxt('t6-total-assets', totalAssets);
+        setTxt('t6-total-liabilities', totalLiabilities);
+        setTxt('t6-cash-balance', totalCashDebit);
+        setTxt('t6-inventory-value', inventoryValue);
+        setTxt('t6-receivables', receivables);
+        setTxt('t6-credit-debt', totalCreditDebt);
+        setTxt('t6-payables', payables);
+
+        setTxt('t6-total-sales', totalSales);
+        setTxt('t6-total-cogs', totalCogs);
+        setTxt('t6-net-profit', netProfit, 'text-emerald-600');
+
+        // Cập nhật số lượng 4 loại đơn hàng & công nợ cho phần Thống kê
+        const counts = window.t1_orderCounts || (window.SERVER_INITIAL_DATA ? window.SERVER_INITIAL_DATA.orderCounts : null) || {};
+        const choShipEl = document.getElementById('t1-count-cho-ship');
+        const preorderEl = document.getElementById('t1-count-preorder');
+        const khachNoEl = document.getElementById('t1-count-khach-no');
+        const choHoanEl = document.getElementById('t1-count-cho-hoan');
+
+        const valChoShip = counts.choShip !== undefined ? counts.choShip : (tab3Summary && tab3Summary.choShipCount !== undefined ? tab3Summary.choShipCount : 0);
+        const valPreorder = counts.preorder !== undefined ? counts.preorder : (window.t1_pendingPreOrders ? window.t1_pendingPreOrders.length : (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.pendingPreOrders ? window.SERVER_INITIAL_DATA.pendingPreOrders.length : 0));
+        const valKhachNo = counts.khachNo !== undefined ? counts.khachNo : (tab3Summary && tab3Summary.debtSalesCount !== undefined ? tab3Summary.debtSalesCount : 0);
+        const valChoHoan = counts.choHoan !== undefined ? counts.choHoan : (tab3Summary && tab3Summary.pendingRefundCount !== undefined ? tab3Summary.pendingRefundCount : 0);
+
+        if (choShipEl) choShipEl.innerText = valChoShip + ' đơn';
+        if (preorderEl) preorderEl.innerText = valPreorder + ' đơn';
+        if (khachNoEl) khachNoEl.innerText = valKhachNo + ' đơn';
+        if (choHoanEl) choHoanEl.innerText = valChoHoan + ' đơn';
+
+        let creditList = (t1_walletsData || []).filter(w => w.type === 'CREDIT');
+        let debitList = (t1_walletsData || []).filter(w => w.type !== 'CREDIT');
+
+        if (searchQ) {
+            creditList = creditList.filter(w => (w.name || '').toLowerCase().includes(searchQ));
+            debitList = debitList.filter(w => (w.name || '').toLowerCase().includes(searchQ));
+        }
+
+        let mainHTML = '';
+
+        // 1. Render Danh sách Thẻ Tín Dụng (CREDIT)
+        if (filterType === 'ALL' || filterType === 'CREDIT') {
+            let creditHTML = `
+            <div class="flex justify-between items-center mb-1.5 px-1">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1">💳 Thẻ Credit</span>
+                <span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">Tổng nợ: ${totalCreditDebt.toLocaleString()} ¥</span>
+            </div>`;
+
+            if (creditList.length > 0) {
+                creditList.forEach(w => {
+                    const metrics = getCreditCardMetrics(w);
+                    const debt = metrics.debt;
+                    const available = metrics.available;
+                    const percent = metrics.percent;
+                    const limit = metrics.limit;
+                    const rawBal = metrics.rawBal;
+                    const safeName = String(w.name || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                    const safeId = String(w.id || '').replace(/'/g, "\\'");
+
+                    creditHTML += `
+                    <div class="bg-white border border-slate-200/90 rounded-xl p-2 px-2.5 shadow-sm hover:border-blue-400 transition cursor-pointer relative space-y-1 mb-1.5" onclick="openStatement('${safeName}', 'CREDIT')">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                                <h4 class="text-[11px] font-bold text-slate-800 truncate" title="${w.name}">${w.name}</h4>
+                                <span class="text-[9px] text-slate-400 font-mono shrink-0">(${w.closing_date || '--'}/${w.due_date || '--'})</span>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button onclick="event.stopPropagation(); openSettleModal('${safeName}', ${debt})" title="Thanh toán tất toán" class="text-[9px] bg-blue-50 hover:bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 font-bold transition cursor-pointer flex items-center gap-0.5">
+                                    💸 Tất toán
+                                </button>
+                                <button onclick="event.stopPropagation(); openEditModal('${safeId}', '${safeName}', '${w.type}', ${rawBal}, ${limit}, '${w.closing_date}', '${w.due_date}')" class="text-[10px] text-slate-500 hover:text-slate-800 p-0.5 transition cursor-pointer">✏️ Sửa</button>
+                                <button onclick="event.stopPropagation(); confirmDeleteWallet('${safeId}', '${safeName}')" class="text-[10px] text-rose-500 hover:text-rose-700 p-0.5 transition cursor-pointer">🗑️</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-[10px] pt-1 border-t border-slate-100 gap-1 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <span>Nợ: <b class="text-rose-600 font-bold">${debt.toLocaleString()} ¥</b></span>
+                                <span class="text-slate-300">|</span>
+                                <span>KD: <b class="text-emerald-700 font-bold">${available.toLocaleString()} ¥</b></span>
+                            </div>
+                            <div class="text-[9px] text-slate-400">
+                                Hạn mức: ${limit.toLocaleString()} ¥ (${percent}%)
+                            </div>
+                        </div>
+
+                        <div class="w-full bg-slate-100 rounded-full h-1 mt-0.5 overflow-hidden">
+                            <div class="bg-rose-500 h-1 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                creditHTML += '<div class="text-center py-6 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">Không tìm thấy thẻ Credit nào.</div>';
+            }
+            mainHTML += `<div class="space-y-1 mb-3">${creditHTML}</div>`;
+        }
+
+        // 2. Render Danh sách Ví (DEBIT)
+        if (filterType === 'ALL' || filterType === 'DEBIT') {
+            let debitHTML = `
+            <div class="flex justify-between items-center mb-1.5 px-1 mt-2">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1">💵 Ví / ATM / Tiền Mặt</span>
+                <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Tổng dư: ${totalCashDebit.toLocaleString()} ¥</span>
+            </div>`;
+
+            if (debitList.length > 0) {
+                debitList.forEach(w => {
+                    const bal = Number(w.current_balance) || 0;
+                    const safeName = String(w.name || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                    const safeId = String(w.id || '').replace(/'/g, "\\'");
+                    debitHTML += `
+                    <div class="bg-white border border-slate-200/90 rounded-xl p-2 px-2.5 shadow-sm cursor-pointer hover:border-emerald-400 transition relative flex justify-between items-center mb-1.5" onclick="openStatement('${safeName}', 'DEBIT')">
+                        <div class="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-1">
+                            <span class="text-xs shrink-0">💵</span>
+                            <h4 class="text-[11px] font-bold text-slate-800 truncate" title="${w.name}">${w.name}</h4>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-[11px] font-bold text-emerald-700">${bal.toLocaleString()} ¥</span>
+                            <div class="flex items-center gap-1 pl-1 border-l border-slate-100">
+                                <button onclick="event.stopPropagation(); openEditModal('${safeId}', '${safeName}', '${w.type}', ${bal}, 0, '', '')" class="text-[10px] text-slate-500 hover:text-slate-800 p-0.5 transition cursor-pointer">✏️ Sửa</button>
+                                <button onclick="event.stopPropagation(); confirmDeleteWallet('${safeId}', '${safeName}')" class="text-[10px] text-rose-500 hover:text-rose-700 p-0.5 transition cursor-pointer">🗑️</button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            } else {
+                debitHTML += '<div class="text-center py-6 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">Không tìm thấy ví Debit / ATM nào.</div>';
+            }
+            mainHTML += `<div class="space-y-1">${debitHTML}</div>`;
+        }
+
+        if (!mainHTML) {
+            mainHTML = '<div class="text-center py-6 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">Chưa có thẻ hoặc ví nào.</div>';
+        }
+
+        cardContainer.innerHTML = mainHTML;
+
+        if (typeof updateModalDropdowns === 'function') {
+            updateModalDropdowns();
+        }
+    }
+
+    window.t1_suggestTimeouts = window.t1_suggestTimeouts || {};
+
+    function t1_renderSuggest(inputId, filterType = 'all', showAllOnFocus = false) {
+        if (window.t1_suggestTimeouts[inputId]) {
+            clearTimeout(window.t1_suggestTimeouts[inputId]);
+            window.t1_suggestTimeouts[inputId] = null;
+        }
+        const input = document.getElementById(inputId);
+        const box = document.getElementById('box-' + inputId);
+        if (!input || !box) return;
+
+        let list = t1_walletsData || [];
+        if (filterType === 'debit') {
+            list = list.filter(w => w.type !== 'CREDIT');
+        } else if (filterType === 'credit') {
+            list = list.filter(w => w.type === 'CREDIT');
+        }
+
+        const rawQ = (input.value || "").trim();
+        let matches = list;
+        if (!showAllOnFocus && rawQ) {
+            const qClean = (typeof removeAccents === 'function') ? removeAccents(rawQ.toLowerCase()) : rawQ.toLowerCase();
+            matches = list.filter(w => w && w.name && ((typeof removeAccents === 'function') ? removeAccents(String(w.name).toLowerCase()) : String(w.name).toLowerCase()).includes(qClean));
+        }
+
+        if (!matches || matches.length === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+
+        box.innerHTML = matches.map(w => {
+            const isCredit = w.type === 'CREDIT';
+            const icon = isCredit ? '💳' : '💵';
+            const badge = isCredit ? '<span class="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded font-bold ml-1">Credit</span>' : '<span class="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.2 rounded font-bold ml-1">Ví/ATM</span>';
+            const safeName = String(w.name || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const bal = Number(w.current_balance) || 0;
+            return `<div class="p-3.5 py-2.5 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                         ontouchstart="if(typeof handleSuggestTouchStart==='function') handleSuggestTouchStart(event);"
+                         ontouchend="if(typeof handleSuggestTouchEnd==='function') handleSuggestTouchEnd(event, function(){ t1_selectSuggest('${inputId}', '${safeName}'); }); else t1_selectSuggest('${inputId}', '${safeName}');"
+                         onmousedown="event.preventDefault(); t1_selectSuggest('${inputId}', '${safeName}');">
+                        <span class="text-slate-800 font-bold flex items-center gap-1">${icon} ${w.name} ${badge}</span>
+                        <span class="text-[9px] font-bold ${bal >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'} px-2 py-0.5 rounded border border-slate-200">
+                            ${bal.toLocaleString()} ¥</span>
+                    </div>`;
+        }).join('');
+        box.classList.remove('hidden');
+    }
+
+    function t1_selectSuggest(inputId, value) {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = value;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        const box = document.getElementById('box-' + inputId);
+        if (box) box.classList.add('hidden');
+    }
+
+    function t1_hideSuggest(inputId) {
+        if (window.t1_suggestTimeouts[inputId]) {
+            clearTimeout(window.t1_suggestTimeouts[inputId]);
+        }
+        window.t1_suggestTimeouts[inputId] = setTimeout(() => {
+            const input = document.getElementById(inputId);
+            if (input && document.activeElement === input) return;
+            const box = document.getElementById('box-' + inputId);
+            if (box) box.classList.add('hidden');
+        }, 300);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        t1_initDateFilters();
+        reloadTab1Data();
+    });
+
+    function switchSubTab(tab) {
+        if (tab === 'credit') {
+            tab = 'card';
+            const sel = document.getElementById('t1-filter-type');
+            if (sel) sel.value = 'CREDIT';
+        } else if (tab === 'debit') {
+            tab = 'card';
+            const sel = document.getElementById('t1-filter-type');
+            if (sel) sel.value = 'DEBIT';
+        } else if (tab === 'confirm') {
+            tab = 'card-info';
+        }
+
+        ['stats', 'card', 'card-info', 'confirm'].forEach(t => {
+            const el = document.getElementById('subtab-' + t);
+            if (el) el.classList.add('hidden');
+            const btn = document.getElementById('btn-' + t);
+            if (btn) btn.className = "flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition relative flex items-center justify-center gap-0.5";
+        });
+        
+        const activeSub = document.getElementById('subtab-' + tab);
+        if (activeSub) activeSub.classList.remove('hidden');
+        const activeBtn = document.getElementById('btn-' + tab);
+        if (activeBtn) activeBtn.className = "flex-1 py-1.5 text-[11px] font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer transition relative flex items-center justify-center gap-0.5";
+
+        const searchContainer = document.getElementById('t1-search-container');
+        if (searchContainer) {
+            if (tab === 'stats' || tab === 'card-info' || tab === 'confirm') searchContainer.classList.add('hidden');
+            else searchContainer.classList.remove('hidden');
+        }
+
+        if (tab === 'card' || tab === 'stats') {
+            if (window.t1_cardInfoUnlocked) t1_lockCardInfo();
+            renderTab1Wallets();
+        } else if (tab === 'card-info') {
+            if (!window.t1_cardInfoUnlocked) {
+                document.getElementById('card-info-locked-placeholder').classList.remove('hidden');
+                document.getElementById('card-info-unlocked-content').classList.add('hidden');
+                openCardInfoAuthModal();
+            } else {
+                document.getElementById('card-info-locked-placeholder').classList.add('hidden');
+                document.getElementById('card-info-unlocked-content').classList.remove('hidden');
+                renderCardInfoList();
+            }
+        }
+    }
+
+    function t1_renderConfirmSuggest(showAllOnFocus = false) {
+        const input = document.getElementById('t1-confirm-search-input');
+        const box = document.getElementById('box-t1-confirm-search-input');
+        if (!input || !box) return;
+
+        const rawQ = (input.value || "").trim();
+        const list = window.t1_pendingPreOrders || [];
+        if (list.length === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+
+        const suggestionsMap = new Map();
+        list.forEach(item => {
+            const nameStr = item.content || item.tenSP || item.category || item.dienGiai || item.noiDung;
+            if (nameStr) suggestionsMap.set('name:' + nameStr, { label: nameStr, type: '📦 Sản phẩm' });
+            
+            const walletName = item.wallet || item.nguonTien || item.vi;
+            if (walletName) suggestionsMap.set('wallet:' + walletName, { label: walletName, type: '💳 Thẻ / Ví' });
+
+            const rawDate = item.date || item.ngayMua || item.ngay;
+            if (rawDate) {
+                let dateStr = rawDate instanceof Date ? rawDate.toLocaleDateString('vi-VN') : String(rawDate).split('T')[0];
+                suggestionsMap.set('date:' + dateStr, { label: dateStr, type: '📅 Ngày' });
+            }
+        });
+
+        let matches = Array.from(suggestionsMap.values());
+        if (!showAllOnFocus && rawQ) {
+            const qClean = removeAccents(rawQ.toLowerCase());
+            matches = matches.filter(s => removeAccents(s.label.toLowerCase()).includes(qClean));
+        }
+
+        if (matches.length === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+
+        box.innerHTML = matches.slice(0, 10).map(s => {
+            const safeLabel = String(s.label).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            return `<div class="p-2.5 px-3 hover:bg-blue-50 active:bg-blue-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                         ontouchstart="if(typeof handleSuggestTouchStart==='function') handleSuggestTouchStart(event);"
+                         ontouchend="if(typeof handleSuggestTouchEnd==='function') handleSuggestTouchEnd(event, function(){ t1_selectConfirmSuggest('${safeLabel}'); }); else t1_selectConfirmSuggest('${safeLabel}');"
+                         onmousedown="event.preventDefault(); t1_selectConfirmSuggest('${safeLabel}');">
+                        <span class="text-slate-800 font-bold">${s.label}</span>
+                        <span class="text-[9px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">${s.type}</span>
+                    </div>`;
+        }).join('');
+        box.classList.remove('hidden');
+    }
+
+    function t1_selectConfirmSuggest(val) {
+        const input = document.getElementById('t1-confirm-search-input');
+        if (input) {
+            input.value = val;
+        }
+        const box = document.getElementById('box-t1-confirm-search-input');
+        if (box) box.classList.add('hidden');
+        renderTab1PendingPreOrders();
+    }
+
+    function t1_hideConfirmSuggest() {
+        setTimeout(() => {
+            const box = document.getElementById('box-t1-confirm-search-input');
+            if (box) box.classList.add('hidden');
+        }, 300);
+    }
+
+    function renderTab1PendingPreOrders() {
+        const listContainer = document.getElementById('t1-pending-preorders-list');
+        const badge = document.getElementById('badge-confirm-count');
+        const fullList = window.t1_pendingPreOrders || [];
+
+        if (badge) {
+            badge.innerText = fullList.length;
+            if (fullList.length > 0) badge.classList.remove('hidden');
+            else badge.classList.add('hidden');
+        }
+
+        if (!listContainer) return;
+
+        const query = (document.getElementById('t1-confirm-search-input')?.value || '').trim();
+        let list = fullList;
+        if (query) {
+            const qClean = removeAccents(query.toLowerCase());
+            list = fullList.filter(item => {
+                const nameStr = item.content || item.tenSP || item.category || item.dienGiai || item.noiDung || '';
+                const walletName = item.wallet || item.nguonTien || item.vi || '';
+                const rawDate = item.date || item.ngayMua || item.ngay || '';
+                let dateStr = '';
+                if (rawDate) {
+                    if (rawDate instanceof Date) {
+                        dateStr = rawDate.toLocaleDateString('vi-VN');
+                    } else {
+                        dateStr = String(rawDate).split('T')[0];
+                    }
+                }
+                const fullText = `${nameStr} ${walletName} ${dateStr} ${rawDate}`;
+                return removeAccents(fullText.toLowerCase()).includes(qClean);
+            });
+        }
+
+        if (list.length === 0) {
+            listContainer.innerHTML = query
+                ? '<div class="text-center py-6 text-xs text-slate-400">Không tìm thấy giao dịch nào phù hợp với tìm kiếm.</div>'
+                : '<div class="text-center py-6 text-xs text-slate-400">Không có giao dịch nào chờ sao kê.</div>';
+            const btnBatch = document.getElementById('btn-t1-batch-confirm');
+            if (btnBatch) btnBatch.classList.add('hidden');
+            return;
+        }
+
+        let html = '';
+        list.forEach((item, idx) => {
+            const nameStr = item.content || item.tenSP || item.category || item.dienGiai || item.noiDung || 'Hàng Pre-order';
+            const safeName = String(nameStr).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+            const amt = Number(item.amount !== undefined && item.amount !== null ? item.amount : (item.total || item.soTien || item.chiPhi || 0));
+            const rawDate = item.date || item.ngayMua || item.ngay;
+            let dateStr = '--';
+            if (rawDate) {
+                if (rawDate instanceof Date) {
+                    dateStr = rawDate.toLocaleDateString('vi-VN');
+                } else {
+                    dateStr = String(rawDate).split('T')[0];
+                }
+            }
+            const walletName = item.wallet || item.nguonTien || item.vi || 'Thẻ Credit';
+            
+            html += `
+            <div id="t1-pre-row-${item.id}" class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 shadow-xs flex justify-between items-center gap-2">
+                <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <input type="checkbox" value="${item.id}" onchange="t1_onPreOrderChkChange()" class="t1-pre-chk accent-blue-600 w-4 h-4 cursor-pointer shrink-0" />
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] font-bold bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200">💳 ${walletName}</span>
+                            <span class="text-[10px] text-slate-400">${dateStr}</span>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-800 truncate mt-0.5" title="${safeName}">${nameStr}</h4>
+                    </div>
+                </div>
+                <div class="text-right shrink-0 flex flex-col items-end gap-1">
+                    <span class="text-xs font-black text-rose-600">${amt.toLocaleString()} ¥</span>
+                    <button onclick="t1_confirmSinglePreOrder('${item.id}', '${safeName}', this)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] shadow-xs cursor-pointer transition">
+                        ✅ Đã Trừ Thẻ
+                    </button>
+                </div>
+            </div>`;
+        });
+
+        listContainer.innerHTML = html;
+        t1_onPreOrderChkChange();
+    }
+
+    function t1_toggleSelectAllPreOrders(masterChk) {
+        const isChecked = masterChk ? masterChk.checked : false;
+        const checkboxes = document.querySelectorAll('.t1-pre-chk');
+        checkboxes.forEach(cb => cb.checked = isChecked);
+        t1_onPreOrderChkChange();
+    }
+
+    function t1_onPreOrderChkChange() {
+        const allCheckboxes = document.querySelectorAll('.t1-pre-chk');
+        const checked = document.querySelectorAll('.t1-pre-chk:checked');
+        const countSpan = document.getElementById('t1-selected-count');
+        const checkedCountElem = document.getElementById('t1-pre-order-checked-count');
+        const btnBatch = document.getElementById('btn-t1-batch-confirm');
+        const masterChk = document.getElementById('t1-chk-select-all');
+
+        if (masterChk) {
+            masterChk.checked = (allCheckboxes.length > 0 && checked.length === allCheckboxes.length);
+        }
+        if (checkedCountElem) {
+            checkedCountElem.innerText = `${checked.length} / ${allCheckboxes.length} Mục`;
+        }
+        if (countSpan) countSpan.innerText = checked.length;
+        if (btnBatch) {
+            if (checked.length > 0) btnBatch.classList.remove('hidden');
+            else btnBatch.classList.add('hidden');
+        }
+    }
+
+    function t1_confirmSinglePreOrder(id, name, btn) {
+        if (typeof openConfirmPreorderDateModal === 'function') {
+            openConfirmPreorderDateModal({
+                type: 'single',
+                orderId: id,
+                itemName: name,
+                rowId: 't1-pre-row-' + id,
+                btnElem: btn
+            }, `Đơn: ${name || 'Pre-order'}`);
+        } else if (typeof doConfirmPreOrderPayment === 'function') {
+            doConfirmPreOrderPayment(id, name, 't1-pre-row-' + id, btn);
+        }
+    }
+
+    function t1_batchConfirmPreOrders(btnElem) {
+        const checked = document.querySelectorAll('.t1-pre-chk:checked');
+        if (checked.length === 0) {
+            showToast("⚠️ Vui lòng chọn ít nhất 1 giao dịch để xác nhận!", true);
+            return;
+        }
+        const itemIds = Array.from(checked).map(cb => cb.value);
+        if (typeof openConfirmPreorderDateModal === 'function') {
+            openConfirmPreorderDateModal({
+                type: 'batch',
+                itemIds: itemIds,
+                btnElem: btnElem
+            }, `Xác nhận ${itemIds.length} giao dịch đã chọn`);
+        }
+    }
+
+    function autoPrefixCreditCardName() {
+        const type = document.getElementById('select-wallet-type').value;
+        const nameInput = document.getElementById('wa-name');
+        if (!nameInput) return;
+        let val = nameInput.value.trim();
+        if (type === 'CREDIT' && val) {
+            if (!/^C[-_\s]/i.test(val)) {
+                nameInput.value = 'C- ' + val;
+            } else if (/^c-/i.test(val)) {
+                nameInput.value = 'C- ' + val.slice(2).trim();
+            }
+        }
+    }
+
+    function toggleLimitFields() {
+        const type = document.getElementById('select-wallet-type').value;
+        const fields = document.getElementById('credit-limit-fields');
+        if (type === 'CREDIT') {
+            fields.classList.remove('hidden');
+            autoPrefixCreditCardName();
+        } else {
+            fields.classList.add('hidden');
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('wa-title').innerText = "Thêm Ví / Thẻ Mới";
+        document.getElementById('wa-id').value = "";
+        document.getElementById('wa-name').value = "";
+        document.getElementById('select-wallet-type').value = "DEBIT";
+        document.getElementById('wa-balance').value = "";
+        document.getElementById('wa-limit').value = "";
+        document.getElementById('wa-cut').value = "";
+        document.getElementById('wa-pay').value = "";
+        document.getElementById('btn-delete-wallet').classList.add('hidden');
+        toggleLimitFields();
+        openModal('modal-add-wallet');
+    }
+
+    function openEditModal(id, name, type, balance, limit, cut, pay) {
+        document.getElementById('wa-title').innerText = "🛠️ Sửa Thông Tin Ví / Thẻ";
+        document.getElementById('wa-id').value = id;
+        document.getElementById('wa-name').value = name;
+        document.getElementById('select-wallet-type').value = type;
+        document.getElementById('wa-balance').value = balance;
+        document.getElementById('btn-delete-wallet').classList.remove('hidden');
+        
+        if (type === 'CREDIT') {
+            document.getElementById('credit-limit-fields').classList.remove('hidden');
+            document.getElementById('wa-limit').value = limit || "";
+            document.getElementById('wa-cut').value = cut || "";
+            document.getElementById('wa-pay').value = pay || "";
+        } else {
+            document.getElementById('credit-limit-fields').classList.add('hidden');
+        }
+        openModal('modal-add-wallet');
+    }
+
+    function handleSaveWallet() {
+        autoPrefixCreditCardName();
+        const type = document.getElementById('select-wallet-type').value;
+        let name = document.getElementById('wa-name').value.trim();
+        if (type === 'CREDIT' && name) {
+            if (!/^C[-_\s]/i.test(name)) {
+                name = 'C- ' + name;
+            } else if (/^c-/i.test(name)) {
+                name = 'C- ' + name.slice(2).trim();
+            }
+            document.getElementById('wa-name').value = name;
+        }
+
+        if (!name) { showToast("⚠️ Vui lòng nhập tên Ví / Thẻ!", true); return; }
+
+        const btn = document.getElementById('btn-submit-wallet');
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        const payload = {
+            id: document.getElementById('wa-id').value || ("W" + Date.now().toString().slice(-5)),
+            name: name,
+            type: type,
+            current_balance: Number(document.getElementById('wa-balance').value) || 0,
+            credit_limit: Number(document.getElementById('wa-limit').value) || 0,
+            closing_date: document.getElementById('wa-cut').value,
+            due_date: document.getElementById('wa-pay').value
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveWalletToSheet === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                closeModal('modal-add-wallet');
+                showToast(res.message || "✅ Đã lưu ví/thẻ thành công!");
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).saveWalletToSheet(payload);
+        } else {
+            btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+            closeModal('modal-add-wallet');
+            showToast("✅ Đã lưu ví/thẻ thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    function confirmDeleteWallet(id, name) {
+        showConfirmModal(
+            "🗑️ Xoá Ví / Thẻ",
+            `Bạn có chắc chắn muốn xoá ví/thẻ "${name}" khỏi hệ thống không?`,
+            function() { deleteWalletById(id); }
+        );
+    }
+
+    function handleDeleteWalletFromModal() {
+        const id = document.getElementById('wa-id').value;
+        const name = document.getElementById('wa-name').value;
+        if (!id) return;
+        confirmDeleteWallet(id, name);
+    }
+
+    function deleteWalletById(id) {
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.deleteWalletFromSheet === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                showToast(res.message || "✅ Đã xoá ví/thẻ!");
+                closeModal('modal-add-wallet');
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                showToast("❌ Lỗi: " + err.message, true);
+            }).deleteWalletFromSheet(id);
+        } else {
+            showToast("✅ Đã xoá ví thành công (Demo)!");
+            closeModal('modal-add-wallet');
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Sổ Phụ Chi Tiết
+    function openStatement(walletName, walletType) {
+        t1_activeWalletForStatement = t1_walletsData.find(w => w.name === walletName) || { name: walletName, current_balance: 0 };
+        
+        if (walletType === 'CREDIT') {
+            document.getElementById('credit-statement-title').innerText = walletName;
+            document.getElementById('credit-statement-balance').innerText = (Number(t1_activeWalletForStatement.current_balance) || 0).toLocaleString() + ' ¥';
+            const listEl = document.getElementById('credit-statement-list');
+            listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>';
+            openModal('modal-statement-credit');
+            fetchStatementHistory(walletName, listEl);
+        } else {
+            document.getElementById('debit-statement-title').innerText = walletName;
+            document.getElementById('debit-statement-balance').innerText = (Number(t1_activeWalletForStatement.current_balance) || 0).toLocaleString() + ' ¥';
+            const listEl = document.getElementById('debit-statement-list');
+            listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>';
+            openModal('modal-statement-debit');
+            fetchStatementHistory(walletName, listEl);
+        }
+    }
+
+    window.t1_statementCache = window.t1_statementCache || {};
+
+    function fetchStatementHistory(walletName, containerEl) {
+        const cleanName = String(walletName || "").trim().toLowerCase();
+        
+        if (window.t1_statementCache[cleanName] && window.t1_statementCache[cleanName].length > 0) {
+            renderStatementList(window.t1_statementCache[cleanName], containerEl);
+            return;
+        }
+
+        let txList = [];
+        if (window.rawTab2Transactions && window.rawTab2Transactions.length > 0) {
+            txList = window.rawTab2Transactions;
+        } else if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab2 && Array.isArray(window.SERVER_INITIAL_DATA.tab2.transactions)) {
+            txList = window.SERVER_INITIAL_DATA.tab2.transactions;
+        }
+
+        let initialTx = [];
+        if (txList.length > 0) {
+            initialTx = txList.filter(t => {
+                const src = String(t.nguon || t.nguontien || "").trim().toLowerCase();
+                const note = String(t.noidung || "").trim().toLowerCase();
+                const hu = String(t.hu || "").trim().toLowerCase();
+                const gc = String(t.ghiChu || t.ghichu || "").trim().toLowerCase();
+                return src === cleanName || note.includes(cleanName) || hu.includes(cleanName) || gc.includes(cleanName);
+            }).map(t => ({
+                id: t.id || "",
+                date: t.ngay || "",
+                module: t.hu || (String(t.loai).toUpperCase() === 'THU' ? "Khoản Thu" : "Khoản Chi"),
+                type: (String(t.loai).toUpperCase() === "THU" || t.loai === "+") ? "+" : "-",
+                amount: Number(t.sotien || t.amount || 0),
+                note: (t.hu ? `[${t.hu}] ` : "") + (t.noidung || t.note || "")
+            }));
+        }
+
+        if (initialTx.length > 0) {
+            window.t1_statementCache[cleanName] = initialTx;
+            renderStatementList(initialTx, containerEl);
+            return;
+        }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getWalletTransactionHistory === 'function') {
+            google.script.run.withSuccessHandler(function(history) {
+                if (history && history.length > 0) {
+                    window.t1_statementCache[cleanName] = history;
+                    renderStatementList(history, containerEl);
+                } else {
+                    containerEl.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-medium">Chưa có lịch sử giao dịch nào.</div>';
+                }
+            }).withFailureHandler(function(err) {
+                containerEl.innerHTML = '<div class="text-center py-6 text-xs text-rose-400 font-medium">Không thể tải lịch sử giao dịch.</div>';
+            }).getWalletTransactionHistory(walletName);
+        } else if (initialTx.length === 0) {
+            containerEl.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-medium">Chưa có lịch sử giao dịch nào.</div>';
+        }
+    }
+
+    let t1_statementHistoryCache = [];
+
+    function renderStatementList(history, containerEl) {
+        t1_statementHistoryCache = history || [];
+        if (!t1_statementHistoryCache || t1_statementHistoryCache.length === 0) {
+            containerEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400">Chưa có giao dịch nào trong khoảng thời gian này.</div>';
+            return;
+        }
+
+        let html = '';
+        t1_statementHistoryCache.forEach((item, index) => {
+            const isPos = item.type === '+';
+            html += `
+            <div onclick="handleClickStatementTx(${index})"
+                 class="flex justify-between items-center py-2.5 px-3 mb-1.5 border border-slate-200/80 rounded-xl hover:border-blue-400 transition cursor-pointer ${isPos ? 'bg-emerald-50/40' : 'bg-white'}" title="Bấm để sửa giao dịch này">
+                <div class="pr-2 max-w-[70%]">
+                    <p class="text-[9px] text-slate-400 font-bold mb-0.5">${item.date || ''} ⬢ ${item.module || ''}</p>
+                    <p class="text-xs text-slate-800 font-medium leading-snug truncate">${item.note || ''}</p>
+                </div>
+                <div class="text-right shrink-0 flex items-center gap-1.5">
+                    <p class="text-xs font-bold ${isPos ? 'text-emerald-600' : 'text-rose-500'}">${isPos ? '+' : '-'}${Number(item.amount || 0).toLocaleString()} ¥</p>
+                    <span class="text-[10px] text-slate-400 hover:text-blue-600">✏️ Sửa</span>
+                </div>
+            </div>`;
+        });
+        containerEl.innerHTML = html;
+    }
+
+    function handleClickStatementTx(index) {
+        const item = t1_statementHistoryCache[index];
+        if (!item) return;
+        openEditStatementTxModal(item.id || '', item.date || '', item.rawNote || item.note || '', item.amount || 0);
+    }
+
+    function openEditStatementTxModal(id, date, note, amount) {
+        document.getElementById('edit-st-id').value = id || '';
+        document.getElementById('edit-st-id-display').value = id || 'Chưa có ID';
+        document.getElementById('edit-st-date').value = date || '';
+        document.getElementById('edit-st-note').value = note || '';
+        document.getElementById('edit-st-amount').value = amount || 0;
+        openModal('modal-edit-statement-tx');
+    }
+
+    function submitEditStatementTx() {
+        const id = document.getElementById('edit-st-id').value;
+        const date = document.getElementById('edit-st-date').value;
+        const note = document.getElementById('edit-st-note').value;
+        const amount = Number(document.getElementById('edit-st-amount').value);
+
+        if (!id) {
+            showToast("⚠️ Không thể xác định ID giao dịch!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-edit-st');
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateFamilyTransactionById === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                closeModal('modal-edit-statement-tx');
+                showToast(res.message || "✅ Đã cập nhật giao dịch!");
+                if (t1_activeWalletForStatement) {
+                    openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
+                }
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).updateFamilyTransactionById({ id: id, date: date, note: note, amount: amount });
+        } else {
+            btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+            closeModal('modal-edit-statement-tx');
+            showToast("✅ Đã cập nhật giao dịch (Demo)!");
+            if (t1_activeWalletForStatement) {
+                openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
+            }
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Chuyển Ví Nội Bộ
+    function openTransferModal() {
+        if (document.getElementById('tf-from-wallet')) document.getElementById('tf-from-wallet').value = "";
+        if (document.getElementById('tf-to-wallet')) document.getElementById('tf-to-wallet').value = "";
+        if (document.getElementById('tf-amount')) document.getElementById('tf-amount').value = "";
+        if (document.getElementById('tf-note')) document.getElementById('tf-note').value = "";
+        openModal('modal-transfer-wallet');
+    }
+
+    function submitWalletTransfer() {
+        const from = document.getElementById('tf-from-wallet').value;
+        const to = document.getElementById('tf-to-wallet').value;
+        const amt = Number(document.getElementById('tf-amount').value);
+        const note = document.getElementById('tf-note').value;
+
+        if (!from || !to || from === to || !amt || amt <= 0) {
+            showToast("⚠️ Vui lòng chọn ví khác nhau và nhập số tiền hợp lệ!", true);
+            return;
+        }
+
+        // Kiểm tra số dư ví nguồn
+        const sourceObj = t1_walletsData.find(w => w.name === from);
+        if (sourceObj && sourceObj.type !== 'CREDIT') {
+            const availBal = Number(sourceObj.current_balance || 0);
+            if (amt > availBal) {
+                showToast(`❌ Lỗi: Số tiền cần chuyển (${amt.toLocaleString()} ¥) vượt quá số dư ví (${availBal.toLocaleString()} ¥)!`, true);
+                return;
+            }
+        }
+
+        const btn = document.getElementById('btn-submit-transfer');
+        btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.processWalletTransfer === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
+                if (res.success) {
+                    closeModal('modal-transfer-wallet');
+                    showToast(res.message || "✅ Đã chuyển tiền thành công!");
+                    reloadTab1Data();
+                } else {
+                    showToast(res.message || "❌ Lỗi chuyển tiền!", true);
+                }
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).processWalletTransfer({ fromWallet: from, toWallet: to, amount: amt, note: note });
+        } else {
+            btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
+            closeModal('modal-transfer-wallet');
+            showToast("✅ Đã chuyển tiền thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Tất Toán Thẻ
+    function openSettleModal(cardName, currentBalance) {
+        document.getElementById('settle-card-name').value = cardName;
+        document.getElementById('settle-amount').value = Math.abs(currentBalance) > 0 ? Math.abs(currentBalance) : "";
+
+        // Lấy nguồn mặc định từ Cột K trong database nếu có
+        const sourceInput = document.getElementById('settle-source-wallet');
+        if (sourceInput) {
+            const cardObj = t1_walletsData.find(w => w.name === cardName);
+            sourceInput.value = (cardObj && cardObj.settle_source) ? cardObj.settle_source : "";
+        }
+
+        openModal('modal-settle-card');
+    }
+
+    function submitCreditSettlement() {
+        const card = document.getElementById('settle-card-name').value;
+        const source = document.getElementById('settle-source-wallet').value;
+        const amt = Number(document.getElementById('settle-amount').value);
+
+        if (!source || !amt || amt <= 0) {
+            showToast("⚠️ Vui lòng chọn ví nguồn và nhập số tiền thanh toán!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-settle');
+        btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.processCreditCardSettlement === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
+                closeModal('modal-settle-card');
+                showToast(res.message || "✅ Đã tất toán thẻ thành công!");
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).processCreditCardSettlement({ creditCard: card, sourceWallet: source, amount: amt });
+        } else {
+            btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
+            closeModal('modal-settle-card');
+            showToast("✅ Đã tất toán thẻ thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Chênh Lệch Số Dư
+    function openAdjustModalFromStatement() {
+        if (!t1_activeWalletForStatement) return;
+        const name = t1_activeWalletForStatement.name;
+        const bal = Number(t1_activeWalletForStatement.current_balance) || 0;
+        document.getElementById('adj-wallet-name').value = name;
+        document.getElementById('adj-app-balance').value = bal;
+        document.getElementById('adj-wallet-name-txt').innerText = name;
+        document.getElementById('adj-app-balance-txt').innerText = bal.toLocaleString() + " ¥";
+        document.getElementById('adj-actual-balance').value = "";
+        openModal('modal-adjust-balance');
+    }
+
+    function submitAdjustBalance() {
+        const name = document.getElementById('adj-wallet-name').value;
+        const actual = Number(document.getElementById('adj-actual-balance').value);
+        const appBal = Number(t1_activeWalletForStatement ? t1_activeWalletForStatement.current_balance : 0);
+
+        if (isNaN(actual)) {
+            showToast("⚠️ Vui lòng nhập số tiền thực tế!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-adjust');
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.adjustWalletBalance === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false;
+                closeModal('modal-adjust-balance');
+                closeModal('modal-statement-credit');
+                closeModal('modal-statement-debit');
+                showToast(res.message || "✅ Đã chỉnh lệch số dư thành công!");
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).adjustWalletBalance({ walletName: name, actualBalance: actual, appBalance: appBal });
+        } else {
+            btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false;
+            closeModal('modal-adjust-balance');
+            showToast("✅ Đã chỉnh lệch thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    // MODAL IMPORT DỮ LIỆU CŨ T1-T8
+    function openImportLegacyModal() {
+        document.getElementById('import-legacy-txt').value = '';
+        openModal('modal-import-legacy');
+    }
+
+    function submitImportLegacyData() {
+        const txt = document.getElementById('import-legacy-txt').value;
+        if (!txt || !txt.trim()) {
+            showToast("⚠️ Vui lòng dán dữ liệu cũ vào ô văn bản!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-import-legacy');
+        btn.innerText = "Đang chuyển đổi & nạp...";
+        btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.importLegacyTSVData === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Bắt Đầu Chuyển Đổi & Nạp";
+                btn.disabled = false;
+                if (res && res.success) {
+                    closeModal('modal-import-legacy');
+                    showToast(res.message || "✅ Đã import dữ liệu thành công!");
+                    reloadTab1Data();
+                } else {
+                    showToast("❌ " + (res ? res.message : "Lỗi import"), true);
+                }
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Bắt Đầu Chuyển Đổi & Nạp";
+                btn.disabled = false;
+                showToast("❌ Lỗi kết nối: " + err, true);
+            }).importLegacyTSVData(txt);
+        } else {
+            btn.innerText = "Bắt Đầu Chuyển Đổi & Nạp";
+            btn.disabled = false;
+            closeModal('modal-import-legacy');
+            showToast("Đã chuyển đổi dữ liệu mẫu (Demo Mode)!");
+            reloadTab1Data();
+        }
+    }
+
+    // ==========================================
+    // JS LOGIC CHO SUBTAB THÔNG TIN THẺ BẢO MẬT (PASSWORD PROTECTED)
+    // ==========================================
+    window.t1_cardInfoUnlocked = false;
+    window.t1_cardInfoData = [];
+    window.t1_autoLockTimer = null;
+
+    // Device Security & Custom Password Logic (Master Fallback: 25100311)
+    function t1_getCustomPassword() {
+        return localStorage.getItem('card_custom_pwd') || '';
+    }
+
+    function t1_openSetPatternModal() {
+        openModal('modal-set-pattern-pwd');
+        t1_switchSetMode('PATTERN');
+    }
+
+    function t1_changeCustomPassword() {
+        t1_openSetPatternModal();
+    }
+
+    // ------------------------------------------
+    // SET PATTERN PWD GESTURE RECORDING ENGINE
+    // ------------------------------------------
+    let t1_setPatternSelectedNodes = [];
+    let t1_isSetPatternDrawing = false;
+    let t1_setPatternCurrentTouch = { x: 0, y: 0 };
+    let t1_setPatternCanvasInited = false;
+
+    function t1_switchSetMode(mode) {
+        const btnPattern = document.getElementById('btn-set-mode-pattern');
+        const btnPin = document.getElementById('btn-set-mode-pin');
+        const containerPattern = document.getElementById('set-mode-pattern-container');
+        const containerPin = document.getElementById('set-mode-pin-container');
+
+        if (mode === 'PATTERN') {
+            if (btnPattern) btnPattern.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs";
+            if (btnPin) btnPin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+            if (containerPattern) containerPattern.classList.remove('hidden');
+            if (containerPin) containerPin.classList.add('hidden');
+            t1_initSetPatternLockCanvas();
+        } else {
+            if (btnPattern) btnPattern.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+            if (btnPin) btnPin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs";
+            if (containerPattern) containerPattern.classList.add('hidden');
+            if (containerPin) containerPin.classList.remove('hidden');
+            const pwdInput = document.getElementById('card-info-new-pwd-input');
+            if (pwdInput) setTimeout(() => pwdInput.focus(), 100);
+        }
+    }
+
+    function t1_drawSetPatternCanvas() {
+        const canvas = document.getElementById('pattern-set-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const nodes = t1_getPatternNodeCoords();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw lines
+        if (t1_setPatternSelectedNodes.length > 0) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#10b981'; // Vibrant emerald line
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            t1_setPatternSelectedNodes.forEach((nodeId, idx) => {
+                const n = nodes.find(item => item.id === nodeId);
+                if (!n) return;
+                if (idx === 0) ctx.moveTo(n.x, n.y);
+                else ctx.lineTo(n.x, n.y);
+            });
+
+            if (t1_isSetPatternDrawing && t1_setPatternSelectedNodes.length > 0) {
+                ctx.lineTo(t1_setPatternCurrentTouch.x, t1_setPatternCurrentTouch.y);
+            }
+            ctx.stroke();
+        }
+
+        // 2. Draw 9 Node Dots
+        nodes.forEach(n => {
+            const isSelected = t1_setPatternSelectedNodes.includes(n.id);
+
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 20, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.3)';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 9, 0, Math.PI * 2);
+                ctx.fillStyle = '#34d399';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 9, 0, Math.PI * 2);
+                ctx.strokeStyle = '#059669';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
+                ctx.fillStyle = '#334155';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 7, 0, Math.PI * 2);
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fill();
+            }
+        });
+    }
+
+    function t1_resetSetPatternCanvas() {
+        t1_setPatternSelectedNodes = [];
+        t1_isSetPatternDrawing = false;
+        const msg = document.getElementById('pattern-set-status-msg');
+        if (msg) {
+            msg.innerText = "Vẽ hình mẫu mới của bạn (nối từ 3 điểm):";
+            msg.className = "text-xs text-slate-600 font-medium";
+        }
+        const badge = document.getElementById('pattern-set-code-badge');
+        if (badge) badge.classList.add('hidden');
+
+        const btnSave = document.getElementById('btn-save-set-pattern');
+        if (btnSave) {
+            btnSave.disabled = true;
+            btnSave.className = "w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5";
+        }
+        t1_drawSetPatternCanvas();
+    }
+
+    function t1_initSetPatternLockCanvas() {
+        const canvas = document.getElementById('pattern-set-canvas');
+        if (!canvas) return;
+
+        t1_resetSetPatternCanvas();
+        if (t1_setPatternCanvasInited) return;
+        t1_setPatternCanvasInited = true;
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : (e.clientX || 0);
+            const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : (e.clientY || 0);
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function checkNodeHit(pos) {
+            const nodes = t1_getPatternNodeCoords();
+            const hitRadius = 28;
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                const dx = pos.x - n.x;
+                const dy = pos.y - n.y;
+                if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) {
+                    return n.id;
+                }
+            }
+            return null;
+        }
+
+        function handleStart(e) {
+            if (e.type === 'touchstart') e.preventDefault();
+            const pos = getCanvasPos(e);
+            const nodeId = checkNodeHit(pos);
+            if (nodeId) {
+                t1_isSetPatternDrawing = true;
+                t1_setPatternSelectedNodes = [nodeId];
+                t1_setPatternCurrentTouch = pos;
+                t1_drawSetPatternCanvas();
+            }
+        }
+
+        function handleMove(e) {
+            if (!t1_isSetPatternDrawing) return;
+            if (e.type === 'touchmove') e.preventDefault();
+            const pos = getCanvasPos(e);
+            t1_setPatternCurrentTouch = pos;
+
+            const nodeId = checkNodeHit(pos);
+            if (nodeId && !t1_setPatternSelectedNodes.includes(nodeId)) {
+                t1_setPatternSelectedNodes.push(nodeId);
+            }
+            t1_drawSetPatternCanvas();
+        }
+
+        function handleEnd(e) {
+            if (!t1_isSetPatternDrawing) return;
+            if (e.type === 'touchend') e.preventDefault();
+            t1_isSetPatternDrawing = false;
+
+            const msg = document.getElementById('pattern-set-status-msg');
+            const badge = document.getElementById('pattern-set-code-badge');
+            const btnSave = document.getElementById('btn-save-set-pattern');
+
+            if (t1_setPatternSelectedNodes.length >= 3) {
+                const patternCode = t1_setPatternSelectedNodes.join('-');
+                if (msg) {
+                    msg.innerText = `✅ Đã ghi nhận hình mẫu! Bấm "Lưu" bên dưới:`;
+                    msg.className = "text-xs text-emerald-600 font-bold";
+                }
+                if (badge) {
+                    badge.innerText = `Mã hình: ${patternCode}`;
+                    badge.classList.remove('hidden');
+                }
+                if (btnSave) {
+                    btnSave.disabled = false;
+                    btnSave.className = "w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5";
+                }
+            } else if (t1_setPatternSelectedNodes.length > 0) {
+                if (msg) {
+                    msg.innerText = "⚠️ Cần nối từ 3 điểm trở lên!";
+                    msg.className = "text-xs text-rose-500 font-bold";
+                }
+                if (badge) badge.classList.add('hidden');
+                if (btnSave) {
+                    btnSave.disabled = true;
+                    btnSave.className = "w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5";
+                }
+            }
+            t1_drawSetPatternCanvas();
+        }
+
+        canvas.addEventListener('pointerdown', handleStart);
+        canvas.addEventListener('pointermove', handleMove);
+        canvas.addEventListener('pointerup', handleEnd);
+        canvas.addEventListener('pointercancel', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd, { passive: false });
+    }
+
+    function t1_saveSetPatternPassword() {
+        if (t1_setPatternSelectedNodes.length < 3) {
+            showToast("⚠️ Vui lòng vẽ hình mẫu nối từ 3 điểm trở lên!", true);
+            return;
+        }
+        const patternCode = t1_setPatternSelectedNodes.join('-');
+        t1_processSaveNewPassword(patternCode);
+    }
+
+    function t1_saveSetTextPassword() {
+        const input = document.getElementById('card-info-new-pwd-input');
+        const pass = input ? input.value.trim() : '';
+        if (!pass || pass.length < 3) {
+            showToast("⚠️ Mật khẩu mới phải từ 3 ký tự trở lên!", true);
+            return;
+        }
+        t1_processSaveNewPassword(pass);
+    }
+
+    function t1_processSaveNewPassword(newPass) {
+        const cleanPass = String(newPass || '').trim().toLowerCase();
+        localStorage.setItem('card_custom_pwd', cleanPass);
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(res) {
+                closeModal('modal-set-pattern-pwd');
+                showToast(res && res.message ? res.message : "✅ Đã lưu hình vẽ mật khẩu cá nhân mới!");
+            }).withFailureHandler(function(err) {
+                closeModal('modal-set-pattern-pwd');
+                showToast("✅ Đã lưu hình vẽ mật khẩu cá nhân mới!");
+            }).setCardCustomPassword(cleanPass);
+        } else {
+            closeModal('modal-set-pattern-pwd');
+            showToast(`✅ Đã lưu mật khẩu mới thành công!`);
+        }
+    }
+
+    // ------------------------------------------
+    // PATTERN LOCK GESTURE DRAWING ENGINE (3x3 GRID)
+    // ------------------------------------------
+    let t1_patternSelectedNodes = [];
+    let t1_isPatternDrawing = false;
+    let t1_patternCurrentTouch = { x: 0, y: 0 };
+    let t1_patternStatusState = 'NORMAL'; // 'NORMAL', 'SUCCESS', 'ERROR'
+    let t1_patternCanvasInited = false;
+
+    function t1_switchAuthMode(mode) {
+        const btnPattern = document.getElementById('btn-auth-mode-pattern');
+        const btnPin = document.getElementById('btn-auth-mode-pin');
+        const containerPattern = document.getElementById('auth-mode-pattern-container');
+        const containerPin = document.getElementById('auth-mode-pin-container');
+
+        if (mode === 'PATTERN') {
+            if (btnPattern) btnPattern.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs";
+            if (btnPin) btnPin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+            if (containerPattern) containerPattern.classList.remove('hidden');
+            if (containerPin) containerPin.classList.add('hidden');
+            t1_initPatternLockCanvas();
+        } else {
+            if (btnPattern) btnPattern.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+            if (btnPin) btnPin.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs";
+            if (containerPattern) containerPattern.classList.add('hidden');
+            if (containerPin) containerPin.classList.remove('hidden');
+            const pwdInput = document.getElementById('card-info-pwd-input');
+            if (pwdInput) setTimeout(() => pwdInput.focus(), 100);
+        }
+    }
+
+    function t1_getPatternNodeCoords() {
+        const coords = [];
+        const gap = 65;
+        const offset = 45;
+        let id = 1;
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                coords.push({ id: id++, x: offset + c * gap, y: offset + r * gap });
+            }
+        }
+        return coords;
+    }
+
+    function t1_drawPatternCanvas() {
+        const canvas = document.getElementById('pattern-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const nodes = t1_getPatternNodeCoords();
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. Draw lines connecting selected nodes
+        if (t1_patternSelectedNodes.length > 0) {
+            ctx.beginPath();
+            let lineColor = '#3b82f6';
+            if (t1_patternStatusState === 'SUCCESS') lineColor = '#10b981';
+            else if (t1_patternStatusState === 'ERROR') lineColor = '#f43f5e';
+
+            ctx.strokeStyle = lineColor;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            t1_patternSelectedNodes.forEach((nodeId, idx) => {
+                const n = nodes.find(item => item.id === nodeId);
+                if (!n) return;
+                if (idx === 0) ctx.moveTo(n.x, n.y);
+                else ctx.lineTo(n.x, n.y);
+            });
+
+            if (t1_isPatternDrawing && t1_patternSelectedNodes.length > 0) {
+                ctx.lineTo(t1_patternCurrentTouch.x, t1_patternCurrentTouch.y);
+            }
+            ctx.stroke();
+        }
+
+        // 2. Draw 9 Node Dots
+        nodes.forEach(n => {
+            const isSelected = t1_patternSelectedNodes.includes(n.id);
+
+            if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 20, 0, Math.PI * 2);
+                let ringColor = 'rgba(59, 130, 246, 0.3)';
+                if (t1_patternStatusState === 'SUCCESS') ringColor = 'rgba(16, 185, 129, 0.3)';
+                else if (t1_patternStatusState === 'ERROR') ringColor = 'rgba(244, 63, 94, 0.3)';
+                ctx.fillStyle = ringColor;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 9, 0, Math.PI * 2);
+                let coreColor = '#60a5fa';
+                if (t1_patternStatusState === 'SUCCESS') coreColor = '#34d399';
+                else if (t1_patternStatusState === 'ERROR') coreColor = '#fb7185';
+                ctx.fillStyle = coreColor;
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 14, 0, Math.PI * 2);
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#94a3b8';
+                ctx.fill();
+            }
+        });
+    }
+
+    function t1_resetPatternCanvas() {
+        t1_patternSelectedNodes = [];
+        t1_isPatternDrawing = false;
+        t1_patternStatusState = 'NORMAL';
+        const msg = document.getElementById('pattern-status-msg');
+        if (msg) {
+            msg.innerText = "Vẽ hình mẫu để mở khóa:";
+            msg.className = "text-xs text-slate-600 font-medium";
+        }
+        t1_drawPatternCanvas();
+    }
+
+    function t1_initPatternLockCanvas() {
+        const canvas = document.getElementById('pattern-canvas');
+        if (!canvas) return;
+
+        t1_resetPatternCanvas();
+        if (t1_patternCanvasInited) return;
+        t1_patternCanvasInited = true;
+
+        function getCanvasPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : (e.clientX || 0);
+            const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : (e.clientY || 0);
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function checkNodeHit(pos) {
+            const nodes = t1_getPatternNodeCoords();
+            const hitRadius = 28;
+            for (let i = 0; i < nodes.length; i++) {
+                const n = nodes[i];
+                const dx = pos.x - n.x;
+                const dy = pos.y - n.y;
+                if (Math.sqrt(dx * dx + dy * dy) <= hitRadius) {
+                    return n.id;
+                }
+            }
+            return null;
+        }
+
+        function handleStart(e) {
+            if (e.type === 'touchstart') e.preventDefault();
+            const pos = getCanvasPos(e);
+            const nodeId = checkNodeHit(pos);
+            if (nodeId) {
+                t1_isPatternDrawing = true;
+                t1_patternSelectedNodes = [nodeId];
+                t1_patternCurrentTouch = pos;
+                t1_patternStatusState = 'NORMAL';
+                t1_drawPatternCanvas();
+            }
+        }
+
+        function handleMove(e) {
+            if (!t1_isPatternDrawing) return;
+            if (e.type === 'touchmove') e.preventDefault();
+            const pos = getCanvasPos(e);
+            t1_patternCurrentTouch = pos;
+
+            const nodeId = checkNodeHit(pos);
+            if (nodeId && !t1_patternSelectedNodes.includes(nodeId)) {
+                t1_patternSelectedNodes.push(nodeId);
+            }
+            t1_drawPatternCanvas();
+        }
+
+        function handleEnd(e) {
+            if (!t1_isPatternDrawing) return;
+            if (e.type === 'touchend') e.preventDefault();
+            t1_isPatternDrawing = false;
+
+            if (t1_patternSelectedNodes.length >= 3) {
+                const patternCode = t1_patternSelectedNodes.join('-');
+                submitCardInfoAuth(patternCode);
+            } else if (t1_patternSelectedNodes.length > 0) {
+                const msg = document.getElementById('pattern-status-msg');
+                if (msg) {
+                    msg.innerText = "⚠️ Cần nối ít nhất 3 điểm!";
+                    msg.className = "text-xs text-rose-500 font-bold";
+                }
+                setTimeout(() => t1_resetPatternCanvas(), 800);
+            }
+        }
+
+        canvas.addEventListener('pointerdown', handleStart);
+        canvas.addEventListener('pointermove', handleMove);
+        canvas.addEventListener('pointerup', handleEnd);
+        canvas.addEventListener('pointercancel', handleEnd);
+
+        canvas.addEventListener('touchstart', handleStart, { passive: false });
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd, { passive: false });
+    }
+
+    function openCardInfoAuthModal() {
+        const pwdInput = document.getElementById('card-info-pwd-input');
+        if (pwdInput) pwdInput.value = '';
+        openModal('modal-card-info-auth');
+        t1_switchAuthMode('PATTERN');
+    }
+
+    function submitCardInfoAuth(overridePwd) {
+        let pwd = overridePwd || '';
+        if (!pwd) {
+            const pwdInput = document.getElementById('card-info-pwd-input');
+            pwd = pwdInput ? pwdInput.value.trim() : '';
+        }
+
+        if (!pwd) {
+            showToast("⚠️ Vui lòng nhập mật khẩu hoặc vẽ hình mẫu!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-card-auth');
+        if (btn) { btn.innerText = "Đang xác thực..."; btn.disabled = true; }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(res) {
+                if (btn) { btn.innerText = "🔓 MỞ KHÓA MẬT KHẨU"; btn.disabled = false; }
+                if (res && res.success) {
+                    t1_patternStatusState = 'SUCCESS';
+                    t1_drawPatternCanvas();
+                    window.t1_cardInfoUnlocked = true;
+                    window.t1_cardInfoData = res.cards || [];
+                    setTimeout(() => {
+                        closeModal('modal-card-info-auth');
+                        document.getElementById('card-info-locked-placeholder').classList.add('hidden');
+                        document.getElementById('card-info-unlocked-content').classList.remove('hidden');
+                        renderCardInfoList();
+                        t1_startAutoLockTimer();
+                        showToast("✅ Đã mở khóa thông tin thẻ!");
+                    }, 300);
+                } else {
+                    t1_patternStatusState = 'ERROR';
+                    t1_drawPatternCanvas();
+                    const msg = document.getElementById('pattern-status-msg');
+                    if (msg) {
+                        msg.innerText = "❌ Mật khẩu hoặc hình vẽ không đúng!";
+                        msg.className = "text-xs text-rose-500 font-bold";
+                    }
+                    showToast(res ? res.message : "❌ Mật khẩu không đúng!", true);
+                    setTimeout(() => t1_resetPatternCanvas(), 1000);
+                }
+            }).withFailureHandler(function(err) {
+                if (btn) { btn.innerText = "🔓 MỞ KHÓA MẬT KHẨU"; btn.disabled = false; }
+                showToast("❌ Lỗi kết nối server: " + err, true);
+                t1_resetPatternCanvas();
+            }).verifyCardPassword(pwd);
+        } else {
+            // Fallback Demo for local environment / unit testing
+            if (btn) { btn.innerText = "🔓 MỞ KHÓA MẬT KHẨU"; btn.disabled = false; }
+            const customPwd = (localStorage.getItem('card_custom_pwd') || '').toLowerCase().replace(/-/g, '');
+            const cleanPwd = pwd.toLowerCase().replace(/-/g, '');
+
+            let isValid = false;
+            if (cleanPwd === "25100311" || cleanPwd === "kichukian") {
+                isValid = true;
+            } else if (customPwd) {
+                isValid = (cleanPwd === customPwd);
+            } else {
+                isValid = (cleanPwd === "12369" || cleanPwd === "1235789" || cleanPwd === "14789" || cleanPwd === "7412369");
+            }
+
+            if (isValid) {
+                t1_patternStatusState = 'SUCCESS';
+                t1_drawPatternCanvas();
+                window.t1_cardInfoUnlocked = true;
+                window.t1_cardInfoData = (window.t1_walletsData || []).map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    type: w.type,
+                    cardNumber: "4111 2222 3333 9012",
+                    cardExp: "12/28",
+                    cardCvv: "888",
+                    vCardName: w.name.includes("Rakuten") ? "RevoChi Shopping" : "",
+                    vCardNumber: w.name.includes("Rakuten") ? "5412 7512 3456 9999" : "",
+                    vCardExp: w.name.includes("Rakuten") ? "09/27" : "",
+                    vCardCvv: w.name.includes("Rakuten") ? "321" : ""
+                }));
+                setTimeout(() => {
+                    closeModal('modal-card-info-auth');
+                    document.getElementById('card-info-locked-placeholder').classList.add('hidden');
+                    document.getElementById('card-info-unlocked-content').classList.remove('hidden');
+                    renderCardInfoList();
+                    t1_startAutoLockTimer();
+                    showToast("✅ Đã mở khóa thông tin thẻ!");
+                }, 300);
+            } else {
+                t1_patternStatusState = 'ERROR';
+                t1_drawPatternCanvas();
+                const msg = document.getElementById('pattern-status-msg');
+                if (msg) {
+                    msg.innerText = "❌ Mật khẩu hoặc hình vẽ không đúng!";
+                    msg.className = "text-xs text-rose-500 font-bold";
+                }
+                showToast("❌ Mật khẩu không đúng!", true);
+                setTimeout(() => t1_resetPatternCanvas(), 1000);
+            }
+        }
+    }
+
+    function t1_lockCardInfo() {
+        window.t1_cardInfoUnlocked = false;
+        window.t1_cardInfoData = [];
+        if (window.t1_autoLockTimer) {
+            clearTimeout(window.t1_autoLockTimer);
+            window.t1_autoLockTimer = null;
+        }
+        const placeholder = document.getElementById('card-info-locked-placeholder');
+        const content = document.getElementById('card-info-unlocked-content');
+        if (placeholder) placeholder.classList.remove('hidden');
+        if (content) content.classList.add('hidden');
+        showToast("🔒 Đã khóa thông tin thẻ!");
+    }
+
+    function t1_startAutoLockTimer() {
+        if (window.t1_autoLockTimer) clearTimeout(window.t1_autoLockTimer);
+        window.t1_autoLockTimer = setTimeout(function() {
+            if (window.t1_cardInfoUnlocked) {
+                t1_lockCardInfo();
+                showToast("⏳ Tự động khóa thẻ do 60s không thao tác!");
+            }
+        }, 60000); // 60 seconds auto-lock
+    }
+
+    function t1_maskCardNumber(num) {
+        if (!num) return "•••• •••• •••• ••••";
+        const clean = String(num).replace(/\s+/g, '');
+        if (clean.length <= 4) return "•••• " + clean;
+        const last4 = clean.slice(-4);
+        return "•••• •••• •••• " + last4;
+    }
+
+    function t1_copyToClipboard(text, label) {
+        if (!text) {
+            showToast(`⚠️ Không có thông tin ${label} để sao chép!`, true);
+            return;
+        }
+        t1_startAutoLockTimer(); // Reset auto lock on action
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`📋 Đã sao chép ${label}!`);
+            }).catch(() => {
+                showToast(`📋 ${label}: ${text}`);
+            });
+        } else {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(`📋 Đã sao chép ${label}!`);
+        }
+    }
+
+    function t1_toggleCardMask(numElId, realNum, btnEl) {
+        t1_startAutoLockTimer();
+        const numEl = document.getElementById(numElId);
+        if (!numEl) return;
+        const isMasked = numEl.getAttribute('data-masked') === 'true';
+        if (isMasked) {
+            numEl.innerText = realNum || 'Chưa nhập số thẻ';
+            numEl.setAttribute('data-masked', 'false');
+            if (btnEl) btnEl.innerText = "🙈 Ẩn số";
+        } else {
+            numEl.innerText = t1_maskCardNumber(realNum);
+            numEl.setAttribute('data-masked', 'true');
+            if (btnEl) btnEl.innerText = "👁 Hiện số thẻ";
+        }
+    }
+
+    function renderCardInfoList() {
+        const container = document.getElementById('t1-card-info-list');
+        if (!container) return;
+
+        let rawCards = window.t1_cardInfoData || [];
+        if (rawCards.length === 0) {
+            container.innerHTML = `<div class="text-center py-8 bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">Chưa có thông tin thẻ nào.</div>`;
+            return;
+        }
+
+        const searchInput = document.getElementById('t1-card-info-search');
+        const rawQ = searchInput ? searchInput.value.trim() : '';
+
+        const filterSelect = document.getElementById('t1-card-info-type-select');
+        const filterType = filterSelect ? filterSelect.value : 'ALL';
+
+        // Tách dữ liệu thành 2 Danh sách riêng biệt:
+        // 1. Thẻ Chính (Cột L..N)
+        // 2. Thẻ Ảo (Cột O..R)
+        const mainCards = [];
+        const virtualCards = [];
+
+        rawCards.forEach((c, idx) => {
+            const hasMain = Boolean(c.cardNumber || c.cardExp || c.cardCvv);
+            const hasVirtual = Boolean(c.vCardNumber || c.vCardName || c.vCardExp || c.vCardCvv);
+
+            if (hasMain) {
+                mainCards.push({ ...c, origIndex: idx });
+            }
+            if (hasVirtual) {
+                virtualCards.push({ ...c, origIndex: idx });
+            }
+        });
+
+        // Filter search
+        let filteredMain = mainCards;
+        let filteredVirtual = virtualCards;
+
+        if (rawQ) {
+            const qClean = (typeof removeAccents === 'function') ? removeAccents(rawQ.toLowerCase()) : rawQ.toLowerCase();
+            const qDigits = rawQ.replace(/\D/g, '');
+
+            filteredMain = mainCards.filter(c => {
+                const nameClean = (typeof removeAccents === 'function') ? removeAccents(String(c.name || '').toLowerCase()) : String(c.name || '').toLowerCase();
+                const numClean = String(c.cardNumber || '').replace(/\D/g, '');
+                const mainLast4 = numClean.slice(-4);
+                const cvvClean = String(c.cardCvv || '').replace(/\D/g, '');
+                const expClean = String(c.cardExp || '').trim();
+
+                if (nameClean.includes(qClean)) return true;
+                if (qDigits && qDigits.length >= 2) {
+                    if (mainLast4 && mainLast4.includes(qDigits)) return true;
+                    if (numClean.endsWith(qDigits)) return true;
+                    if (cvvClean === qDigits) return true;
+                    if (qDigits.length >= 6 && numClean.includes(qDigits)) return true;
+                }
+                if (expClean.includes(rawQ)) return true;
+                return false;
+            });
+
+            filteredVirtual = virtualCards.filter(c => {
+                const nameClean = (typeof removeAccents === 'function') ? removeAccents(String(c.name || '').toLowerCase()) : String(c.name || '').toLowerCase();
+                const vNameClean = (typeof removeAccents === 'function') ? removeAccents(String(c.vCardName || '').toLowerCase()) : String(c.vCardName || '').toLowerCase();
+                const vNumClean = String(c.vCardNumber || '').replace(/\D/g, '');
+                const vLast4 = vNumClean.slice(-4);
+                const vCvvClean = String(c.vCardCvv || '').replace(/\D/g, '');
+                const vExpClean = String(c.vCardExp || '').trim();
+
+                if (nameClean.includes(qClean) || vNameClean.includes(qClean)) return true;
+                if (qDigits && qDigits.length >= 2) {
+                    if (vLast4 && vLast4.includes(qDigits)) return true;
+                    if (vNumClean.endsWith(qDigits)) return true;
+                    if (vCvvClean === qDigits) return true;
+                    if (qDigits.length >= 6 && vNumClean.includes(qDigits)) return true;
+                }
+                if (vExpClean.includes(rawQ)) return true;
+                return false;
+            });
+        }
+
+        let html = '';
+
+        // 1. RENDER DANH SÁCH THẺ CHÍNH - Ở TRÊN
+        if (filterType === 'ALL' || filterType === 'MAIN') {
+            if (filteredMain.length > 0) {
+                if (filterType === 'ALL') {
+                    html += `
+                    <div class="flex items-center gap-2 pt-1 pb-1">
+                      <span class="text-xs font-black text-blue-700 uppercase tracking-wider">💳 Thẻ chính</span>
+                      <span class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">${filteredMain.length} thẻ</span>
+                    </div>`;
+                }
+
+                filteredMain.forEach((c, idx) => {
+                    const cardId = String(c.id).replace(/'/g, "\\'");
+                    const numElId = `main-card-num-${c.origIndex}`;
+                    const maskedMainNum = t1_maskCardNumber(c.cardNumber);
+
+                    html += `
+                    <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white rounded-xl p-2.5 px-3 shadow-xs border border-slate-700/80 space-y-2">
+                      <!-- Header Card -->
+                      <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-xs font-black text-white">💳 ${c.name}</h4>
+                          <span class="text-[8px] font-extrabold uppercase bg-blue-500/30 text-blue-200 px-1.5 py-0.5 rounded border border-blue-400/30">
+                            ${c.type || 'CREDIT'}
+                          </span>
+                        </div>
+                        <button onclick="openEditCardSecurityModal('${cardId}')" class="text-[10px] bg-white/10 hover:bg-white/20 active:scale-95 text-slate-200 px-2 py-0.5 rounded-md border border-white/20 transition cursor-pointer font-bold">
+                          ✏️ Sửa
+                        </button>
+                      </div>
+
+                      <!-- Main Card Details -->
+                      <div class="bg-white/5 p-2 rounded-lg border border-white/10 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">Thẻ chính:</span>
+                            <p id="${numElId}" data-masked="true" class="font-mono text-xs font-bold text-amber-300 tracking-wider">
+                              ${maskedMainNum}
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-1.5">
+                            <button onclick="t1_toggleCardMask('${numElId}', '${(c.cardNumber||'').replace(/'/g, "\\'")}', this)" class="text-[9px] text-indigo-300 hover:text-indigo-100 font-bold cursor-pointer">
+                              👁 Hiện
+                            </button>
+                            <button onclick="t1_copyToClipboard('${(c.cardNumber||'').replace(/'/g, "\\'")}', 'Số thẻ chính')" class="px-1.5 py-0.5 bg-white/10 hover:bg-white/20 text-white rounded text-[9px] font-bold cursor-pointer transition">
+                              📋 Copy
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[10px] pt-1 border-t border-white/10">
+                          <div class="flex items-center gap-3">
+                            <div><span class="text-slate-400 text-[8px] font-bold mr-1">HSD:</span><span class="font-mono font-bold text-white">${c.cardExp || '--/--'}</span> <button onclick="t1_copyToClipboard('${(c.cardExp||'').replace(/'/g, "\\'")}', 'HSD')" class="text-[9px] text-indigo-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
+                            <div><span class="text-slate-400 text-[8px] font-bold mr-1">CVV:</span><span class="font-mono font-bold text-white">${c.cardCvv || '***'}</span> <button onclick="t1_copyToClipboard('${(c.cardCvv||'').replace(/'/g, "\\'")}', 'CVV')" class="text-[9px] text-indigo-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>`;
+                });
+            } else if (filterType === 'MAIN') {
+                html += `<div class="text-center py-6 bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">Không có thẻ chính nào khớp kết quả.</div>`;
+            }
+        }
+
+        // 2. RENDER DANH SÁCH THẺ ÁO - Ở DƯỚI
+        if (filterType === 'ALL' || filterType === 'VIRTUAL') {
+            if (filteredVirtual.length > 0) {
+                if (filterType === 'ALL') {
+                    html += `
+                    <div class="flex items-center gap-2 pt-2 pb-1 border-t border-slate-200/80">
+                      <span class="text-xs font-black text-purple-700 uppercase tracking-wider">✨ Thẻ ảo</span>
+                      <span class="text-[10px] font-bold bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">${filteredVirtual.length} thẻ ảo</span>
+                    </div>`;
+                }
+
+                filteredVirtual.forEach((c, idx) => {
+                    const cardId = String(c.id).replace(/'/g, "\\'");
+                    const numElId = `vcard-num-${c.origIndex}`;
+                    const maskedVNum = t1_maskCardNumber(c.vCardNumber);
+
+                    html += `
+                    <div class="bg-gradient-to-br from-purple-950 via-slate-900 to-indigo-950 text-white rounded-xl p-2.5 px-3 shadow-xs border border-purple-600/50 space-y-2">
+                      <!-- Header Card -->
+                      <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                          <h4 class="text-xs font-black text-purple-200">${c.vCardName || 'Thẻ Ảo RevoChi'}</h4>
+                          <span class="text-[8px] font-extrabold uppercase bg-purple-500/30 text-purple-200 px-1.5 py-0.5 rounded border border-purple-400/30">✨ THẺ ÁO (${c.name})</span>
+                        </div>
+                        <button onclick="openEditCardSecurityModal('${cardId}')" class="text-[10px] bg-white/10 hover:bg-white/20 active:scale-95 text-slate-200 px-2 py-0.5 rounded-md border border-white/20 transition cursor-pointer font-bold">
+                          ✏️ Sửa
+                        </button>
+                      </div>
+
+                      <!-- Virtual Card Details -->
+                      <div class="bg-purple-900/40 p-2 rounded-lg border border-purple-500/30 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-purple-300 font-bold uppercase">Thẻ ảo:</span>
+                            <p id="${numElId}" data-masked="true" class="font-mono text-xs font-bold text-purple-200 tracking-wider">
+                              ${maskedVNum}
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-1.5">
+                            <button onclick="t1_toggleCardMask('${numElId}', '${(c.vCardNumber||'').replace(/'/g, "\\'")}', this)" class="text-[9px] text-purple-300 hover:text-purple-100 font-bold cursor-pointer">
+                              👁 Hiện
+                            </button>
+                            <button onclick="t1_copyToClipboard('${(c.vCardNumber||'').replace(/'/g, "\\'")}', 'Số thẻ ảo')" class="px-1.5 py-0.5 bg-purple-500/30 hover:bg-purple-500/50 text-white rounded text-[9px] font-bold cursor-pointer transition">
+                              📋 Copy
+                            </button>
+                          </div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-[10px] pt-1 border-t border-purple-500/20">
+                          <div class="flex items-center gap-3">
+                            <div><span class="text-purple-300 text-[8px] font-bold mr-1">HSD:</span><span class="font-mono font-bold text-white">${c.vCardExp || '--/--'}</span> <button onclick="t1_copyToClipboard('${(c.vCardExp||'').replace(/'/g, "\\'")}', 'HSD Thẻ ảo')" class="text-[9px] text-purple-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
+                            <div><span class="text-purple-300 text-[8px] font-bold mr-1">CVV:</span><span class="font-mono font-bold text-white">${c.vCardCvv || '***'}</span> <button onclick="t1_copyToClipboard('${(c.vCardCvv||'').replace(/'/g, "\\'")}', 'CVV Thẻ ảo')" class="text-[9px] text-purple-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>`;
+                });
+            } else if (filterType === 'VIRTUAL') {
+                html += `<div class="text-center py-6 bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">Không có thẻ ảo nào khớp kết quả.</div>`;
+            }
+        }
+
+        if (!html) {
+            html = `<div class="text-center py-8 bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">🔍 Không tìm thấy thẻ nào khớp với "${rawQ}".</div>`;
+        }
+
+        container.innerHTML = html;
+    }
+
+    function t1_populateSecCardNameSuggest() {
+        const datalist = document.getElementById('sec-card-name-suggest');
+        if (!datalist) return;
+        datalist.innerHTML = '';
+        const list = (window.t1_walletsData && window.t1_walletsData.length) ? window.t1_walletsData : ((window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.wallets) ? window.SERVER_INITIAL_DATA.wallets : []);
+        list.forEach(w => {
+            const opt = document.createElement('option');
+            opt.value = w.name;
+            datalist.appendChild(opt);
+        });
+    }
+
+    function openAddCardSecurityModal() {
+        t1_startAutoLockTimer();
+        t1_populateSecCardNameSuggest();
+        document.getElementById('sec-card-id').value = '';
+        document.getElementById('sec-card-name').value = '';
+        document.getElementById('sec-card-number').value = '';
+        document.getElementById('sec-card-exp').value = '';
+        document.getElementById('sec-card-cvv').value = '';
+        document.getElementById('sec-vcard-name').value = '';
+        document.getElementById('sec-vcard-number').value = '';
+        document.getElementById('sec-vcard-exp').value = '';
+        document.getElementById('sec-vcard-cvv').value = '';
+        openModal('modal-edit-card-security');
+    }
+
+    function t1_onSecCardNameInput() {
+        const val = document.getElementById('sec-card-name').value.trim();
+        if (!val) return;
+        const wallets = (window.t1_walletsData && window.t1_walletsData.length) ? window.t1_walletsData : ((window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.wallets) ? window.SERVER_INITIAL_DATA.wallets : []);
+        const matched = wallets.find(w => w.name.toLowerCase() === val.toLowerCase());
+        if (matched) {
+            document.getElementById('sec-card-id').value = matched.id;
+            const existing = (window.t1_cardInfoData || []).find(c => String(c.id) === String(matched.id));
+            if (existing) {
+                document.getElementById('sec-card-number').value = existing.cardNumber || '';
+                document.getElementById('sec-card-exp').value = existing.cardExp || '';
+                document.getElementById('sec-card-cvv').value = existing.cardCvv || '';
+                document.getElementById('sec-vcard-name').value = existing.vCardName || '';
+                document.getElementById('sec-vcard-number').value = existing.vCardNumber || '';
+                document.getElementById('sec-vcard-exp').value = existing.vCardExp || '';
+                document.getElementById('sec-vcard-cvv').value = existing.vCardCvv || '';
+            }
+        }
+    }
+
+    function openEditCardSecurityModal(cardId) {
+        t1_startAutoLockTimer();
+        t1_populateSecCardNameSuggest();
+        const card = (window.t1_cardInfoData || []).find(c => String(c.id) === String(cardId));
+        if (!card) {
+            showToast("⚠️ Không tìm thấy thông tin thẻ!", true);
+            return;
+        }
+
+        document.getElementById('sec-card-id').value = card.id;
+        document.getElementById('sec-card-name').value = card.name;
+        document.getElementById('sec-card-number').value = card.cardNumber || '';
+        document.getElementById('sec-card-exp').value = card.cardExp || '';
+        document.getElementById('sec-card-cvv').value = card.cardCvv || '';
+
+        document.getElementById('sec-vcard-name').value = card.vCardName || '';
+        document.getElementById('sec-vcard-number').value = card.vCardNumber || '';
+        document.getElementById('sec-vcard-exp').value = card.vCardExp || '';
+        document.getElementById('sec-vcard-cvv').value = card.vCardCvv || '';
+
+        openModal('modal-edit-card-security');
+    }
+
+    function submitCardSecurityDetails() {
+        t1_startAutoLockTimer();
+        let id = document.getElementById('sec-card-id').value;
+        const name = document.getElementById('sec-card-name').value.trim();
+        
+        if (!id && name) {
+            const wallets = (window.t1_walletsData && window.t1_walletsData.length) ? window.t1_walletsData : ((window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.wallets) ? window.SERVER_INITIAL_DATA.wallets : []);
+            const matched = wallets.find(w => w.name.toLowerCase() === name.toLowerCase());
+            if (matched) {
+                id = matched.id;
+                document.getElementById('sec-card-id').value = id;
+            } else {
+                id = "W_" + Date.now();
+                document.getElementById('sec-card-id').value = id;
+            }
+        }
+
+        const cardNumber = document.getElementById('sec-card-number').value.trim();
+        const cardExp = document.getElementById('sec-card-exp').value.trim();
+        const cardCvv = document.getElementById('sec-card-cvv').value.trim();
+
+        const vCardName = document.getElementById('sec-vcard-name').value.trim();
+        const vCardNumber = document.getElementById('sec-vcard-number').value.trim();
+        const vCardExp = document.getElementById('sec-vcard-exp').value.trim();
+        const vCardCvv = document.getElementById('sec-vcard-cvv').value.trim();
+
+        const btn = document.getElementById('btn-submit-sec-details');
+        if (btn) { btn.innerText = "Đang lưu..."; btn.disabled = true; }
+
+        const payload = {
+            password: (typeof t1_getCustomPassword === 'function' ? t1_getCustomPassword() : '') || "25100311",
+            id: id,
+            cardNumber: cardNumber,
+            cardExp: cardExp,
+            cardCvv: cardCvv,
+            vCardName: vCardName,
+            vCardNumber: vCardNumber,
+            vCardExp: vCardExp,
+            vCardCvv: vCardCvv
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(function(res) {
+                if (btn) { btn.innerText = "💾 Lưu Thông Tin Bảo Mật"; btn.disabled = false; }
+                if (res && res.success) {
+                    closeModal('modal-edit-card-security');
+                    showToast(res.message || "✅ Đã lưu thông tin thẻ thành công!");
+                    const found = (window.t1_cardInfoData || []).find(c => String(c.id) === String(id));
+                    if (found) {
+                        found.cardNumber = cardNumber;
+                        found.cardExp = cardExp;
+                        found.cardCvv = cardCvv;
+                        found.vCardName = vCardName;
+                        found.vCardNumber = vCardNumber;
+                        found.vCardExp = vCardExp;
+                        found.vCardCvv = vCardCvv;
+                    }
+                    renderCardInfoList();
+                } else {
+                    showToast(res ? res.message : "❌ Lỗi lưu thông tin thẻ!", true);
+                }
+            }).withFailureHandler(function(err) {
+                if (btn) { btn.innerText = "💾 Lưu Thông Tin Bảo Mật"; btn.disabled = false; }
+                showToast("❌ Lỗi kết nối: " + err, true);
+            }).saveCardSecurityDetails(payload);
+        } else {
+            if (btn) { btn.innerText = "💾 Lưu Thông Tin Bảo Mật"; btn.disabled = false; }
+            closeModal('modal-edit-card-security');
+            const found = (window.t1_cardInfoData || []).find(c => String(c.id) === String(id));
+            if (found) {
+                found.cardNumber = cardNumber;
+                found.cardExp = cardExp;
+                found.cardCvv = cardCvv;
+                found.vCardName = vCardName;
+                found.vCardNumber = vCardNumber;
+                found.vCardExp = vCardExp;
+                found.vCardCvv = vCardCvv;
+            }
+            renderCardInfoList();
+            showToast("✅ Đã lưu thông tin thẻ thành công (Demo)!");
+        }
+    }
+
+    if(typeof openModal === 'undefined') {
+        window.openModal = function(id) { document.getElementById(id).classList.add('active'); }
+        window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); }
+    }
+  </script>
+
+<script>
+// AUTO INITIAL RENDER ON LOAD
+(function() {
+    if (typeof reloadTab1Data === 'function') {
+        reloadTab1Data();
+    }
+})();
+</script>
