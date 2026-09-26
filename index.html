@@ -11603,6 +11603,7 @@
             familyMap.set(key, { name: famName, members: [] });
           }
           const famObj = familyMap.get(key);
+          if (famObj.explicit) return;
 
           const rawName = (m.name || m.member_name || '').trim();
           const cleanName = t7_normalizeMemberName(rawName) || rawName;
@@ -11869,9 +11870,6 @@
     if (!members.some(m => m.isRep)) {
       members[0].isRep = true;
       members[0].isMe = true;
-    }
-    if (isFamMe) {
-      members.forEach(m => { m.isMe = true; });
     }
 
     // Find removed members for deactivation
