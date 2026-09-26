@@ -1647,10 +1647,12 @@
           repMember: f.repMember,
           isMe: isFamMe,
           members: (f.members || []).map(m => ({
-            id: m.member_id,
-            name: m.member_name,
-            type: m.member_type,
-            weight: m.default_weight,
+            id: m.member_id || m.id,
+            name: m.member_name || m.name,
+            member_name: m.member_name || m.name,
+            type: m.member_type || m.type || 'ADULT',
+            member_type: m.member_type || m.type || 'ADULT',
+            weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
             sortOrder: m.sort_order,
             status: m.status,
             isMe: Boolean(m.isMe || m.is_me || isFamMe)
@@ -1668,8 +1670,27 @@
           parsed.forEach(f => {
             if (f && f.name) {
               const key = f.name.trim().toLowerCase();
-              if (!deletedSet.has(key) && !familyMap.has(key)) {
-                familyMap.set(key, f);
+              if (!deletedSet.has(key)) {
+                if (!familyMap.has(key)) {
+                  familyMap.set(key, f);
+                } else {
+                  const existingFam = familyMap.get(key);
+                  (f.members || []).forEach(m => {
+                    const mName = (m.name || m.member_name || '').trim();
+                    const mKey = mName.toLowerCase();
+                    if (mKey && !existingFam.members.some(em => (em.name || em.member_name || '').trim().toLowerCase() === mKey)) {
+                      existingFam.members.push({
+                        id: m.id || m.member_id || '',
+                        name: mName,
+                        member_name: mName,
+                        type: m.type || m.member_type || 'ADULT',
+                        member_type: m.type || m.member_type || 'ADULT',
+                        weight: m.weight !== undefined ? m.weight : (m.default_weight !== undefined ? m.default_weight : 1.0),
+                        isMe: Boolean(m.isMe || m.is_me)
+                      });
+                    }
+                  });
+                }
               }
             }
           });
@@ -1689,15 +1710,18 @@
             familyMap.set(key, { name: famName, members: [] });
           }
           const famObj = familyMap.get(key);
-          if (famObj.explicit) return;
 
-          const mbrKey = (m.name || '').trim().toLowerCase();
-          if (mbrKey && !famObj.members.some(existing => (existing.name || '').trim().toLowerCase() === mbrKey)) {
+          const mName = (m.name || m.member_name || '').trim();
+          const mbrKey = mName.toLowerCase();
+          if (mbrKey && !famObj.members.some(existing => (existing.name || existing.member_name || '').trim().toLowerCase() === mbrKey)) {
             famObj.members.push({
-              name: m.name.trim(),
-              type: m.type || 'ADULT',
+              id: m.id || m.member_id || '',
+              name: mName,
+              member_name: mName,
+              type: m.type || m.member_type || 'ADULT',
+              member_type: m.type || m.member_type || 'ADULT',
               weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-              isMe: Boolean(m.isMe)
+              isMe: Boolean(m.isMe || m.is_me)
             });
           }
         }
@@ -2094,22 +2118,25 @@
 
     if (famObj && famObj.members && famObj.members.length > 0) {
       famObj.members.forEach(m => {
+        const mName = (m.name || m.member_name || '').trim();
+        const mType = m.type || m.member_type || 'ADULT';
+        const mWeight = m.weight !== undefined ? m.weight : (m.default_weight !== undefined ? m.default_weight : (mType === 'CHILD' ? 0.5 : (mType === 'BABY' ? 0.0 : 1.0)));
         t7_addMemberRow({
-          name: m.name,
+          name: mName,
           family: cleanFam,
-          type: m.type || 'ADULT',
-          weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-          isMe: Boolean(m.isMe)
+          type: mType,
+          weight: mWeight,
+          isMe: Boolean(m.isMe || m.is_me)
         });
       });
-      showToast(`⚡ Đã nạp thành viên của [${cleanFam}]!`);
+      showToast(`⚡ Đã nạp ${famObj.members.length} thành viên của [${cleanFam}]!`);
     } else {
       const groups = window.T7_STATE.groups || [];
       const memberMap = new Map();
       groups.forEach(g => {
         (g.members || []).forEach(m => {
           if (m.family && m.family.trim().toLowerCase() === cleanFam.toLowerCase()) {
-            const key = (m.name || '').trim().toLowerCase();
+            const key = (m.name || m.member_name || '').trim().toLowerCase();
             if (key && !memberMap.has(key)) {
               memberMap.set(key, m);
             }
@@ -2120,12 +2147,15 @@
       const membersToInsert = Array.from(memberMap.values());
       if (membersToInsert.length > 0) {
         membersToInsert.forEach(m => {
+          const mName = (m.name || m.member_name || '').trim();
+          const mType = m.type || m.member_type || 'ADULT';
+          const mWeight = m.weight !== undefined ? m.weight : (m.default_weight !== undefined ? m.default_weight : 1.0);
           t7_addMemberRow({
-            name: m.name,
+            name: mName,
             family: cleanFam,
-            type: m.type || 'ADULT',
-            weight: m.weight !== undefined ? m.weight : 1.0,
-            isMe: Boolean(m.isMe)
+            type: mType,
+            weight: mWeight,
+            isMe: Boolean(m.isMe || m.is_me)
           });
         });
         showToast(`⚡ Đã nạp ${membersToInsert.length} thành viên của [${cleanFam}]!`);
