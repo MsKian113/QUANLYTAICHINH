@@ -10810,6 +10810,19 @@
     const allGroups = window.T7_STATE.groups || [];
     const filtered = allGroups.filter(g => (g.category || 'TRIP') === cat);
 
+    const parseGroupDateHelper = function(g) {
+      if (g.created_at) {
+        const d = new Date(g.created_at);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (g.id) {
+        const num = parseInt(String(g.id).replace(/\D/g, ''), 10);
+        if (!isNaN(num)) return num;
+      }
+      return 0;
+    };
+    filtered.sort((a, b) => parseGroupDateHelper(b) - parseGroupDateHelper(a));
+
     if (countEl) countEl.innerText = filtered.length;
     if (titleEl) titleEl.innerText = cat === 'DINING' ? "Cuộc Ăn Chơi" : "Chuyến Du Lịch";
 
@@ -11272,7 +11285,22 @@
     if (!container) return;
     container.innerHTML = '';
 
-    const expenses = window.T7_STATE.expenses || [];
+    const parseExpenseDateHelper = function(e) {
+      if (e.date) {
+        const d = new Date(e.date);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (e.created_at) {
+        const d = new Date(e.created_at);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (e.id) {
+        const num = parseInt(String(e.id).replace(/\D/g, ''), 10);
+        if (!isNaN(num)) return num;
+      }
+      return 0;
+    };
+    const expenses = (window.T7_STATE.expenses || []).slice().sort((a, b) => parseExpenseDateHelper(b) - parseExpenseDateHelper(a));
     if (countEl) countEl.innerText = expenses.length;
 
     if (expenses.length === 0) {
@@ -11540,7 +11568,6 @@
       familyMap.set('2f', {
         name: '2F',
         members: [
-          { name: 'Quậy (Tôi)', type: 'ADULT', weight: 1.0, isMe: true },
           { name: 'Chi', type: 'ADULT', weight: 1.0, isMe: true },
           { name: 'Chít', type: 'CHILD', weight: 0.5, isMe: true }
         ]
@@ -11948,6 +11975,10 @@
 
     if (famObj && famObj.members && famObj.members.length > 0) {
       famObj.members.forEach(m => {
+        const mName = (m.name || m.member_name || '').trim();
+        if (cleanFam.toLowerCase() === '2f' && (mName === 'Quậy (Tôi)' || mName === 'Quậy' || mName.toLowerCase().startsWith('quậy'))) {
+          return;
+        }
         t7_addMemberRow({
           name: m.name,
           family: cleanFam,
@@ -11956,7 +11987,7 @@
           isMe: Boolean(m.isMe)
         });
       });
-      showToast(`⚡ Đã nạp ${famObj.members.length} thành viên của [${cleanFam}]!`);
+      showToast(`⚡ Đã nạp thành viên của [${cleanFam}]!`);
     } else {
       const groups = window.T7_STATE.groups || [];
       const memberMap = new Map();
@@ -11965,6 +11996,7 @@
           if (m.family && m.family.trim().toLowerCase() === cleanFam.toLowerCase()) {
             const key = (m.name || '').trim().toLowerCase();
             if (key && !memberMap.has(key)) {
+              if (cleanFam.toLowerCase() === '2f' && (key === 'quậy (tôi)' || key === 'quậy' || key.startsWith('quậy'))) return;
               memberMap.set(key, m);
             }
           }

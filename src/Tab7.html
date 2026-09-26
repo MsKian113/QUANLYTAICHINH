@@ -1,0 +1,4281 @@
+<!-- ========================================================================= -->
+<!-- TAB 7: CHIA TIỀN CHUYẾN ĐÍ & NHÓM (TRICOUNT & FAMILY WEIGHT SPLIT) -->
+<!-- ========================================================================= -->
+
+<!-- TOP CATEGORY SUBTAB NAVIGATION (GIA ĐÌNH vs ĂN CHƠI vs DU LỊCH) -->
+<div class="bg-slate-900 text-white p-2 px-3 flex items-center justify-center shrink-0 border-b border-slate-800">
+  <div class="flex bg-slate-800/90 p-1 rounded-xl w-full max-w-md">
+    <button id="btn-t7-cat-family" onclick="t7_switchCategory('FAMILY')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1">
+      <span>👨‍👩‍👧‍👦 Gia Đình</span>
+    </button>
+    <button id="btn-t7-cat-dining" onclick="t7_switchCategory('DINING')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-amber-300 bg-slate-700 shadow-xs flex items-center justify-center gap-1">
+      <span>🍻 Cùng ăn</span>
+    </button>
+    <button id="btn-t7-cat-trip" onclick="t7_switchCategory('TRIP')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1">
+      <span>✈️ Du Lịch</span>
+    </button>
+  </div>
+</div>
+
+<!-- TOP HEADER & SELECTOR BAR -->
+<div id="t7-header-bar" class="bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white p-3.5 shadow-md shrink-0 transition-all duration-300">
+  <div class="flex justify-between items-center mb-2.5">
+    <div class="flex items-center gap-2">
+      <span id="t7-header-icon" class="text-2xl">🍻</span>
+      <div>
+        <h1 id="t7-header-title" class="text-sm font-bold tracking-tight">Chia Tiền Ăn Uống</h1>
+        <p id="t7-header-subtitle" class="text-[10px] opacity-80">Quẹt thẻ chia nhanh • Tự động tính bù trừ nợ</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SELECT TRIP / GROUP SEARCH SUGGEST -->
+  <div id="t7-group-select-box" class="flex items-center gap-2">
+    <div class="relative flex-1">
+      <input type="text" id="t7-group-search" placeholder="🔍 Tìm kiếm..."
+             onfocus="t7_showGroupSuggest(true)"
+             oninput="t7_showGroupSuggest(false)"
+             onblur="t7_hideGroupSuggest()"
+             class="w-full bg-black/20 text-white font-bold text-xs px-3 py-2 rounded-xl outline-none border border-white/20 placeholder-white/60 shadow-inner" />
+      <div id="box-t7-group-search" class="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto hidden divide-y divide-slate-800 text-xs text-white">
+        <!-- Dynamic suggest items -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN SCROLLABLE CONTENT AREA -->
+<div class="flex-1 scroll-touch p-3 space-y-3.5 bg-slate-50 overflow-y-auto">
+
+  <!-- FAMILY DATABASE VIEW CONTAINER (ACTIVE WHEN SUB-TAB IS 'FAMILY') -->
+  <div id="t7-family-view-container" class="space-y-3.5 hidden">
+    <div class="flex justify-between items-center px-1">
+      <div>
+        <h2 class="text-xs font-bold text-slate-800 flex items-center gap-1">
+          <span>🏡</span>
+          <span>Danh Sách Gia Đình (<span id="t7-fam-db-count">0</span>)</span>
+        </h2>
+        <p class="text-[10px] text-slate-500">Bấm vào từng gia đình để xem chi tiết thành viên</p>
+      </div>
+      <button onclick="t7_openAddFamilyModal()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center gap-1 cursor-pointer">
+        <span>➕ Thêm</span>
+      </button>
+    </div>
+
+    <!-- FAMILY CARDS LIST -->
+    <div id="t7-family-cards-list" class="space-y-2.5">
+      <!-- Dynamic family cards rendered here -->
+    </div>
+  </div>
+
+  <!-- GROUPS LIST VIEW CONTAINER (ACTIVE WHEN VIEW IS 'LIST' IN DINING / TRIP) -->
+  <div id="t7-groups-list-container" class="space-y-3.5 hidden">
+    <div class="flex justify-between items-center px-1">
+      <div>
+        <h2 class="text-xs font-bold text-slate-800 flex items-center gap-1">
+          <span>📋</span>
+          <span>Danh Sách <span id="t7-groups-list-title">Chuyến Đi</span> (<span id="t7-groups-list-count">0</span>)</span>
+        </h2>
+        <p class="text-[10px] text-slate-500">Bấm vào từng mục để xem chi tiết & chia tiền</p>
+      </div>
+      <button onclick="t7_openGroupModal()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center gap-1 cursor-pointer">
+        <span>➕ Tạo Mới</span>
+      </button>
+    </div>
+
+    <!-- GROUPS CARDS LIST -->
+    <div id="t7-groups-cards-list" class="space-y-2.5">
+      <!-- Dynamic group cards rendered here -->
+    </div>
+  </div>
+
+  <!-- ACTIVE GROUP CONTAINER (DETAILED VIEW) -->
+  <div id="t7-active-group-container" class="space-y-3 hidden">
+
+    <!-- GROUP HEADER & ACTION BAR -->
+    <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs space-y-2.5">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2 flex-wrap min-w-0">
+          <h2 id="t7-group-title" class="font-black text-sm text-slate-800 shrink-0">---</h2>
+          <span id="t7-group-date-badge" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 shrink-0">--/--/----</span>
+          <span id="t7-group-status-badge" class="text-[9px] font-bold px-2 py-0.5 rounded-md border shrink-0">---</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="t7_backToGroupList()" title="Đóng chi tiết & quay lại danh sách" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full font-bold text-base flex items-center justify-center transition cursor-pointer shrink-0 ml-1">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <!-- OVERVIEW SUMMARY BANNER & HEADCOUNT BREAKDOWN (SINGLE CLICK TO VIEW GROUP DETAILS) -->
+      <div onclick="t7_openEditCurrentGroup()" title="Nhấp 1 lần để xem chi tiết nhóm & thành viên" class="bg-gradient-to-r from-teal-50 to-emerald-50 p-2.5 rounded-xl border border-teal-200/80 space-y-2 cursor-pointer select-none hover:border-teal-400 transition">
+        <div class="flex justify-between items-center">
+          <span class="text-xs font-extrabold text-teal-900">💵 Tổng chi:</span>
+          <span id="t7-stat-total-expense" class="text-base font-black text-emerald-700">0 ¥</span>
+        </div>
+
+        <div id="t7-headcount-breakdown-box" class="flex items-center justify-between gap-1 pt-1.5 border-t border-teal-200/60 text-[10px] flex-wrap">
+          <!-- Dynamic headcount breakdown rendered here -->
+        </div>
+      </div>
+
+      <!-- FINISH TRIP & EXPORT DEBT BUTTON -->
+      <div id="t7-finish-trip-box" class="pt-0.5">
+        <button onclick="t7_openFinalizeModal()" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+          <span>🏁 Kết Thúc Chuyến Đi & Chốt Nợ Tự Động</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SECTION 1: CÁC KHOẢN CHI -->
+    <div class="space-y-2">
+      <div class="flex justify-between items-center px-1">
+        <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+          <span>🧾</span>
+          <span>Các Khoản Chi (<span id="t7-expense-count">0</span>)</span>
+        </h3>
+        <button onclick="t7_openExpenseModal()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs shadow-xs active:scale-95 transition flex items-center gap-1 cursor-pointer">
+          <span>➕ Thêm Khoản Chi</span>
+        </button>
+      </div>
+
+      <!-- EXPENSE LIST CONTAINER -->
+      <div id="t7-expense-list" class="space-y-2">
+        <!-- Dynamic expense items -->
+      </div>
+    </div>
+
+    <!-- SECTION 2: SỐ DƯ & CÔNG NỢ THEO GIA ĐÌNH -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden space-y-2 p-3">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-sm">⚖️</span>
+          <h3 class="text-xs font-bold text-slate-800">Số Dư & Công Nợ Theo Gia Đình</h3>
+        </div>
+      </div>
+
+      <div id="t7-balance-section-body" class="space-y-2">
+        <!-- MEMBER & FAMILY BALANCES LIST -->
+        <div id="t7-member-balances-list" class="space-y-2 text-xs">
+          <!-- Dynamic balances rendered here -->
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 1: TẠO / SỬA CHUYẾN ĐÍ & THÀNH VIÊN (modal-tab7-group) -->
+<!-- ========================================================================= -->
+<div id="modal-tab7-group" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-group')">
+  <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <div class="flex items-center gap-2">
+        <span id="t7-group-modal-icon" class="text-xl">✈️</span>
+        <h3 id="t7-group-modal-title" class="font-bold text-sm text-slate-800">Tạo Chuyến Đi Mới</h3>
+      </div>
+      <button onclick="closeModal('modal-tab7-group')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <input type="hidden" id="t7-group-id" value="" />
+
+    <div class="space-y-2.5 text-xs">
+      <!-- ROW 1: TÊN (*) & TRẠNG THÁI (SAME LINE) -->
+      <div class="flex items-center gap-2 text-xs">
+        <div class="flex-1 min-w-0">
+          <label id="t7-group-name-label" class="block font-bold text-slate-700 mb-1">🏷️ Tên (*):</label>
+          <input type="text" id="t7-group-name" placeholder="VD: Cháo lòng, Đi Ăn Cuối Tuần..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition" />
+        </div>
+        <div class="w-32 shrink-0">
+          <label class="block font-bold text-slate-700 mb-1">📌 Trạng Thái:</label>
+          <select id="t7-group-status" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs">
+            <option value="OPEN">🟢 Đang diễn ra</option>
+            <option value="CLOSED">🔒 Kết thúc</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- IMPLICIT CATEGORY (AUTO-INFERRED IN BACKGROUND) -->
+      <input type="hidden" id="t7-group-category" value="DINING" />
+
+      <!-- ROW 2: NGÀY (*) & TIỀN TỆ & GHI CHÚ (SAME LINE) -->
+      <div class="flex items-center gap-2 text-xs">
+        <div class="w-32 shrink-0">
+          <label class="block font-bold text-slate-700 mb-1">📅 Ngày (*):</label>
+          <input type="date" id="t7-group-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs" />
+        </div>
+        <div class="w-24 shrink-0">
+          <label class="block font-bold text-slate-700 mb-1">💱 Tiền Tệ:</label>
+          <select id="t7-group-currency" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-1.5 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs">
+            <option value="JPY">JPY (¥)</option>
+            <option value="VND">VND (₫)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </div>
+        <div class="flex-1 min-w-0">
+          <label class="block font-bold text-slate-700 mb-1">📝 Ghi Chú:</label>
+          <input type="text" id="t7-group-note" placeholder="Ghi chú chuyến đi..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 font-medium text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition" />
+        </div>
+      </div>
+
+      <!-- MEMBER LIST BUILDER & QUICK FAMILY TOOL -->
+      <div class="pt-2 border-t border-slate-100 space-y-2">
+        <!-- HEADER WITH MEMBER BUTTONS AND FAMILY TEXTBOX WITH SUGGEST -->
+        <div class="flex items-center justify-between gap-1 flex-wrap text-xs">
+          <label class="font-bold text-slate-800 flex items-center gap-1 shrink-0">
+            <span>👨‍👩‍👧‍👦</span>
+            <span>Danh sách:</span>
+          </label>
+          <div class="flex items-center gap-1 flex-wrap">
+            <button type="button" onclick="t7_addMemberRow()" class="text-teal-700 hover:text-teal-800 font-bold text-[11px] px-2 py-1 bg-teal-50 rounded-lg border border-teal-200 transition cursor-pointer">
+              + Người
+            </button>
+            <input type="text" id="t7-select-family-input" list="t7-preset-fam-suggest" placeholder="🔍 Gõ/chọn gia đình..." onkeydown="if(event.key==='Enter'){ event.preventDefault(); t7_addFamilyFromInput(); }" class="w-32 bg-white border border-teal-300 rounded-lg px-2 py-1 font-bold text-[11px] text-teal-900 outline-none focus:border-teal-600 shadow-2xs" />
+            <datalist id="t7-preset-fam-suggest"></datalist>
+            <button type="button" onclick="t7_addFamilyFromInput()" class="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold text-[11px] px-2 py-1 rounded-lg shadow-xs transition cursor-pointer flex items-center gap-1">
+              + Gia Đình
+            </button>
+          </div>
+        </div>
+
+        <!-- COMPACT MEMBER ROWS CONTAINER -->
+        <div class="bg-slate-50 rounded-xl p-1.5 border border-slate-200 max-h-[240px] overflow-y-auto space-y-1.5" id="t7-member-rows-container">
+          <!-- Dynamic member rows rendered here -->
+        </div>
+
+        <datalist id="t7-fam-history-list"></datalist>
+        <datalist id="t7-mbr-history-list"></datalist>
+      </div>
+    </div>
+
+    <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+      <button onclick="closeModal('modal-tab7-group')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
+      <button onclick="t7_saveGroupFromModal()" class="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
+        <span id="t7-group-save-btn-text">💾 Lưu</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 2: CHI TIẾT KHOẢN CHI (modal-tab7-expense) -->
+<!-- ========================================================================= -->
+<div id="modal-tab7-expense" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-expense')">
+  <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3 max-h-[92vh] flex flex-col">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🧾</span>
+        <h3 id="t7-expense-modal-title" class="font-bold text-sm text-slate-800">Chi tiết khoản chi</h3>
+      </div>
+      <button onclick="closeModal('modal-tab7-expense')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <input type="hidden" id="t7-expense-id" value="" />
+
+    <div class="space-y-2.5 text-xs overflow-y-auto pr-1 flex-1">
+
+      <!-- DESCRIPTION -->
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">📝 Nội dung (*):</label>
+        <input type="text" id="t7-expense-desc" placeholder="VD: Cáp treo Bà Nà, Hải sản Bé Mặn..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs" />
+      </div>
+
+      <!-- ROW 2: SỐ TIỀN - NGÀY CHI - GIA ĐÌNH ỨNG -->
+      <div class="grid grid-cols-3 gap-2">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1 text-[11px]">💰 Số tiền (*):</label>
+          <input type="text" id="t7-expense-amount" oninput="t7_recalculateSplitPreview()" placeholder="VD: 30000" class="w-full h-[34px] bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1 text-[11px]">📅 Ngày chi:</label>
+          <input type="date" id="t7-expense-date" class="w-full h-[34px] bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs text-center" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1 text-[11px]">🏡 Gia đình ứng (*):</label>
+          <div class="relative">
+            <input type="text" id="t7-expense-payer-input" placeholder="Gõ/chọn..." list="t7-expense-payer-suggest-list" oninput="t7_handlePayerInputChange()" onchange="t7_handlePayerInputChange()" class="w-full h-[34px] bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs" />
+            <datalist id="t7-expense-payer-suggest-list"></datalist>
+            <input type="hidden" id="t7-expense-payer" value="" />
+            <input type="hidden" id="t7-expense-wallet" value="" />
+          </div>
+          <div id="t7-selected-wallet-badge" onclick="t7_openWalletSelectModal()" class="text-[10px] text-teal-700 font-bold cursor-pointer hover:underline mt-0.5 hidden truncate" title="Nhấp để đổi ví trừ tiền">
+            💳 Ví: <span id="t7-selected-wallet-name"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPLIT MODE SELECTOR (TITLE + 3 MODES: HỆ SỐ - TRẺ EM - TỰ NHẬP ON SAME ROW) -->
+      <div class="flex items-center gap-2 pt-0.5">
+        <label class="font-bold text-slate-800 text-xs shrink-0 select-none">🔀 Kiểu chia:</label>
+        <div class="flex-1 grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl font-bold text-xs text-center" id="t7-split-mode-tabs">
+          <button type="button" onclick="t7_setSplitMode('WEIGHT')" id="btn-mode-WEIGHT" class="py-1 px-1 rounded-lg bg-teal-600 text-white shadow-xs transition truncate">⚖️ Hệ số</button>
+          <button type="button" onclick="t7_setSplitMode('FIXED_KIDS_EQUAL_ADULT')" id="btn-mode-FIXED_KIDS_EQUAL_ADULT" class="py-1 px-1 rounded-lg text-slate-600 hover:bg-white transition truncate">🧒 Trẻ em</button>
+          <button type="button" onclick="t7_setSplitMode('CUSTOM')" id="btn-mode-CUSTOM" class="py-1 px-1 rounded-lg text-slate-600 hover:bg-white transition truncate">✍️ Tự nhập</button>
+        </div>
+      </div>
+
+      <!-- EXTRA OPTIONS (FOR FIXED KIDS MODE: TRẺ EM & EM BÉ) -->
+      <div id="t7-fixed-kids-options" class="hidden bg-amber-50 p-2.5 rounded-xl border border-amber-200 space-y-1.5">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-amber-900 mb-1 text-[11px]">🧒 Tiền 1 Trẻ Em (¥):</label>
+            <input type="number" id="t7-fixed-kid-amount" value="" placeholder="VD: 3000..." oninput="t7_applyFixedKidsToRows()" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1 font-bold text-amber-900 outline-none focus:ring-1 focus:ring-amber-500 text-xs" />
+          </div>
+          <div>
+            <label class="block font-bold text-amber-900 mb-1 text-[11px]">🍼 Tiền 1 Em Bé (¥):</label>
+            <input type="number" id="t7-fixed-baby-amount" value="" placeholder="VD: 0..." oninput="t7_applyFixedKidsToRows()" class="w-full bg-white border border-amber-300 rounded-lg px-2.5 py-1 font-bold text-amber-900 outline-none focus:ring-1 focus:ring-amber-500 text-xs" />
+          </div>
+        </div>
+      </div>
+
+      <!-- PARTICIPANTS LIST & LIVE CALCULATION PREVIEW -->
+      <div class="pt-1 space-y-1">
+        <div class="flex justify-between items-center">
+          <label class="flex items-center gap-1.5 font-bold text-slate-800 cursor-pointer text-xs select-none">
+            <input type="checkbox" id="t7-select-all-participants-cb" onchange="t7_selectAllParticipants(this.checked)" checked class="w-4 h-4 text-teal-600 rounded focus:ring-teal-500 cursor-pointer" />
+            <span>Chọn người tham gia</span>
+          </label>
+          <span id="t7-split-total-check" class="text-[10px] font-bold text-emerald-600">Khớp 100%</span>
+        </div>
+
+        <div id="t7-participants-list" class="space-y-1.5 max-h-[200px] overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <!-- Dynamic participant items with weight/amount inputs rendered here -->
+        </div>
+      </div>
+
+    </div>
+
+    <div class="pt-2 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+      <button onclick="closeModal('modal-tab7-expense')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
+      <button onclick="t7_saveExpenseFromModal()" class="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
+        <span>💾 Lưu Khoản Chi</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: CHỌN VÍ CÁ NHÂN TRỪ TIỀN (KHI CHỌN GIA ĐÌNH 2F - TÔI) -->
+<!-- ========================================================================= -->
+<div id="modal-tab7-select-wallet" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-select-wallet')">
+  <div class="modal-content max-w-[340px] w-full p-4 rounded-2xl bg-white shadow-2xl space-y-3">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+      <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+        <span>💳</span>
+        <span>Chọn ví cá nhân cần trừ tiền:</span>
+      </h3>
+      <button onclick="closeModal('modal-tab7-select-wallet')" class="text-slate-400 font-bold text-lg hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <!-- TEXTBOX SUGGEST FOR WALLETS -->
+    <div class="relative">
+      <input type="text" id="t7-wallet-modal-search" placeholder="🔍 Gõ/chọn ví..." list="t7-wallet-modal-suggest-list" oninput="t7_onWalletModalSearchInput()" onchange="t7_onWalletModalSearchInput()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:border-teal-600 focus:bg-white transition text-xs" />
+      <datalist id="t7-wallet-modal-suggest-list"></datalist>
+    </div>
+
+    <div id="t7-wallet-select-options-list" class="space-y-1.5 max-h-[220px] overflow-y-auto">
+      <!-- Dynamic wallet buttons -->
+    </div>
+    <div class="pt-2 border-t border-slate-100 flex justify-end">
+      <button onclick="closeModal('modal-tab7-select-wallet')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs">
+        Bỏ qua
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL 3: KẾT THÚC CHUYẾN ĐÍ & XUẤT BÁO CÁO CÔNG NỢ DẠNG ẢNH (modal-tab7-finalize) -->
+<!-- ========================================================================= -->
+<div id="modal-tab7-finalize" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-finalize')">
+  <div class="modal-content max-w-[480px] w-full p-4 rounded-2xl bg-white shadow-2xl space-y-3 border-t-4 border-emerald-600 max-h-[92vh] flex flex-col relative">
+    <!-- ABSOLUTE FLOATING CLOSE BUTTON AT TOP-RIGHT (Z-50 GUARANTEES NEVER COVERED) -->
+    <button onclick="closeModal('modal-tab7-finalize')" class="absolute top-2.5 right-2.5 z-50 text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-100 active:scale-90 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer font-extrabold text-xl shadow-md border border-slate-200" title="Đóng modal">&times;</button>
+    
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0 pr-10">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <span class="text-xl shrink-0">📊</span>
+        <div class="min-w-0">
+          <h3 class="font-bold text-xs text-slate-800 truncate">Báo Cáo Xuất Công Nợ & Chi Trả Chi Tiết</h3>
+          <p id="t7-finalize-group-name" class="text-[10px] text-emerald-700 font-semibold truncate"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBER / FAMILY FILTER SELECTOR -->
+    <div class="shrink-0 bg-slate-50 p-2 rounded-xl border border-slate-200">
+      <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">👤 Chọn Gia Đình / Cá Nhân Cần Xuất Báo Cáo:</label>
+      <select id="t7-finalize-member-select" onchange="t7_renderFinalizeReportView()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer">
+        <option value="ALL">📌 Tất Cả Gia Đình (Báo Cáo Tổng Hợp)</option>
+        <option value="1F">🏠 1F (Tuyết Anh)</option>
+      </select>
+    </div>
+
+    <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
+      <style>
+      .t7-loan-card { width: 100%; max-width: 360px; margin: auto; font-family: Arial, Helvetica, sans-serif; color: #222; font-size: 12px; background: #fff; box-sizing: border-box; }
+      .t7-loan-header { margin-bottom: 6px; }
+      .t7-header-top { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #555; flex-wrap: wrap; gap: 4px; }
+      .t7-header-title { font-size: 12px; font-weight: 700; color: #111; word-break: break-word; }
+      .t7-total-box { height: 36px; background: linear-gradient(135deg, #5f55c9, #8056d9); border-radius: 6px; color: white; display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; padding: 0 10px; }
+      .t7-people-box { border: 1px solid #ddd; border-radius: 7px; background: #fff; overflow: hidden; margin-top: 6px; }
+      .t7-summary { margin-top: 6px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; }
+      .t7-summary-row { display: flex; align-items: center; justify-content: space-between; min-height: 27px; padding: 3px 8px; border-b: 1px solid #f0f0f0; gap: 6px; }
+      .t7-summary-row:last-child { border-b: none; }
+      .t7-summary-icon { width: 22px; font-size: 14px; shrink: 0; }
+      .t7-summary-label { flex: 1; font-size: 11px; color: #333; font-weight: 600; min-width: 0; word-break: break-word; }
+      .t7-summary-value { font-size: 11px; font-weight: 700; white-space: nowrap; shrink: 0; text-align: right; }
+      .t7-summary-diff-pos { color: #198754; font-weight: 800; }
+      .t7-summary-diff-neg { color: #dc3545; font-weight: 800; }
+      .t7-detail-box { margin-top: 7px; border: 1px solid #ddd; border-radius: 8px; padding: 7px; background: #fff; }
+      .t7-detail-title { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+      .t7-detail-row { display: grid; grid-template-columns: max-content 1fr auto; align-items: center; min-height: 20px; font-size: 10px; gap: 4px; padding: 2px 0; border-b: 1px solid #f5f5f5; }
+      .t7-detail-row:last-child { border-b: none; }
+      .t7-detail-date { font-weight: 700; color: #555; white-space: nowrap; flex-shrink: 0; }
+      .t7-detail-name { word-break: break-word; overflow-wrap: anywhere; color: #222; min-width: 0; line-height: 1.3; }
+      .t7-detail-money { text-align: right; font-weight: 700; color: #198754; white-space: nowrap; flex-shrink: 0; }
+      .t7-expense-box { margin-top: 7px; border: 1px solid #ddd; border-radius: 8px; padding: 7px; min-height: 60px; background: #fff; }
+      .t7-expense-title { font-size: 10px; font-weight: 800; color: #777; text-transform: uppercase; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+      .t7-expense-row { display: grid; grid-template-columns: max-content 1fr auto; font-size: 10px; min-height: 20px; align-items: center; gap: 4px; padding: 2px 0; border-b: 1px solid #f5f5f5; }
+      .t7-expense-row:last-child { border-b: none; }
+      .t7-expense-money { text-align: right; font-weight: 700; color: #111; white-space: nowrap; flex-shrink: 0; }
+      </style>
+
+      <!-- REPORT CARD CANVAS FOR IMAGE EXPORT -->
+      <div id="t7-report-card-canvas" class="bg-white border-2 border-emerald-500/80 rounded-2xl p-3 shadow-md t7-loan-card space-y-2 text-xs">
+        
+        <!-- HEADER -->
+        <div class="t7-loan-header border-b border-slate-200/80 pb-2 space-y-1">
+          <!-- DÒNG 1: CÔNG NỢ : TÊN GIA ĐÌNH -->
+          <div class="t7-header-top">
+            <span id="t7-card-target-label" class="font-extrabold text-purple-900 text-xs">CÔNG NỢ : 1F</span>
+            <div class="flex items-center gap-1 text-[11px] text-slate-500">
+              <span id="t7-finalize-mock-badge" class="hidden text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">Mock Demo</span>
+            </div>
+          </div>
+
+          <!-- DÒNG 2: TÊN CUỘC ĂN CHƠI / CHUYẾN ĐÍ ------- NGÀY -->
+          <div class="flex justify-between items-center text-xs">
+            <div id="t7-card-group-subtitle" class="t7-header-title">
+              🥣 Ăn uống: Cháo lòng
+            </div>
+            <div id="t7-card-group-date" class="text-[11px] font-medium text-slate-500">
+              20/09/2026
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. DIV TỔNG CHI & THÔNG TIN THAM GIA -->
+        <div class="bg-gradient-to-r from-teal-50 to-emerald-50 p-2.5 rounded-xl border border-teal-200/80 space-y-1.5">
+          <div class="flex justify-between items-center pb-1 border-b border-teal-200/60">
+            <span class="text-xs font-extrabold text-teal-900 uppercase tracking-tight">TỔNG CHI:</span>
+            <span class="text-sm font-black text-emerald-700"><span id="t7-card-total-purchase">0</span> ¥</span>
+          </div>
+          <div class="flex items-center justify-between text-xs font-bold text-slate-700 flex-wrap gap-1">
+            <span class="text-slate-500 text-[11px]">👥 Tổng người tham gia:</span>
+            <div class="flex items-center gap-1.5 text-[11px] font-extrabold text-teal-900">
+              <span id="t7-card-adult-cnt">👤 0 người</span>
+              <span id="t7-card-kid-cnt">🧒 0 bé</span>
+              <span id="t7-card-baby-cnt">🍼 0 em</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. SỐ TIỀN PHẢI TRẢ & KẾT TOÁN -->
+        <div id="t7-card-summary-box" class="t7-summary">
+          <div class="t7-summary-row">
+            <span class="t7-summary-icon">💴</span>
+            <span class="t7-summary-label">Đã ứng:</span>
+            <span id="t7-card-advanced-val" class="t7-summary-value">0 ¥</span>
+          </div>
+
+          <div class="t7-summary-row">
+            <span class="t7-summary-icon">📊</span>
+            <span class="t7-summary-label">Phải trả:</span>
+            <span id="t7-card-share-val" class="t7-summary-value text-slate-900 font-black">0 ¥</span>
+          </div>
+
+          <div class="t7-summary-row">
+            <span class="t7-summary-icon">💰</span>
+            <span class="t7-summary-label">Kết toán (Bù trừ):</span>
+            <span id="t7-card-net-val" class="t7-summary-value t7-summary-diff-pos">+0 ¥</span>
+          </div>
+        </div>
+
+        <!-- CHI TIẾT CÁC KHOẢN ỨNG (HỂN THỊ KHI CÓ KHOẢN ỨNG) -->
+        <div id="t7-card-advanced-detail-box" class="t7-detail-box">
+          <div id="t7-card-advanced-label" class="t7-detail-title">
+            <span>CHI TIẾT CÁC KHOẢN ỨNG</span>
+            <span id="t7-card-advanced-total-header" class="text-emerald-700 font-extrabold">0 ¥</span>
+          </div>
+          <div id="t7-finalize-advanced-detail">
+            <!-- Dynamic detailed advanced expenses -->
+          </div>
+        </div>
+
+        <!-- 3. CHI TIẾT CÁC KHOẢN CHI (GHI RÕ SỐ LƯỢNG & ĐƠN GIÁ TRÊN ĐẦU NGƯỜI) -->
+        <div id="t7-card-expense-detail-box" class="t7-expense-box">
+          <div id="t7-card-expense-label" class="t7-expense-title">
+            <span>CHI TIẾT CÁC KHOẢN CHI</span>
+            <span id="t7-card-expense-total-header" class="text-slate-900 font-extrabold">0 ¥</span>
+          </div>
+          <div id="t7-finalize-expenses-detail" class="space-y-1.5 pt-1">
+            <!-- Dynamic detailed expenses -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ACTION BUTTONS -->
+    <div class="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 shrink-0">
+      <button id="btn-t7-copy-img" onclick="t7_copyReportImageToClipboard()" class="w-full justify-center bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer flex items-center gap-1.5">
+        <span>📸</span>
+        <span>Xuất BC</span>
+      </button>
+      <button id="btn-t7-finalize-submit" onclick="t7_executeFinalizeTrip()" class="w-full justify-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-95 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1.5">
+        <span>🚀</span>
+        <span>Chốt Nợ</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: BẢNG QUẢN LÝ DANH SÁCH GIA ĐÌNH (modal-tab7-family-manager) -->
+<!-- ========================================================================= -->
+<div id="modal-tab7-family-manager" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-family-manager')">
+  <div class="modal-content max-w-[400px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5 max-h-[85vh] flex flex-col">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🏡</span>
+        <h3 class="font-bold text-sm text-slate-800">Bảng Quản Lý Danh Sách Gia Đình</h3>
+      </div>
+      <button onclick="closeModal('modal-tab7-family-manager')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
+      <!-- ADD NEW PRESET FAMILY FORM -->
+      <div class="bg-teal-50 p-2.5 rounded-xl border border-teal-200 space-y-2">
+        <span class="font-bold text-teal-900 block">➕ Thêm Gia Đình Mới Vào Database:</span>
+        <div class="flex items-center gap-1.5">
+          <input type="text" id="t7-mgr-fam-name" list="t7-fam-category-suggestions" placeholder="Tên gia đình (VD: 4F, Nhà Cúc...)" class="flex-1 bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-bold text-slate-800 outline-none text-xs" />
+          <button type="button" onclick="t7_savePresetFamilyFromManager()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition cursor-pointer shrink-0">
+            + Thêm
+          </button>
+        </div>
+      </div>
+
+      <!-- LIST OF PRESET FAMILIES IN DATABASE -->
+      <div class="space-y-1.5">
+        <span class="font-bold text-slate-700 block">📋 Danh sách các gia đình trong Database:</span>
+        <div id="t7-preset-families-manager-list" class="space-y-1.5 max-h-[220px] overflow-y-auto">
+          <!-- Dynamic list rendered here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-2 border-t border-slate-100 flex justify-end shrink-0">
+      <button onclick="closeModal('modal-tab7-family-manager')" class="bg-slate-700 hover:bg-slate-800 text-white font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DATALIST SUGGESTIONS FOR FAMILY NAMES (POPULATED FROM CATEGORIES & DATABASE) -->
+<datalist id="t7-fam-category-suggestions"></datalist>
+
+<!-- ========================================================================= -->
+<!-- MODAL: THÊM / SỬA GIA ĐÌNH VÀO DATABASE (modal-tab7-add-family) -->
+<!-- ========================================================================= -->
+<div id="modal-tab7-add-family" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-add-family')">
+  <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5 max-h-[90vh] flex flex-col">
+    <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🏡</span>
+        <h3 id="t7-fam-modal-title" class="font-bold text-sm text-slate-800">Thêm Gia Đình Mới</h3>
+      </div>
+      <button onclick="closeModal('modal-tab7-add-family')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
+      <div>
+        <input type="hidden" id="t7-fam-old-name" value="" />
+        <label class="block font-bold text-slate-700 mb-1">🏷️ Tên Gia Đình (*):</label>
+        <input type="text" id="t7-fam-form-name" list="t7-fam-category-suggestions" placeholder="VD: 1F, 2F, 3F, Gia đình Cúc..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition" />
+        <div class="mt-2 bg-blue-50/80 border border-blue-200 p-2 rounded-xl flex items-center gap-2">
+          <input type="checkbox" id="t7-fam-is-me-cb" class="w-4 h-4 rounded border-blue-400 text-blue-600 focus:ring-blue-500 cursor-pointer" />
+          <label for="t7-fam-is-me-cb" class="text-xs font-extrabold text-blue-900 cursor-pointer select-none">
+            ⭐ Là Gia Đình Tôi (Ví của tôi / 2F)
+          </label>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2 border-t border-slate-100">
+        <div class="flex justify-between items-center">
+          <label class="font-bold text-slate-800">👨‍👩‍👧‍👦 Thành Viên Trong Gia Đình:</label>
+          <button type="button" onclick="t7_addFamMemberRow()" class="text-indigo-700 hover:text-indigo-800 font-bold text-[11px] px-2 py-1 bg-indigo-50 rounded-lg border border-indigo-200 transition cursor-pointer">
+            + Thêm 1 Người
+          </button>
+        </div>
+
+        <div id="t7-fam-member-rows-container" class="space-y-1.5 max-h-[240px] overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <!-- Dynamic member rows for family modal -->
+        </div>
+      </div>
+    </div>
+
+    <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 shrink-0">
+      <button onclick="closeModal('modal-tab7-add-family')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
+      <button onclick="t7_saveFamilyFromModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
+        <span>💾 Lưu Gia Đình</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT FRONTEND CONTROLLER FOR TAB 7 -->
+<!-- ========================================================================= -->
+<script>
+  window.T7_STATE = {
+    groups: [],
+    splitFamilies: [],
+    rawFamilyMembers: [],
+    activeGroupId: "",
+    activeGroup: null,
+    activeCategory: "DINING", // "DINING" (Ăn uống) or "TRIP" (Chuyến đi) or "FAMILY" (Gia đình)
+    currentView: "LIST", // "LIST" (Danh sách card) or "DETAIL" (Chi tiết chuyến đi)
+    expenses: [],
+    memberBalances: [],
+    settlements: [],
+    currentSplitMode: "WEIGHT",
+    isBalanceSectionOpen: true
+  };
+
+  // 1. INITIALIZATION & DATA LOADING
+  function initTab7() {
+    // Instant 0ms load from localStorage cache if available
+    try {
+      const cachedGroups = localStorage.getItem('T7_CACHE_GROUPS');
+      if (cachedGroups) {
+        const parsed = JSON.parse(cachedGroups);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          window.T7_STATE.groups = parsed;
+        }
+      }
+      const cachedFams = localStorage.getItem('T7_CACHE_SPLIT_FAMILIES');
+      if (cachedFams) {
+        const parsedFams = JSON.parse(cachedFams);
+        if (Array.isArray(parsedFams) && parsedFams.length > 0) {
+          window.T7_STATE.splitFamilies = parsedFams;
+        }
+      }
+    } catch(e) {}
+
+    t7_loadAllData();
+  }
+
+  function t7_switchCategory(cat) {
+    window.T7_STATE.activeCategory = cat || 'DINING';
+    window.T7_STATE.currentView = 'LIST';
+
+    const btnFamily = document.getElementById('btn-t7-cat-family');
+    const btnDining = document.getElementById('btn-t7-cat-dining');
+    const btnTrip = document.getElementById('btn-t7-cat-trip');
+
+    const headerBar = document.getElementById('t7-header-bar');
+    const headerIcon = document.getElementById('t7-header-icon');
+    const headerTitle = document.getElementById('t7-header-title');
+    const headerSub = document.getElementById('t7-header-subtitle');
+    const btnQuickCreate = document.getElementById('btn-t7-quick-create');
+    const groupSelectBox = document.getElementById('t7-group-select-box');
+
+    const unselectedCls = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-400 hover:text-white flex items-center justify-center gap-1";
+    if (btnFamily) btnFamily.className = unselectedCls;
+    if (btnDining) btnDining.className = unselectedCls;
+    if (btnTrip) btnTrip.className = unselectedCls;
+
+    if (cat === 'FAMILY') {
+      if (btnFamily) btnFamily.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-indigo-300 bg-slate-700 shadow-xs flex items-center justify-center gap-1";
+      if (headerBar) headerBar.className = "bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-600 text-white p-3.5 shadow-md shrink-0 transition-all duration-300";
+      if (headerIcon) headerIcon.innerText = "👨‍👩‍👧‍👦";
+      if (headerTitle) headerTitle.innerText = "Quản Lý Danh Sách Gia Đình";
+      if (headerSub) {
+        headerSub.innerText = "";
+        headerSub.classList.add('hidden');
+      }
+      if (btnQuickCreate) btnQuickCreate.classList.add('hidden');
+      if (groupSelectBox) groupSelectBox.classList.add('hidden');
+    } else if (cat === 'DINING') {
+      if (btnDining) btnDining.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-amber-300 bg-slate-700 shadow-xs flex items-center justify-center gap-1";
+      if (headerBar) headerBar.className = "bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 text-white p-3.5 shadow-md shrink-0 transition-all duration-300";
+      if (headerIcon) headerIcon.innerText = "🍻";
+      if (headerTitle) headerTitle.innerText = "Chia Tiền Ăn Uống";
+      if (headerSub) {
+        headerSub.innerText = "Quẹt thẻ chia nhanh • Tự động tính bù trừ nợ";
+        headerSub.classList.remove('hidden');
+      }
+      if (btnQuickCreate) {
+        btnQuickCreate.classList.remove('hidden');
+        btnQuickCreate.innerHTML = "➕ Tạo Mới";
+        btnQuickCreate.onclick = function() { t7_openGroupModal(); };
+      }
+      if (groupSelectBox) groupSelectBox.classList.remove('hidden');
+    } else {
+      if (btnTrip) btnTrip.className = "flex-1 py-1.5 rounded-lg text-xs font-bold transition text-teal-300 bg-slate-700 shadow-xs flex items-center justify-center gap-1";
+      if (headerBar) headerBar.className = "bg-gradient-to-r from-teal-600 to-emerald-700 text-white p-3.5 shadow-md shrink-0 transition-all duration-300";
+      if (headerIcon) headerIcon.innerText = "✈️";
+      if (headerTitle) headerTitle.innerText = "Chia Tiền Du Lịch";
+      if (headerSub) {
+        headerSub.innerText = "Hệ số Gia Đình • Bù trừ nợ tối ưu 1-Click";
+        headerSub.classList.remove('hidden');
+      }
+      if (btnQuickCreate) {
+        btnQuickCreate.classList.remove('hidden');
+        btnQuickCreate.innerHTML = "➕ Tạo Mới";
+        btnQuickCreate.onclick = function() { t7_openGroupModal(); };
+      }
+      if (groupSelectBox) groupSelectBox.classList.remove('hidden');
+    }
+
+    t7_renderUI();
+  }
+
+  function t7_loadAllData() {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+      console.warn("GAS google.script.run not available in standalone preview.");
+      return;
+    }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          window.T7_STATE.groups = res.groups || [];
+          try {
+            localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(res.groups || []));
+          } catch(e) {}
+
+          t7_renderUI();
+        } else {
+          showToast(res ? res.message : "❌ Lỗi tải danh sách chuyến đi", true);
+        }
+      })
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi kết nối máy chủ: " + err, true);
+      })
+      .getSplitGroups();
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          window.T7_STATE.splitFamilies = res.families || [];
+          window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
+          try {
+            localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
+          } catch(e) {}
+
+          t7_renderUI();
+        }
+      })
+      .getSplitFamilies();
+  }
+
+  function t7_openGroupDetail(groupId) {
+    if (!groupId) return;
+    window.T7_STATE.currentView = 'DETAIL';
+    window.T7_STATE.activeGroupId = groupId;
+    t7_loadActiveGroupData(groupId);
+  }
+
+  function t7_backToGroupList() {
+    window.T7_STATE.currentView = 'LIST';
+    t7_renderUI();
+  }
+
+  function t7_loadActiveGroupData(groupId) {
+    if (!groupId) return;
+    window.T7_STATE.activeGroupId = groupId;
+
+    // Instant render from local cache if available
+    try {
+      const cached = localStorage.getItem('T7_CACHE_FULL_' + groupId);
+      if (cached) {
+        const cData = JSON.parse(cached);
+        if (cData && cData.group) {
+          window.T7_STATE.activeGroup = cData.group;
+          window.T7_STATE.expenses = cData.expenses || [];
+          window.T7_STATE.memberBalances = cData.memberBalances || [];
+          window.T7_STATE.settlements = cData.settlements || [];
+          t7_renderUI();
+        }
+      }
+    } catch(e) {}
+
+    // Fast 1-call bundled fetch from Apps Script
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          window.T7_STATE.activeGroup = res.group || null;
+          window.T7_STATE.expenses = res.expenses || [];
+          window.T7_STATE.memberBalances = res.memberBalances || [];
+          window.T7_STATE.settlements = res.settlements || [];
+
+          const activeTotal = (res.expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.totalExpense = activeTotal;
+          const match = (window.T7_STATE.groups || []).find(g => g.id === groupId);
+          if (match) match.totalExpense = activeTotal;
+
+          try {
+            localStorage.setItem('T7_CACHE_FULL_' + groupId, JSON.stringify(res));
+          } catch(e) {}
+          t7_renderUI();
+        } else {
+          showToast(res ? res.message : "❌ Không tìm thấy thông tin chuyến đi", true);
+        }
+      })
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi kết nối: " + err, true);
+      })
+      .getTab7FullGroupData(groupId);
+  }
+
+  // 2. RENDER DROPDOWN & ACTIVE GROUP UI
+  function t7_renderGroupDropdown() {
+    const inputEl = document.getElementById('t7-group-search');
+    if (!inputEl) return;
+
+    const cat = window.T7_STATE.activeCategory || 'TRIP';
+    const allGroups = window.T7_STATE.groups || [];
+    const filteredGroups = allGroups.filter(g => (g.category || 'TRIP') === cat);
+
+    inputEl.placeholder = cat === 'DINING' 
+      ? "🔍 Tìm cuộc ăn chơi..." 
+      : "🔍 Tìm chuyến du lịch...";
+
+    const activeGroup = filteredGroups.find(g => g.id === window.T7_STATE.activeGroupId);
+    if (activeGroup && window.T7_STATE.currentView === 'DETAIL') {
+      const statusIcon = activeGroup.status === 'CLOSED' ? '🔒' : '🟢';
+      const catIcon = activeGroup.category === 'DINING' ? '🍻' : '✈️';
+      inputEl.value = `${statusIcon} ${catIcon} ${activeGroup.name} (${(activeGroup.members || []).length} người)`;
+    } else {
+      inputEl.value = '';
+    }
+  }
+
+  let t7_groupSuggestHideTimer = null;
+
+  function t7_showGroupSuggest(showAll) {
+    if (t7_groupSuggestHideTimer) clearTimeout(t7_groupSuggestHideTimer);
+    const box = document.getElementById('box-t7-group-search');
+    const input = document.getElementById('t7-group-search');
+    if (!box || !input) return;
+
+    const cat = window.T7_STATE.activeCategory || 'TRIP';
+    const allGroups = window.T7_STATE.groups || [];
+    const filtered = allGroups.filter(g => (g.category || 'TRIP') === cat);
+
+    let query = (input.value || '').trim().toLowerCase();
+    const activeGroup = filtered.find(g => g.id === window.T7_STATE.activeGroupId);
+    if (activeGroup && input.value.includes(activeGroup.name)) {
+      query = '';
+    }
+
+    const matches = filtered.filter(g => {
+      if (showAll || !query) return true;
+      return (g.name || '').toLowerCase().includes(query) || (g.note || '').toLowerCase().includes(query);
+    });
+
+    box.innerHTML = '';
+    if (matches.length === 0) {
+      box.innerHTML = `<div class="p-3 text-slate-400 italic text-center text-xs">Không tìm thấy ${cat === 'DINING' ? 'cuộc ăn chơi' : 'chuyến đi'} phù hợp</div>`;
+    } else {
+      matches.forEach(g => {
+        const item = document.createElement('div');
+        item.className = "p-2.5 px-3 hover:bg-slate-800 cursor-pointer flex justify-between items-center transition border-b border-slate-800/80 last:border-b-0";
+        const statusIcon = g.status === 'CLOSED' ? '🔒' : '🟢';
+        const catIcon = g.category === 'DINING' ? '🍻' : '✈️';
+        const isSelected = g.id === window.T7_STATE.activeGroupId;
+        const formattedDate = t7_formatExpenseDate(g.created_at || '2026-09-20');
+        const mbrCount = (g.members || []).length;
+        item.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0">
+            <span>${catIcon}</span>
+            <div class="min-w-0">
+              <span class="font-bold text-xs ${isSelected ? 'text-teal-400' : 'text-white'} truncate block">${g.name} - ${mbrCount} thành viên - ${formattedDate}</span>
+            </div>
+          </div>
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${g.status==='CLOSED'?'bg-slate-700 text-slate-300':'bg-emerald-900/60 text-emerald-300'}">${statusIcon}</span>
+        `;
+        item.onmousedown = function(e) {
+          e.preventDefault();
+          t7_selectGroupFromSuggest(g.id);
+        };
+        box.appendChild(item);
+      });
+    }
+
+    box.classList.remove('hidden');
+  }
+
+  function t7_hideGroupSuggest() {
+    t7_groupSuggestHideTimer = setTimeout(function() {
+      const box = document.getElementById('box-t7-group-search');
+      if (box) box.classList.add('hidden');
+      t7_renderGroupDropdown();
+    }, 200);
+  }
+
+  function t7_selectGroupFromSuggest(groupId) {
+    if (t7_groupSuggestHideTimer) clearTimeout(t7_groupSuggestHideTimer);
+    const box = document.getElementById('box-t7-group-search');
+    if (box) box.classList.add('hidden');
+    if (groupId) {
+      t7_openGroupDetail(groupId);
+    }
+  }
+
+  function t7_renderGroupsCardsList() {
+    const container = document.getElementById('t7-groups-cards-list');
+    const countEl = document.getElementById('t7-groups-list-count');
+    const titleEl = document.getElementById('t7-groups-list-title');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const cat = window.T7_STATE.activeCategory || 'TRIP';
+    const allGroups = window.T7_STATE.groups || [];
+    const filtered = allGroups.filter(g => (g.category || 'TRIP') === cat);
+
+    const parseGroupDateHelper = function(g) {
+      if (g.created_at) {
+        const d = new Date(g.created_at);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (g.id) {
+        const num = parseInt(String(g.id).replace(/\D/g, ''), 10);
+        if (!isNaN(num)) return num;
+      }
+      return 0;
+    };
+    filtered.sort((a, b) => parseGroupDateHelper(b) - parseGroupDateHelper(a));
+
+    if (countEl) countEl.innerText = filtered.length;
+    if (titleEl) titleEl.innerText = cat === 'DINING' ? "Cuộc Ăn Chơi" : "Chuyến Du Lịch";
+
+    if (filtered.length === 0) {
+      container.innerHTML = `
+        <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 shadow-xs space-y-3">
+          <span class="text-4xl block">${cat === 'DINING' ? '🍻' : '🏕️'}</span>
+          <h3 class="text-sm font-bold text-slate-800">${cat === 'DINING' ? 'Chưa có cuộc ăn chơi nào!' : 'Chưa có chuyến du lịch nào!'}</h3>
+          <p class="text-xs text-slate-500 max-w-[260px] mx-auto">Bấm nút "Tạo Mới" ở trên để bắt đầu ghi chép và chia tiền nợ.</p>
+          <button onclick="t7_openGroupModal()" class="bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md active:scale-95 transition cursor-pointer">
+            ➕ ${cat === 'DINING' ? 'Tạo Nhóm Ăn Chơi Mới' : 'Tạo Chuyến Du Lịch Mới'}
+          </button>
+        </div>`;
+      return;
+    }
+
+    filtered.forEach(g => {
+      const card = document.createElement('div');
+      card.className = "t7-group-card bg-white rounded-xl px-3 py-2 border border-slate-200 shadow-2xs hover:border-teal-400 transition cursor-pointer select-none flex justify-between items-center gap-2";
+      card.onclick = function(e) {
+        if (e.target.closest('button')) return;
+        t7_openGroupDetail(g.id);
+      };
+
+      const statusBadge = g.status === 'CLOSED'
+        ? '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-slate-100 text-slate-700 border-slate-300">🔒 Đã chốt nợ</span>'
+        : '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">🟢 Đang diễn ra</span>';
+
+      const catIcon = g.category === 'DINING' ? '🥣' : '✈️';
+      const mbrCount = (g.members || []).length;
+      const gDate = t7_formatExpenseDate(g.created_at || '2026-09-20');
+      const totalExp = Number(g.totalExpense) || 0;
+
+      card.innerHTML = `
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <h3 class="font-extrabold text-xs text-slate-800 flex items-center gap-1 shrink-0">
+              <span>${catIcon}</span>
+              <span>${g.name}</span>
+            </h3>
+            <span class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 shrink-0">📅 ${gDate}</span>
+            ${statusBadge}
+          </div>
+          <p class="text-[10px] text-slate-500 truncate mt-0.5">👥 ${mbrCount} thành viên</p>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="font-black text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/80">${totalExp.toLocaleString()} ¥</span>
+          <button onclick="event.stopPropagation(); t7_confirmDeleteGroupById('${g.id}', '${g.name.replace(/'/g, "\\'")}')" title="Xóa" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-[10px] font-bold transition cursor-pointer">🗑️</button>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  function t7_openGroupModalById(groupId) {
+    const g = (window.T7_STATE.groups || []).find(item => item.id === groupId);
+    if (g) t7_openGroupModal(g);
+  }
+
+  function t7_confirmDeleteGroupById(groupId, groupName) {
+    showConfirmModal(
+      "⚠️ Xóa Chuyến Đi / Nhóm",
+      `Bạn có chắc chắn muốn xóa "${groupName}" và TOÀN BỘ khoản chi trong chuyến này không?`,
+      function() {
+        showToast("⏳ Đang xóa...");
+        window.T7_STATE.groups = (window.T7_STATE.groups || []).filter(g => g.id !== groupId);
+        if (window.T7_STATE.activeGroupId === groupId) {
+          window.T7_STATE.activeGroupId = "";
+          window.T7_STATE.activeGroup = null;
+          window.T7_STATE.currentView = 'LIST';
+        }
+        try { localStorage.removeItem('T7_CACHE_FULL_' + groupId); } catch(e) {}
+        try { localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+        t7_renderUI();
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              showToast(res.message);
+              t7_loadAllData();
+            } else {
+              showToast(res ? res.message : "❌ Lỗi xóa", true);
+              t7_loadAllData();
+            }
+          })
+          .withFailureHandler(function(err) {
+            showToast("❌ Lỗi kết nối máy chủ: " + err, true);
+            t7_loadAllData();
+          })
+          .deleteSplitGroup(groupId);
+      },
+      "🗑️ Xóa Vĩnh Viễn"
+    );
+  }
+
+  function t7_renderUI() {
+    const familyView = document.getElementById('t7-family-view-container');
+    const groupsListView = document.getElementById('t7-groups-list-container');
+    const container = document.getElementById('t7-active-group-container');
+
+    if (window.T7_STATE.activeCategory === 'FAMILY') {
+      if (groupsListView) groupsListView.classList.add('hidden');
+      if (container) container.classList.add('hidden');
+      if (familyView) {
+        familyView.classList.remove('hidden');
+        t7_renderFamilyCardsList();
+      }
+      return;
+    }
+
+    if (familyView) familyView.classList.add('hidden');
+    t7_renderGroupDropdown();
+
+    const currentView = window.T7_STATE.currentView || 'LIST';
+
+    // LIST VIEW MODE
+    if (currentView === 'LIST' || !window.T7_STATE.activeGroup) {
+      if (container) container.classList.add('hidden');
+      if (groupsListView) {
+        groupsListView.classList.remove('hidden');
+        t7_renderGroupsCardsList();
+      }
+      return;
+    }
+
+    // DETAIL VIEW MODE
+    if (groupsListView) groupsListView.classList.add('hidden');
+    if (container) container.classList.remove('hidden');
+
+    const group = window.T7_STATE.activeGroup;
+    if (!group) return;
+
+    // Title & Badges
+    // Title & Badges & Date
+    document.getElementById('t7-group-title').innerText = group.name;
+    const dateBadge = document.getElementById('t7-group-date-badge');
+    if (dateBadge) {
+      dateBadge.innerText = t7_formatExpenseDate(group.created_at || group.date || new Date());
+    }
+
+    const badge = document.getElementById('t7-group-status-badge');
+    const finishBox = document.getElementById('t7-finish-trip-box');
+
+    if (group.status === 'CLOSED') {
+      badge.className = "text-[9px] font-bold px-2 py-0.5 rounded-md border bg-slate-100 text-slate-700 border-slate-300";
+      badge.innerText = "🔒 Đã chốt nợ";
+      if (finishBox) {
+        finishBox.classList.remove('hidden');
+        finishBox.innerHTML = `
+          <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <button onclick="t7_openFinalizeModal()" class="py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>📊 Chốt Nợ Lại</span>
+            </button>
+            <button onclick="t7_reopenCurrentGroup()" class="py-2 bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-900 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>🔓 Mở Lại Chuyến Đi</span>
+            </button>
+          </div>
+        `;
+      }
+    } else {
+      badge.className = "text-[9px] font-bold px-2 py-0.5 rounded-md border bg-emerald-50 text-emerald-700 border-emerald-200";
+      badge.innerText = "🟢 Đang diễn ra";
+      if (finishBox) {
+        finishBox.classList.remove('hidden');
+        finishBox.innerHTML = `
+          <button onclick="t7_openFinalizeModal()" class="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+            <span>🏁 Kết Thúc Chuyến Đi & Chốt Nợ Tự Động</span>
+          </button>
+        `;
+      }
+    }
+
+    // Stats
+    const totalExp = window.T7_STATE.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    document.getElementById('t7-stat-total-expense').innerText = typeof formatMoney === 'function' ? formatMoney(totalExp) : (totalExp.toLocaleString() + " ¥");
+
+    // Headcount breakdown for the entire group/trip
+    const members = group.members || [];
+    const adultsCount = members.filter(m => String(m.member_type || m.type || m.age_group || 'ADULT').toUpperCase() === 'ADULT').length;
+    const kidsCount = members.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'CHILD').length;
+    const babiesCount = members.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'BABY').length;
+
+    const totalWeight = (adultsCount * 1.0) + (kidsCount * 0.5) + (babiesCount * 0.0);
+    const perAdult = (adultsCount > 0 && totalWeight > 0 && totalExp > 0) ? Math.round(totalExp / totalWeight) : 0;
+    const perKid = (kidsCount > 0 && totalWeight > 0 && totalExp > 0) ? Math.round(perAdult * 0.5) : 0;
+
+    const breakdownBox = document.getElementById('t7-headcount-breakdown-box');
+    if (breakdownBox) {
+      breakdownBox.className = "grid grid-cols-3 gap-1 pt-1.5 border-t border-teal-200/60 text-[10px]";
+      breakdownBox.innerHTML = `
+        <div class="bg-white/80 px-1.5 py-1.5 rounded-lg border border-teal-100 text-center flex flex-col items-center justify-center">
+          <span class="text-slate-600 font-bold leading-none">👤 người lớn: <b class="text-teal-900">${adultsCount}</b></span>
+        </div>
+        <div class="bg-white/80 px-1.5 py-1.5 rounded-lg border border-teal-100 text-center flex flex-col items-center justify-center">
+          <span class="text-slate-600 font-bold leading-none">🧒 trẻ em: <b class="text-teal-900">${kidsCount}</b></span>
+        </div>
+        <div class="bg-white/80 px-1.5 py-1.5 rounded-lg border border-teal-100 text-center flex flex-col items-center justify-center">
+          <span class="text-slate-600 font-bold leading-none">🍼 em bé: <b class="text-teal-900">${babiesCount}</b></span>
+        </div>
+      `;
+    }
+
+    // Render Member Balances
+    t7_renderBalancesList();
+
+    // Render Optimal Settlements
+    t7_renderOptimalSettlementsList();
+
+    // Render Expense Items
+    t7_renderExpensesList();
+  }
+
+  // 3. RENDER MEMBER BALANCES & OPTIMAL SETTLEMENTS
+  function t7_toggleBalanceSection() {
+    window.T7_STATE.isBalanceSectionOpen = !window.T7_STATE.isBalanceSectionOpen;
+    const body = document.getElementById('t7-balance-section-body');
+    const icon = document.getElementById('t7-balance-toggle-icon');
+    const text = document.getElementById('t7-balance-toggle-text');
+
+    if (window.T7_STATE.isBalanceSectionOpen) {
+      body.classList.remove('hidden');
+      icon.innerText = "▲";
+      text.innerText = "Thu gọn";
+    } else {
+      body.classList.add('hidden');
+      icon.innerText = "▼";
+      text.innerText = "Mở rộng";
+    }
+  }
+
+  function t7_computeLocalBalances() {
+    const group = window.T7_STATE.activeGroup;
+    if (!group || !group.members) return [];
+
+    const expenses = window.T7_STATE.expenses || [];
+    const famMap = {};
+
+    group.members.forEach(m => {
+      const fam = m.family || 'Gia đình';
+      if (!famMap[fam]) {
+        famMap[fam] = { family: fam, paid: 0, owed: 0, balance: 0 };
+      }
+    });
+
+    expenses.forEach(exp => {
+      const amt = Number(exp.amount) || 0;
+      if (amt <= 0) return;
+
+      const payerFam = exp.payerFamily || t7_getPayerFamilyName(exp.payerId, exp.payerName);
+      if (!famMap[payerFam]) {
+        famMap[payerFam] = { family: payerFam, paid: 0, owed: 0, balance: 0 };
+      }
+      famMap[payerFam].paid += amt;
+
+      const parts = exp.participants && exp.participants.length > 0
+        ? exp.participants
+        : group.members.map(m => ({ memberId: m.id, name: m.name, family: m.family, type: m.type, weight: m.weight }));
+
+      if (parts.length > 0) {
+        const mode = exp.splitType || 'WEIGHT';
+        if (mode === 'CUSTOM') {
+          parts.forEach(p => {
+            const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.id) || m.name === p.name);
+            const pFam = pMbr ? pMbr.family : (p.family || payerFam);
+            if (!famMap[pFam]) famMap[pFam] = { family: pFam, paid: 0, owed: 0, balance: 0 };
+            famMap[pFam].owed += Number(p.customAmount) || 0;
+          });
+        } else if (mode === 'FIXED_KIDS_EQUAL_ADULT') {
+          const extra = exp.extraOptions || {};
+          const kidAmt = Number(extra.fixedChildAmount) || 3000;
+          let kidsTotal = 0;
+          const kidsList = [];
+          const adultsList = [];
+
+          parts.forEach(p => {
+            const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.id) || m.name === p.name);
+            const pType = ((pMbr ? pMbr.type : p.type) || 'ADULT').toUpperCase();
+            const pFam = pMbr ? pMbr.family : (p.family || payerFam);
+            if (pType === 'CHILD' || pType === 'BABY') {
+              const cAmt = (p.customAmount !== null && p.customAmount !== undefined) ? Number(p.customAmount) : (pType === 'CHILD' ? kidAmt : 0);
+              kidsTotal += cAmt;
+              kidsList.push({ fam: pFam, amt: cAmt });
+            } else {
+              adultsList.push({ fam: pFam });
+            }
+          });
+
+          kidsList.forEach(k => {
+            if (!famMap[k.fam]) famMap[k.fam] = { family: k.fam, paid: 0, owed: 0, balance: 0 };
+            famMap[k.fam].owed += k.amt;
+          });
+
+          const remAdult = Math.max(0, amt - kidsTotal);
+          if (adultsList.length > 0) {
+            const share = Math.floor(remAdult / adultsList.length);
+            const rem = remAdult - (share * adultsList.length);
+            adultsList.forEach((a, idx) => {
+              if (!famMap[a.fam]) famMap[a.fam] = { family: a.fam, paid: 0, owed: 0, balance: 0 };
+              famMap[a.fam].owed += share + (idx === 0 ? rem : 0);
+            });
+          }
+        } else {
+          let totalW = 0;
+          const weightedParts = parts.map(p => {
+            const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.id) || m.name === p.name);
+            const pFam = pMbr ? pMbr.family : (p.family || payerFam);
+            const pType = ((pMbr ? pMbr.type : p.type) || 'ADULT').toUpperCase();
+            const w = p.weight !== undefined ? Number(p.weight) : (pType === 'CHILD' ? 0.5 : (pType === 'BABY' ? 0.0 : 1.0));
+            totalW += w;
+            return { fam: pFam, weight: w };
+          });
+
+          if (totalW > 0) {
+            let sumCalc = 0;
+            const shares = weightedParts.map(wp => {
+              const c = Math.round((wp.weight / totalW) * amt);
+              sumCalc += c;
+              return { fam: wp.fam, calc: c };
+            });
+            const remW = amt - sumCalc;
+            if (remW !== 0 && shares.length > 0) shares[0].calc += remW;
+
+            shares.forEach(s => {
+              if (!famMap[s.fam]) famMap[s.fam] = { family: s.fam, paid: 0, owed: 0, balance: 0 };
+              famMap[s.fam].owed += s.calc;
+            });
+          }
+        }
+      }
+    });
+
+    const result = [];
+    Object.values(famMap).forEach(f => {
+      result.push({
+        family: f.family,
+        paid: f.paid,
+        owed: f.owed,
+        balance: f.paid - f.owed
+      });
+    });
+    return result;
+  }
+
+  function t7_renderBalancesList() {
+    const listEl = document.getElementById('t7-member-balances-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    let balances = window.T7_STATE.memberBalances || [];
+    if (balances.length === 0 && (window.T7_STATE.expenses || []).length > 0) {
+      balances = t7_computeLocalBalances();
+    }
+
+    if (balances.length === 0) {
+      listEl.innerHTML = '<p class="text-slate-400 italic text-center py-1">Chưa có dữ liệu chi tiêu.</p>';
+      return;
+    }
+
+    // Group balances by Family
+    const familyMap = {};
+    balances.forEach(b => {
+      const famKey = b.family || 'Gia đình';
+      if (!familyMap[famKey]) familyMap[famKey] = [];
+      familyMap[famKey].push(b);
+    });
+
+    const groupMembers = (window.T7_STATE.activeGroup ? window.T7_STATE.activeGroup.members : []) || [];
+
+    Object.keys(familyMap).forEach(fam => {
+      const membersInFam = familyMap[fam];
+      const famPaid = membersInFam.reduce((sum, m) => sum + (m.paid || 0), 0);
+      const famOwed = membersInFam.reduce((sum, m) => sum + (m.owed || 0), 0);
+      const famNetSum = famPaid - famOwed;
+
+      // Family headcount breakdown (adults, kids, babies)
+      const fMembers = groupMembers.filter(m => (m.family || 'Gia đình') === fam);
+      const fAdults = fMembers.filter(m => String(m.member_type || m.type || m.age_group || 'ADULT').toUpperCase() === 'ADULT').length;
+      const fKids = fMembers.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'CHILD').length;
+      const fBabies = fMembers.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'BABY').length;
+
+      const hcParts = [];
+      if (fAdults > 0) hcParts.push(`👤 ${fAdults} Lớn`);
+      if (fKids > 0) hcParts.push(`🧒 ${fKids} em`);
+      if (fBabies > 0) hcParts.push(`🍼 ${fBabies} bé`);
+      const hcBadgeStr = hcParts.length > 0 ? hcParts.join(' ') : '👤 1 Lớn';
+
+      // Rate per adult for this specific family
+      const fWeight = (fAdults * 1.0) + (fKids * 0.5) + (fBabies * 0.0);
+      let rateNote = '';
+      if (famOwed > 0 && fWeight > 0 && fAdults > 0) {
+        const fPerAdult = Math.round(famOwed / fWeight);
+        rateNote = ` (${fPerAdult.toLocaleString()} ¥/1Lớn)`;
+      }
+
+      const famCard = document.createElement('div');
+      famCard.className = "bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs select-none space-y-1.5";
+
+      let phaiTraClass = "text-slate-700 font-extrabold bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200";
+      if (famNetSum > 0) {
+        phaiTraClass = "text-emerald-700 font-extrabold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200";
+      } else if (famNetSum < 0) {
+        phaiTraClass = "text-rose-700 font-extrabold bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200";
+      }
+
+      famCard.innerHTML = `
+        <div class="flex justify-between items-center gap-2">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap">
+            <span class="font-extrabold text-slate-800 shrink-0">🏡 Gia đình ${fam}</span>
+            <span class="text-[10px] font-bold text-slate-500 bg-slate-200/70 px-1.5 py-0.2 rounded-md border border-slate-300/60 shrink-0">${hcBadgeStr}</span>
+            ${rateNote ? `<span class="text-[10px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded-md border border-teal-200/80 shrink-0">${rateNote.trim()}</span>` : ''}
+          </div>
+        </div>
+        <div class="flex justify-between items-center text-[11px] text-slate-600 bg-white/90 p-1.5 rounded-lg border border-slate-200/60">
+          <span>Đã ứng: <b class="text-slate-800">${famPaid.toLocaleString()} ¥</b></span>
+          <span class="${phaiTraClass}">Phải trả: <b>${famOwed.toLocaleString()} ¥</b></span>
+        </div>
+      `;
+
+      listEl.appendChild(famCard);
+    });
+  }
+
+  function t7_renderOptimalSettlementsList() {
+    const boxEl = document.getElementById('t7-optimal-settlements-box');
+    if (boxEl) boxEl.classList.add('hidden');
+  }
+
+  // 4. RENDER EXPENSES LIST
+  function t7_getPayerFamilyName(payerId, payerName) {
+    const group = window.T7_STATE.activeGroup || {};
+    const gMbr = (group.members || []).find(m =>
+      (m.id && m.id === payerId) || (m.member_id && m.member_id === payerId) ||
+      (m.name && m.name === payerName) || (m.member_name && m.member_name === payerName)
+    );
+    if (gMbr) {
+      const f = gMbr.family || gMbr.family_name || gMbr.familyName || gMbr.familyTag;
+      if (f) return f;
+    }
+    const rawMembers = window.T7_STATE.rawFamilyMembers || [];
+    const rMbr = rawMembers.find(rm =>
+      (rm.member_id && rm.member_id === payerId) || (rm.id && rm.id === payerId) ||
+      (rm.member_name && rm.member_name === payerName) || (rm.name && rm.name === payerName)
+    );
+    if (rMbr && (rMbr.family_name || rMbr.family)) return rMbr.family_name || rMbr.family;
+
+    const familyMap = t7_getFamilyDatabaseMap();
+    for (const [key, fam] of familyMap.entries()) {
+      if (fam && fam.members && fam.members.some(m => (m.id && m.id === payerId) || (m.member_id && m.member_id === payerId) || (m.name && m.name === payerName) || (m.member_name && m.member_name === payerName))) {
+        return fam.name || fam.family_name || key;
+      }
+    }
+    return payerName || payerId || 'N/A';
+  }
+
+  function t7_renderExpensesList() {
+    const container = document.getElementById('t7-expense-list');
+    const countEl = document.getElementById('t7-expense-count');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const parseExpenseDateHelper = function(e) {
+      if (e.date) {
+        const d = new Date(e.date);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (e.created_at) {
+        const d = new Date(e.created_at);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (e.id) {
+        const num = parseInt(String(e.id).replace(/\D/g, ''), 10);
+        if (!isNaN(num)) return num;
+      }
+      return 0;
+    };
+    const expenses = (window.T7_STATE.expenses || []).slice().sort((a, b) => parseExpenseDateHelper(b) - parseExpenseDateHelper(a));
+    if (countEl) countEl.innerText = expenses.length;
+
+    if (expenses.length === 0) {
+      container.innerHTML = `
+        <div class="bg-white rounded-2xl p-6 text-center border border-slate-200 shadow-xs">
+          <span class="text-3xl block mb-2">🧾</span>
+          <p class="text-xs font-bold text-slate-700">Chưa có khoản chi nào trong chuyến đi này!</p>
+          <p class="text-[11px] text-slate-400 mt-1">Bấm "Thêm Khoản Chi" để bắt đầu ghi chép các chi phí.</p>
+        </div>`;
+      return;
+    }
+
+    const groupMbrs = (window.T7_STATE.activeGroup ? window.T7_STATE.activeGroup.members : []) || [];
+
+    expenses.forEach(exp => {
+      const card = document.createElement('div');
+      card.className = "bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-teal-400 transition cursor-pointer select-none flex justify-between items-center gap-1.5 text-xs";
+      card.onclick = function(e) {
+        if (e && e.target && e.target.closest('button')) return;
+        t7_openEditExpense(exp.id);
+      };
+      card.title = "Nhấp 1 lần để xem chi tiết / sửa khoản chi";
+
+      const formattedDate = t7_formatExpenseDate(exp.date || exp.created_at);
+      const payerFamName = t7_getPayerFamilyName(exp.payerId, exp.payerName);
+      const escapedDesc = String(exp.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+      const parts = (exp.participants && exp.participants.length > 0) ? exp.participants : groupMbrs;
+      const partCount = parts.length;
+      const eAdults = parts.filter(p => {
+        const pMbr = groupMbrs.find(m => m.id === (p.memberId || p.id) || m.name === p.name);
+        const pType = ((pMbr ? pMbr.type : p.type) || 'ADULT').toUpperCase();
+        return pType === 'ADULT';
+      }).length;
+      const eKids = parts.filter(p => {
+        const pMbr = groupMbrs.find(m => m.id === (p.memberId || p.id) || m.name === p.name);
+        const pType = ((pMbr ? pMbr.type : p.type) || '').toUpperCase();
+        return pType === 'CHILD';
+      }).length;
+      const eWeight = (eAdults * 1.0) + (eKids * 0.5);
+      const eAmt = Number(exp.amount) || 0;
+      const eRatePerAdult = (eAmt > 0 && eWeight > 0 && eAdults > 0) ? Math.round(eAmt / eWeight) : 0;
+      const rateBadgeNote = eRatePerAdult > 0 ? ` • ${eRatePerAdult.toLocaleString()} ¥/1n` : '';
+
+      card.innerHTML = `
+        <div class="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap text-[11px]">
+          <span class="font-extrabold text-slate-800 truncate">${exp.description}</span>
+          <span class="text-[10px] text-slate-400 shrink-0">(${payerFamName} ứng • ${formattedDate})</span>
+          <span class="text-[10px] text-slate-600 font-bold bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 shrink-0">👤 ${partCount}n${rateBadgeNote}</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="font-black text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200/60">${eAmt.toLocaleString()} ¥</span>
+          <button onclick="event.stopPropagation(); t7_confirmDeleteExpense('${exp.id}', '${escapedDesc}')" title="Xóa khoản chi" class="w-5 h-5 flex items-center justify-center bg-slate-100 hover:bg-rose-100 text-slate-400 hover:text-rose-600 rounded-md text-xs font-bold cursor-pointer transition">✕</button>
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+  }
+
+  // 5. GROUP MODAL & CRUD HANDLERS
+  let t7_lastSummaryTapTime = 0;
+
+  function t7_handleSummaryDblClick(e) {
+    const now = Date.now();
+    const timeDiff = now - t7_lastSummaryTapTime;
+
+    if (e && e.type === 'dblclick') {
+      t7_openEditCurrentGroup();
+      return;
+    }
+
+    if (timeDiff < 400 && timeDiff > 0) {
+      t7_openEditCurrentGroup();
+      t7_lastSummaryTapTime = 0;
+    } else {
+      t7_lastSummaryTapTime = now;
+    }
+  }
+
+  function t7_openEditCurrentGroup() {
+    const activeGroup = window.T7_STATE.activeGroup || (window.T7_STATE.groups || []).find(g => g.id === window.T7_STATE.activeGroupId);
+    if (activeGroup) {
+      t7_openGroupModal(activeGroup);
+    } else {
+      t7_openGroupModal();
+    }
+  }
+
+  function t7_openGroupModal(groupToEdit = null) {
+    const modal = document.getElementById('modal-tab7-group');
+    const title = document.getElementById('t7-group-modal-title');
+    const icon = document.getElementById('t7-group-modal-icon');
+    const nameLabel = document.getElementById('t7-group-name-label');
+    const nameInput = document.getElementById('t7-group-name');
+    const saveBtnText = document.getElementById('t7-group-save-btn-text');
+    const container = document.getElementById('t7-member-rows-container');
+
+    document.getElementById('t7-group-id').value = groupToEdit ? groupToEdit.id : '';
+    document.getElementById('t7-group-name').value = groupToEdit ? groupToEdit.name : '';
+    const cat = groupToEdit ? (groupToEdit.category || 'TRIP') : (window.T7_STATE.activeCategory || 'TRIP');
+    if (document.getElementById('t7-group-category')) {
+      document.getElementById('t7-group-category').value = cat;
+    }
+    const dateInput = document.getElementById('t7-group-date');
+    if (dateInput) {
+      let dVal = groupToEdit ? (groupToEdit.created_at || groupToEdit.date || groupToEdit.ngay) : '';
+      if (dVal) {
+        if (typeof dVal === 'string') {
+          dVal = dVal.split('T')[0];
+        } else if (dVal instanceof Date) {
+          try { dVal = dVal.toISOString().split('T')[0]; } catch(e) {}
+        }
+      }
+      dateInput.value = dVal || new Date().toISOString().split('T')[0];
+    }
+
+    document.getElementById('t7-group-currency').value = groupToEdit ? groupToEdit.currency : 'JPY';
+    document.getElementById('t7-group-status').value = groupToEdit ? groupToEdit.status : 'OPEN';
+    document.getElementById('t7-group-note').value = groupToEdit ? groupToEdit.note : '';
+
+    if (cat === 'DINING') {
+      if (icon) icon.innerText = "🍻";
+      if (title) title.innerText = groupToEdit ? "Chi tiết nhóm" : "Tạo Nhóm Cùng Ăn Mới";
+      if (nameLabel) nameLabel.innerText = "🏷️ Tên (*):";
+      if (nameInput) nameInput.placeholder = "VD: Đi Ăn Bún Chả Cuối Tuần, Lẩu Nướng 20/10...";
+      if (saveBtnText) saveBtnText.innerText = "💾 Lưu";
+    } else {
+      if (icon) icon.innerText = "✈️";
+      if (title) title.innerText = groupToEdit ? "Chi tiết nhóm" : "Tạo Chuyến Đi Mới";
+      if (nameLabel) nameLabel.innerText = "🏷️ Tên (*):";
+      if (nameInput) nameInput.placeholder = "VD: Du Lịch Đà Nẵng 2026, Đi Phượt Sapa...";
+      if (saveBtnText) saveBtnText.innerText = "💾 Lưu";
+    }
+
+    // Populate Datalists, Preset Family Chips & Reset Quick Family Inputs
+    t7_updateHistoryDatalists();
+    t7_renderPresetFamilyChips();
+    t7_resetQuickFamilyInputs();
+
+    container.innerHTML = '';
+
+    const members = (groupToEdit && groupToEdit.members && groupToEdit.members.length > 0)
+      ? groupToEdit.members
+      : [];
+
+    members.forEach(m => t7_addMemberRow(m));
+
+    openModal('modal-tab7-group');
+  }
+
+  function t7_openEditCurrentGroup() {
+    if (window.T7_STATE.activeGroup) {
+      t7_openGroupModal(window.T7_STATE.activeGroup);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // FAMILY DATABASE CONTROLLER & VIEW RENDERER (PERSISTENT EDIT & DELETE)
+  // -------------------------------------------------------------------------
+  function t7_getDeletedFamiliesSet() {
+    try {
+      const stored = localStorage.getItem('T7_DELETED_FAMILIES');
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) return new Set(arr.map(s => String(s).trim().toLowerCase()));
+      }
+    } catch(e) {}
+    return new Set();
+  }
+
+  function t7_addDeletedFamilyKey(famName) {
+    if (!famName) return;
+    const deletedSet = t7_getDeletedFamiliesSet();
+    deletedSet.add(famName.trim().toLowerCase());
+    try {
+      localStorage.setItem('T7_DELETED_FAMILIES', JSON.stringify(Array.from(deletedSet)));
+    } catch(e) {}
+  }
+
+  function t7_removeDeletedFamilyKey(famName) {
+    if (!famName) return;
+    const deletedSet = t7_getDeletedFamiliesSet();
+    deletedSet.delete(famName.trim().toLowerCase());
+    try {
+      localStorage.setItem('T7_DELETED_FAMILIES', JSON.stringify(Array.from(deletedSet)));
+    } catch(e) {}
+  }
+
+  function t7_getFamilyDatabaseMap() {
+    const familyMap = new Map();
+    const deletedSet = t7_getDeletedFamiliesSet();
+
+    // 1. Primary Source of Truth: Server SplitFamilies sheet data
+    if (window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0) {
+      window.T7_STATE.splitFamilies.forEach(f => {
+        const key = (f.family_name || f.family_id || '').trim().toLowerCase();
+        if (!key || deletedSet.has(key)) return;
+        const isFamMe = Boolean(f.isMe || (f.members && f.members.some(m => m.isMe || m.is_me)) || key.includes('2f') || key.includes('tôi'));
+        familyMap.set(key, {
+          id: f.family_id,
+          name: f.family_name,
+          repMember: f.repMember,
+          isMe: isFamMe,
+          members: (f.members || []).map(m => ({
+            id: m.member_id,
+            name: m.member_name,
+            type: m.member_type,
+            weight: m.default_weight,
+            sortOrder: m.sort_order,
+            status: m.status,
+            isMe: Boolean(m.isMe || m.is_me || isFamMe)
+          })),
+          explicit: true
+        });
+      });
+    }
+
+    try {
+      const stored = localStorage.getItem('T7_FAMILY_DATABASE');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(f => {
+            if (f && f.name) {
+              const key = f.name.trim().toLowerCase();
+              if (!deletedSet.has(key) && !familyMap.has(key)) {
+                familyMap.set(key, f);
+              }
+            }
+          });
+        }
+      }
+    } catch(e) {}
+
+    const groups = window.T7_STATE.groups || [];
+    groups.forEach(g => {
+      (g.members || []).forEach(m => {
+        if (m.family && m.family.trim()) {
+          const famName = m.family.trim();
+          const key = famName.toLowerCase();
+          if (deletedSet.has(key)) return;
+
+          if (!familyMap.has(key)) {
+            familyMap.set(key, { name: famName, members: [] });
+          }
+          const famObj = familyMap.get(key);
+          if (famObj.explicit) return;
+
+          const mbrKey = (m.name || '').trim().toLowerCase();
+          if (mbrKey && !famObj.members.some(existing => (existing.name || '').trim().toLowerCase() === mbrKey)) {
+            famObj.members.push({
+              name: m.name.trim(),
+              type: m.type || 'ADULT',
+              weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
+              isMe: Boolean(m.isMe)
+            });
+          }
+        }
+      });
+    });
+
+    if (!deletedSet.has('2f') && !familyMap.has('2f')) {
+      familyMap.set('2f', {
+        name: '2F',
+        members: [
+          { name: 'Chi', type: 'ADULT', weight: 1.0, isMe: true },
+          { name: 'Chít', type: 'CHILD', weight: 0.5, isMe: true }
+        ]
+      });
+    }
+    if (!deletedSet.has('1f') && !familyMap.has('1f')) {
+      familyMap.set('1f', {
+        name: '1F',
+        members: [
+          { name: 'A Huân 1F', type: 'ADULT', weight: 1.0, isMe: false },
+          { name: 'Tuyết Anh 1F', type: 'ADULT', weight: 1.0, isMe: false }
+        ]
+      });
+    }
+
+    return familyMap;
+  }
+
+  function t7_saveFamilyDatabaseMap(familyMap) {
+    try {
+      const arr = Array.from(familyMap.values());
+      localStorage.setItem('T7_FAMILY_DATABASE', JSON.stringify(arr));
+    } catch(e) {}
+  }
+
+  function t7_populateFamilyCategorySuggestions() {
+    const datalist = document.getElementById('t7-fam-category-suggestions');
+    if (!datalist) return;
+
+    const catSet = new Set();
+
+    if (window.INITIAL_DATA && Array.isArray(window.INITIAL_DATA.categories)) {
+      window.INITIAL_DATA.categories.forEach(c => {
+        if (c && c.name) catSet.add(c.name.trim());
+      });
+    }
+
+    if (window.CATEGORIES_RAW && Array.isArray(window.CATEGORIES_RAW)) {
+      window.CATEGORIES_RAW.forEach(c => {
+        if (c && c.name) catSet.add(c.name.trim());
+        else if (typeof c === 'string' && c.trim()) catSet.add(c.trim());
+      });
+    }
+
+    if (window.T7_STATE && Array.isArray(window.T7_STATE.categories)) {
+      window.T7_STATE.categories.forEach(c => {
+        if (c && c.name) catSet.add(c.name.trim());
+      });
+    }
+
+    const familyMap = t7_getFamilyDatabaseMap();
+    familyMap.forEach((val) => {
+      if (val && val.name) catSet.add(val.name.trim());
+    });
+
+    ["1F", "2F", "3F", "4F", "Gia đình A", "Gia đình B", "Gia đình C"].forEach(f => catSet.add(f));
+
+    datalist.innerHTML = Array.from(catSet).map(name => `<option value="${name}">`).join('');
+  }
+
+  function t7_renderFamilyCardsList() {
+    const listEl = document.getElementById('t7-family-cards-list');
+    const countEl = document.getElementById('t7-fam-db-count');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+
+    const familyMap = t7_getFamilyDatabaseMap();
+    const families = Array.from(familyMap.values());
+    if (countEl) countEl.innerText = families.length;
+
+    if (families.length === 0) {
+      listEl.innerHTML = `
+        <div class="bg-white rounded-2xl p-4 text-center border border-slate-200 shadow-xs">
+          <span class="text-2xl block mb-1">🏡</span>
+          <p class="text-xs font-bold text-slate-700">Chưa có thông tin gia đình nào trong Database!</p>
+          <p class="text-[11px] text-slate-400 mt-1">Bấm "Thêm Gia Đình" để bắt đầu nạp danh sách người thân.</p>
+        </div>`;
+      return;
+    }
+
+    families.forEach(fam => {
+      const card = document.createElement('div');
+      const escapedFamName = fam.name.replace(/'/g, "\\'");
+      card.onclick = () => t7_openAddFamilyModal(fam.name);
+      card.className = "bg-white rounded-xl px-3 py-2 border border-slate-200 shadow-2xs hover:border-indigo-400 hover:bg-slate-50/90 transition cursor-pointer flex justify-between items-center gap-2";
+
+      const members = fam.members || [];
+      const adultCnt = members.filter(m => (m.type || 'ADULT') === 'ADULT').length;
+      const kidCnt = members.filter(m => m.type === 'CHILD').length;
+      const babyCnt = members.filter(m => m.type === 'BABY').length;
+
+      let summaryParts = [];
+      if (adultCnt > 0) summaryParts.push(`${adultCnt} Lớn`);
+      if (kidCnt > 0) summaryParts.push(`${kidCnt} Nhỏ`);
+      if (babyCnt > 0) summaryParts.push(`${babyCnt} Bé`);
+
+      const detailsBadge = summaryParts.length > 0 ? ` (${summaryParts.join(', ')})` : '';
+      const summaryText = `${members.length} thành viên${detailsBadge}`;
+
+      const memberNamesStr = members.map(m => {
+        const icon = m.type === 'CHILD' ? '🧒' : (m.type === 'BABY' ? '🍼' : '👤');
+        return `${icon} ${m.name}${m.isMe ? ' (Tôi)' : ''}`;
+      }).join(' • ');
+
+      card.innerHTML = `
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <h3 class="font-extrabold text-xs text-slate-800 flex items-center gap-1 shrink-0">
+              <span>🏡</span>
+              <span>Gia đình ${fam.name}</span>
+            </h3>
+            <span class="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded shrink-0">${summaryText}</span>
+            ${Boolean(fam.isMe || (members && members.some(m => m.isMe || m.is_me)) || fam.name.toLowerCase().includes('2f') || fam.name.toLowerCase().includes('tôi')) ? '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded shrink-0">⭐ Gia đình Tôi</span>' : ''}
+          </div>
+          <p class="text-[10px] text-slate-500 truncate mt-0.5" title="${memberNamesStr}">${memberNamesStr || 'Chưa có thành viên'}</p>
+        </div>
+
+        <div class="flex items-center gap-1 shrink-0">
+          <button onclick="event.stopPropagation(); t7_useFamilyForCategory('${escapedFamName}', 'DINING')" title="Tạo nhóm Ăn Chơi với gia đình này" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[10px] font-extrabold border border-amber-200 transition cursor-pointer flex items-center gap-0.5 active:scale-95">
+            🍻 + Ăn Chơi
+          </button>
+          <button onclick="event.stopPropagation(); t7_useFamilyForCategory('${escapedFamName}', 'TRIP')" title="Tạo chuyến Du Lịch với gia đình này" class="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-[10px] font-extrabold border border-teal-200 transition cursor-pointer flex items-center gap-0.5 active:scale-95">
+            ✈️ + Du Lịch
+          </button>
+          <button onclick="event.stopPropagation(); t7_deleteFamilyFromDatabase('${escapedFamName}')" title="Xóa gia đình" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition cursor-pointer">
+            🗑️
+          </button>
+        </div>
+      `;
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function t7_openAddFamilyModal(famNameToEdit = null) {
+    t7_populateFamilyCategorySuggestions();
+    const modal = document.getElementById('modal-tab7-add-family');
+    const title = document.getElementById('t7-fam-modal-title');
+    const container = document.getElementById('t7-fam-member-rows-container');
+
+    const oldNameInput = document.getElementById('t7-fam-old-name');
+    if (oldNameInput) oldNameInput.value = famNameToEdit || '';
+
+    document.getElementById('t7-fam-form-name').value = famNameToEdit || '';
+    if (title) title.innerText = famNameToEdit ? `Sửa Gia Đình [${famNameToEdit}]` : "Thêm Gia Đình Mới";
+
+    container.innerHTML = '';
+    window._T7_EDITING_INITIAL_MEMBERS = [];
+
+    if (famNameToEdit) {
+      const familyMap = t7_getFamilyDatabaseMap();
+      const famObj = familyMap.get(famNameToEdit.trim().toLowerCase());
+      if (famObj && famObj.members && famObj.members.length > 0) {
+        window._T7_EDITING_INITIAL_MEMBERS = famObj.members.map(m => ({
+          id: m.id || m.member_id || '',
+          name: m.name || m.member_name || ''
+        }));
+        const hasRep = famObj.members.some(m => Boolean(m.isRep || m.isMe || Number(m.sort_order) === 1));
+        famObj.members.forEach((m, idx) => {
+          const isThisRep = hasRep ? Boolean(m.isRep || m.isMe || Number(m.sort_order) === 1) : (idx === 0);
+          t7_addFamMemberRow({ ...m, isRep: isThisRep });
+        });
+      } else {
+        t7_addFamMemberRow({ name: "Người lớn 1", type: "ADULT", weight: 1.0, isRep: true });
+        t7_addFamMemberRow({ name: "Người lớn 2", type: "ADULT", weight: 1.0, isRep: false });
+      }
+    } else {
+      t7_addFamMemberRow({ name: "Người lớn 1", type: "ADULT", weight: 1.0, isRep: true });
+      t7_addFamMemberRow({ name: "Người lớn 2", type: "ADULT", weight: 1.0, isRep: false });
+      t7_addFamMemberRow({ name: "Con nhỏ", type: "CHILD", weight: 0.5, isRep: false });
+    }
+
+    openModal('modal-tab7-add-family');
+
+    const isMeFamCb = document.getElementById('t7-fam-is-me-cb');
+    if (isMeFamCb) {
+      let isMe = false;
+      if (famNameToEdit) {
+        const familyMap = t7_getFamilyDatabaseMap();
+        const famObj = familyMap.get(famNameToEdit.trim().toLowerCase());
+        isMe = famObj ? Boolean(famObj.isMe || (famObj.members && famObj.members.some(m => m.isMe))) : famNameToEdit.toLowerCase().includes('2f');
+      } else {
+        isMe = false;
+      }
+      isMeFamCb.checked = isMe;
+    }
+  }
+
+  function t7_addFamMemberRow(m = null) {
+    const container = document.getElementById('t7-fam-member-rows-container');
+    if (!container) return;
+
+    const row = document.createElement('div');
+    row.className = "flex items-center gap-1.5 bg-white p-1.5 rounded-lg border border-slate-200 shadow-2xs fam-member-row text-[11px]";
+
+    const mId = m ? (m.id || m.member_id || '') : '';
+    const name = m ? (m.name || m.member_name || '') : '';
+    const type = m ? (m.type || m.member_type || 'ADULT') : 'ADULT';
+    const isRep = m ? Boolean(m.isRep || m.isMe || Number(m.sort_order) === 1) : false;
+
+    row.innerHTML = `
+      <input type="hidden" class="fam-member-id" value="${mId}" />
+      <input type="text" placeholder="Tên người thân" value="${name}" maxlength="20" class="flex-1 bg-slate-50 border border-slate-300 rounded px-2 py-1 font-bold text-[11px] text-slate-800 outline-none fam-member-name min-w-0" />
+      <select class="w-20 bg-slate-50 border border-slate-300 rounded px-1 py-1 font-bold text-[10px] text-slate-800 outline-none fam-member-type shrink-0">
+        <option value="ADULT" ${type==='ADULT'?'selected':''}>👤 Lớn</option>
+        <option value="CHILD" ${type==='CHILD'?'selected':''}>🧒 Nhỏ</option>
+        <option value="BABY" ${type==='BABY'?'selected':''}>🍼 Bé</option>
+      </select>
+      <label class="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 cursor-pointer select-none shrink-0 px-1" title="Người đại diện nhận/trả công nợ gia đình (Sort Order = 1)">
+        <input type="radio" name="fam-rep-radio" class="fam-member-is-rep" ${isRep?'checked':''} /> 👑 Đại diện
+      </label>
+      <button type="button" onclick="this.closest('.fam-member-row').remove()" class="text-rose-500 hover:text-rose-700 font-bold px-1 text-sm cursor-pointer shrink-0">&times;</button>
+    `;
+
+    container.appendChild(row);
+  }
+
+  function t7_saveFamilyFromModal() {
+    const nameInput = document.getElementById('t7-fam-form-name');
+    if (!nameInput || !nameInput.value.trim()) {
+      showToast("⚠️ Vui lòng nhập tên gia đình!", true);
+      return;
+    }
+    const famName = nameInput.value.trim();
+    const oldNameInput = document.getElementById('t7-fam-old-name');
+    const oldName = oldNameInput ? oldNameInput.value.trim() : '';
+
+    const isFamMe = Boolean(document.getElementById('t7-fam-is-me-cb')?.checked || famName.toLowerCase().includes('2f') || famName.toLowerCase().includes('tôi'));
+
+    const container = document.getElementById('t7-fam-member-rows-container');
+    const rowEls = container ? container.querySelectorAll('.fam-member-row') : [];
+
+    const rawMembers = [];
+    rowEls.forEach(row => {
+      const mIdEl = row.querySelector('.fam-member-id');
+      const mId = mIdEl ? mIdEl.value.trim() : '';
+      const mName = row.querySelector('.fam-member-name').value.trim();
+      const mType = row.querySelector('.fam-member-type').value;
+      const mIsRep = row.querySelector('.fam-member-is-rep').checked;
+      let w = 1.0;
+      if (mType === 'CHILD') w = 0.5;
+      else if (mType === 'BABY') w = 0.0;
+
+      if (mName) {
+        rawMembers.push({ id: mId, member_id: mId, name: mName, type: mType, weight: w, isMe: isFamMe || mIsRep, isRep: mIsRep });
+      }
+    });
+
+    if (rawMembers.length === 0) {
+      showToast("⚠️ Gia đình phải có ít nhất 1 thành viên!", true);
+      return;
+    }
+
+    // Ensure representative (isRep = true) is placed first so sort_order = 1
+    const members = rawMembers.slice().sort((a, b) => (b.isRep ? 1 : 0) - (a.isRep ? 1 : 0));
+    if (!members.some(m => m.isRep)) {
+      members[0].isRep = true;
+      members[0].isMe = true;
+    }
+    if (isFamMe) {
+      members.forEach(m => { m.isMe = true; });
+    }
+
+    // Find removed members for deactivation
+    const currentMemberIds = new Set(members.map(m => m.id || m.member_id).filter(Boolean));
+    const currentMemberNames = new Set(members.map(m => m.name.toLowerCase()));
+
+    const removedMembers = (window._T7_EDITING_INITIAL_MEMBERS || []).filter(initM => {
+      if (initM.id && currentMemberIds.has(initM.id)) return false;
+      if (initM.name && currentMemberNames.has(initM.name.toLowerCase())) return false;
+      return true;
+    });
+
+    t7_removeDeletedFamilyKey(famName);
+
+    const familyMap = t7_getFamilyDatabaseMap();
+
+    if (oldName && oldName.toLowerCase() !== famName.toLowerCase()) {
+      familyMap.delete(oldName.toLowerCase());
+      t7_addDeletedFamilyKey(oldName);
+    }
+
+    familyMap.set(famName.toLowerCase(), { name: famName, members: members, explicit: true, isMe: isFamMe });
+    t7_saveFamilyDatabaseMap(familyMap);
+
+    let fams = t7_getCustomPresetFamilies();
+    if (!fams.some(f => f.trim().toLowerCase() === famName.toLowerCase())) {
+      fams.push(famName);
+      t7_saveCustomPresetFamilies(fams);
+    }
+
+    // Server-side sync with SplitFamilies sheet via single batch call
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            window.T7_STATE.splitFamilies = res.families || [];
+            window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
+            t7_renderFamilyCardsList();
+            t7_renderPresetFamilyChips();
+            t7_updateHistoryDatalists();
+            t7_renderUI();
+          }
+        })
+        .saveSplitFamilyBatch({
+          family_name: famName,
+          old_name: oldName,
+          members: members,
+          removed_members: removedMembers
+        });
+    }
+
+    closeModal('modal-tab7-add-family');
+    t7_renderFamilyCardsList();
+    t7_renderPresetFamilyChips();
+    t7_updateHistoryDatalists();
+    showToast(`✅ Đã lưu gia đình [${famName}] với ${members.length} thành viên vào Database!`);
+  }
+
+  function t7_deleteFamilyFromDatabase(famName) {
+    if (!famName) return;
+    if (!confirm(`Bạn có chắc muốn xóa gia đình [${famName}] khỏi Database?`)) return;
+    const cleanKey = famName.trim().toLowerCase();
+
+    t7_addDeletedFamilyKey(cleanKey);
+
+    const familyMap = t7_getFamilyDatabaseMap();
+    const famObj = familyMap.get(cleanKey);
+
+    // Server-side deletion sync (Hard row deletion from SplitFamilies)
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run.deleteSplitFamilyEntirely(famName);
+      setTimeout(t7_loadAllData, 500);
+    }
+
+    familyMap.delete(cleanKey);
+    t7_saveFamilyDatabaseMap(familyMap);
+
+    let fams = t7_getCustomPresetFamilies();
+    fams = fams.filter(f => f.trim().toLowerCase() !== cleanKey);
+    t7_saveCustomPresetFamilies(fams);
+
+    t7_renderFamilyCardsList();
+    t7_renderPresetFamilyChips();
+    t7_updateHistoryDatalists();
+    showToast(`🗑️ Đã xóa gia đình [${famName}] khỏi Database`);
+  }
+
+  function t7_useFamilyForCategory(famName, targetCategory) {
+    t7_switchCategory(targetCategory);
+    t7_openGroupModal();
+    t7_loadPresetFamily(famName);
+  }
+
+  // PRESET FAMILY CHIPS (DATABASE & ONE-CLICK AUTO-LOAD)
+  function t7_renderPresetFamilyChips() {
+    const suggestDatalist = document.getElementById('t7-preset-fam-suggest');
+    if (suggestDatalist) suggestDatalist.innerHTML = '';
+
+    const familyMap = t7_getFamilyDatabaseMap();
+    const families = Array.from(familyMap.values());
+    const famSet = new Set();
+
+    families.forEach(famObj => {
+      if (famObj && famObj.name && famObj.name.trim()) {
+        famSet.add(famObj.name.trim());
+      }
+    });
+
+    const groups = window.T7_STATE.groups || [];
+    groups.forEach(g => {
+      (g.members || []).forEach(m => {
+        if (m.family && m.family.trim()) famSet.add(m.family.trim());
+      });
+    });
+
+    famSet.forEach(famName => {
+      if (suggestDatalist) {
+        const opt = document.createElement('option');
+        opt.value = famName;
+        suggestDatalist.appendChild(opt);
+      }
+    });
+  }
+
+  function t7_addFamilyFromInput() {
+    const input = document.getElementById('t7-select-family-input');
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) {
+      showToast("⚠️ Vui lòng gõ hoặc chọn tên gia đình!", true);
+      return;
+    }
+    t7_loadPresetFamily(val);
+    input.value = '';
+  }
+
+  function t7_loadPresetFamily(famName) {
+    if (!famName) return;
+    const cleanFam = famName.trim();
+    const familyMap = t7_getFamilyDatabaseMap();
+    const famObj = familyMap.get(cleanFam.toLowerCase());
+
+    const container = document.getElementById('t7-member-rows-container');
+
+    if (famObj && famObj.members && famObj.members.length > 0) {
+      famObj.members.forEach(m => {
+        const mName = (m.name || m.member_name || '').trim();
+        if (cleanFam.toLowerCase() === '2f' && (mName === 'Quậy (Tôi)' || mName === 'Quậy' || mName.toLowerCase().startsWith('quậy'))) {
+          return;
+        }
+        t7_addMemberRow({
+          name: m.name,
+          family: cleanFam,
+          type: m.type || 'ADULT',
+          weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
+          isMe: Boolean(m.isMe)
+        });
+      });
+      showToast(`⚡ Đã nạp thành viên của [${cleanFam}]!`);
+    } else {
+      const groups = window.T7_STATE.groups || [];
+      const memberMap = new Map();
+      groups.forEach(g => {
+        (g.members || []).forEach(m => {
+          if (m.family && m.family.trim().toLowerCase() === cleanFam.toLowerCase()) {
+            const key = (m.name || '').trim().toLowerCase();
+            if (key && !memberMap.has(key)) {
+              if (cleanFam.toLowerCase() === '2f' && (key === 'quậy (tôi)' || key === 'quậy' || key.startsWith('quậy'))) return;
+              memberMap.set(key, m);
+            }
+          }
+        });
+      });
+
+      const membersToInsert = Array.from(memberMap.values());
+      if (membersToInsert.length > 0) {
+        membersToInsert.forEach(m => {
+          t7_addMemberRow({
+            name: m.name,
+            family: cleanFam,
+            type: m.type || 'ADULT',
+            weight: m.weight !== undefined ? m.weight : 1.0,
+            isMe: Boolean(m.isMe)
+          });
+        });
+        showToast(`⚡ Đã nạp ${membersToInsert.length} thành viên của [${cleanFam}]!`);
+      } else {
+        t7_addMemberRow({
+          name: `Thành viên (${cleanFam})`,
+          family: cleanFam,
+          type: 'ADULT',
+          weight: 1.0,
+          isMe: false
+        });
+        showToast(`⚡ Đã nạp gia đình [${cleanFam}] vào danh sách!`);
+      }
+    }
+
+    const famInput = document.getElementById('t7-gen-fam-name');
+    if (famInput) famInput.value = cleanFam;
+  }
+
+  // PRESET CUSTOM FAMILY PERSISTENCE
+  function t7_getCustomPresetFamilies() {
+    try {
+      const stored = localStorage.getItem('T7_CUSTOM_PRESET_FAMILIES');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch(e) {}
+    return ['1F', '2F', '3F'];
+  }
+
+  function t7_saveCustomPresetFamilies(fams) {
+    try {
+      localStorage.setItem('T7_CUSTOM_PRESET_FAMILIES', JSON.stringify(fams || []));
+    } catch(e) {}
+  }
+
+  // BẢNG QUẢN LÝ DANH SÁCH GIA ĐÌNH (FAMILY MANAGER MODAL)
+  function t7_openFamilyManagerModal() {
+    t7_populateFamilyCategorySuggestions();
+    t7_renderPresetFamiliesManagerList();
+    openModal('modal-tab7-family-manager');
+  }
+
+  function t7_renderPresetFamiliesManagerList() {
+    const container = document.getElementById('t7-preset-families-manager-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const deletedSet = t7_getDeletedFamiliesSet();
+    const customFams = t7_getCustomPresetFamilies();
+    const groups = window.T7_STATE.groups || [];
+    const famSet = new Set();
+
+    customFams.forEach(f => {
+      if (f && f.trim() && !deletedSet.has(f.trim().toLowerCase())) {
+        famSet.add(f.trim());
+      }
+    });
+
+    groups.forEach(g => {
+      (g.members || []).forEach(m => {
+        if (m.family && m.family.trim() && !deletedSet.has(m.family.trim().toLowerCase())) {
+          famSet.add(m.family.trim());
+        }
+      });
+    });
+
+    if (famSet.size === 0) {
+      container.innerHTML = '<p class="text-slate-400 italic text-center py-2 text-xs">Chưa có gia đình nào trong danh sách</p>';
+      return;
+    }
+
+    famSet.forEach(famName => {
+      const row = document.createElement('div');
+      row.className = "flex justify-between items-center bg-slate-50 p-2 rounded-xl border border-slate-200 text-xs";
+      row.innerHTML = `
+        <span class="font-bold text-slate-800 flex items-center gap-1.5">
+          <span>🏡</span> <span>${famName}</span>
+        </span>
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="t7_loadPresetFamily('${famName.replace(/'/g, "\\'")}'); closeModal('modal-tab7-family-manager');" class="bg-teal-50 text-teal-700 hover:bg-teal-100 px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer">
+            ⚡ Nạp Nhanh
+          </button>
+          <button type="button" onclick="t7_deletePresetFamilyFromManager('${famName.replace(/'/g, "\\\'")}')" class="bg-rose-50 text-rose-600 hover:bg-rose-100 px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer">
+            🗑️ Xóa
+          </button>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  function t7_savePresetFamilyFromManager() {
+    const input = document.getElementById('t7-mgr-fam-name');
+    if (!input || !input.value.trim()) {
+      showToast("⚠️ Vui lòng nhập tên gia đình!", true);
+      return;
+    }
+    const newName = input.value.trim();
+    t7_removeDeletedFamilyKey(newName);
+
+    const fams = t7_getCustomPresetFamilies();
+    if (!fams.some(f => f.trim().toLowerCase() === newName.toLowerCase())) {
+      fams.push(newName);
+      t7_saveCustomPresetFamilies(fams);
+    }
+    input.value = '';
+    t7_renderPresetFamiliesManagerList();
+    t7_renderPresetFamilyChips();
+    t7_renderFamilyCardsList();
+    t7_updateHistoryDatalists();
+    showToast(`✅ Đã lưu gia đình [${newName}] vào Database!`);
+  }
+
+  function t7_deletePresetFamilyFromManager(famName) {
+    if (!famName) return;
+    const cleanFam = famName.trim();
+    t7_addDeletedFamilyKey(cleanFam);
+
+    let fams = t7_getCustomPresetFamilies();
+    fams = fams.filter(f => f.trim().toLowerCase() !== cleanFam.toLowerCase());
+    t7_saveCustomPresetFamilies(fams);
+
+    const familyMap = t7_getFamilyDatabaseMap();
+    familyMap.delete(cleanFam.toLowerCase());
+    t7_saveFamilyDatabaseMap(familyMap);
+
+    t7_renderPresetFamiliesManagerList();
+    t7_renderPresetFamilyChips();
+    t7_renderFamilyCardsList();
+    t7_updateHistoryDatalists();
+    showToast(`🗑️ Đã xóa gia đình [${cleanFam}] khỏi danh sách có sẵn`);
+  }
+
+
+
+  function t7_clearAllMemberRows() {
+    const container = document.getElementById('t7-member-rows-container');
+    if (container) {
+      container.innerHTML = '';
+      showToast("🧹 Đã xóa toàn bộ danh sách thành viên");
+    }
+  }
+
+  // UPDATE DATALISTS WITH HISTORY FROM ALL GROUPS
+  function t7_updateHistoryDatalists() {
+    const famList = document.getElementById('t7-fam-history-list');
+    const mbrList = document.getElementById('t7-mbr-history-list');
+    const presetFamSuggest = document.getElementById('t7-preset-fam-suggest');
+    if (!famList || !mbrList) return;
+
+    famList.innerHTML = '';
+    mbrList.innerHTML = '';
+    if (presetFamSuggest) presetFamSuggest.innerHTML = '';
+
+    const groups = window.T7_STATE.groups || [];
+    const famSet = new Set(["1F", "2F", "3F", "Gia đình A", "Gia đình B", "Gia đình C"]);
+    const mbrSet = new Set(["Chủ Ví (Tôi)", "Vợ / Chồng", "Con nhỏ", "Bạn A", "Bạn B"]);
+
+    try {
+      const familyMap = t7_getFamilyDatabaseMap();
+      familyMap.forEach(fObj => {
+        if (fObj && fObj.name && fObj.name.trim()) famSet.add(fObj.name.trim());
+      });
+    } catch(e) {}
+
+    groups.forEach(g => {
+      (g.members || []).forEach(m => {
+        if (m.family && m.family.trim()) famSet.add(m.family.trim());
+        if (m.name && m.name.trim()) mbrSet.add(m.name.trim());
+      });
+    });
+
+    famSet.forEach(fam => {
+      const opt = document.createElement('option');
+      opt.value = fam;
+      famList.appendChild(opt);
+
+      if (presetFamSuggest) {
+        const opt2 = document.createElement('option');
+        opt2.value = fam;
+        presetFamSuggest.appendChild(opt2);
+      }
+    });
+
+    mbrSet.forEach(mbr => {
+      const opt = document.createElement('option');
+      opt.value = mbr;
+      mbrList.appendChild(opt);
+    });
+  }
+
+  let t7_copyGroupSuggestHideTimer = null;
+
+  function t7_showCopyGroupSuggest(showAll) {
+    if (t7_copyGroupSuggestHideTimer) clearTimeout(t7_copyGroupSuggestHideTimer);
+    const box = document.getElementById('box-t7-copy-group-search');
+    const input = document.getElementById('t7-copy-group-search');
+    if (!box || !input) return;
+
+    const allGroups = window.T7_STATE.groups || [];
+    const query = (input.value || '').trim().toLowerCase();
+
+    const matches = allGroups.filter(g => {
+      if (showAll || !query) return true;
+      return (g.name || '').toLowerCase().includes(query) || (g.note || '').toLowerCase().includes(query);
+    });
+
+    box.innerHTML = '';
+    if (matches.length === 0) {
+      box.innerHTML = `<div class="p-2.5 text-slate-400 italic text-center text-xs">Không tìm thấy nhóm phù hợp</div>`;
+    } else {
+      matches.forEach(g => {
+        const item = document.createElement('div');
+        item.className = "p-2 px-3 hover:bg-teal-50 cursor-pointer flex justify-between items-center transition border-b border-slate-100 last:border-b-0";
+        const catIcon = g.category === 'DINING' ? '🍻' : '✈️';
+        item.innerHTML = `
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span>${catIcon}</span>
+            <span class="font-bold text-slate-800 truncate text-xs">${g.name}</span>
+          </div>
+          <span class="text-[10px] font-bold text-slate-500 shrink-0">👥 ${(g.members || []).length} ng</span>
+        `;
+        item.onmousedown = function(e) {
+          e.preventDefault();
+          t7_copyMembersFromPreviousGroupById(g.id);
+        };
+        box.appendChild(item);
+      });
+    }
+
+    box.classList.remove('hidden');
+  }
+
+  function t7_hideCopyGroupSuggest() {
+    t7_copyGroupSuggestHideTimer = setTimeout(function() {
+      const box = document.getElementById('box-t7-copy-group-search');
+      if (box) box.classList.add('hidden');
+    }, 200);
+  }
+
+  function t7_copyMembersFromPreviousGroupById(groupId) {
+    if (t7_copyGroupSuggestHideTimer) clearTimeout(t7_copyGroupSuggestHideTimer);
+    const box = document.getElementById('box-t7-copy-group-search');
+    const input = document.getElementById('t7-copy-group-search');
+    if (box) box.classList.add('hidden');
+    if (input) input.value = '';
+
+    const sourceGroup = (window.T7_STATE.groups || []).find(g => g.id === groupId);
+    if (!sourceGroup || !sourceGroup.members || sourceGroup.members.length === 0) {
+      showToast("❌ Chuyến đi đã chọn không có thành viên!", true);
+      return;
+    }
+
+    const container = document.getElementById('t7-member-rows-container');
+    if (container) container.innerHTML = '';
+
+    sourceGroup.members.forEach(m => t7_addMemberRow(m));
+    showToast(`📋 Đã copy ${sourceGroup.members.length} thành viên từ [${sourceGroup.name}]!`);
+  }
+
+  function t7_toggleQuickFamilyBox() {
+    const box = document.getElementById('t7-quick-fam-box');
+    const txt = document.getElementById('t7-quick-fam-toggle-text');
+    if (!box) return;
+    if (box.classList.contains('hidden')) {
+      box.classList.remove('hidden');
+      t7_resetQuickFamilyInputs();
+      if (txt) txt.innerText = "Ẩn Tool";
+    } else {
+      box.classList.add('hidden');
+      if (txt) txt.innerText = "Hiện Tool";
+    }
+  }
+
+  // BATCH GENERATE FAMILY MEMBERS
+  function t7_generateFamilyMembersBatch() {
+    const famInput = document.getElementById('t7-gen-fam-name');
+    const adultInput = document.getElementById('t7-gen-adult-cnt');
+    const kidInput = document.getElementById('t7-gen-kid-cnt');
+    const babyInput = document.getElementById('t7-gen-baby-cnt');
+
+    const famName = famInput ? (famInput.value.trim() || 'Gia đình A') : 'Gia đình A';
+    const adultCnt = Math.max(0, parseInt(adultInput ? adultInput.value : 0) || 0);
+    const kidCnt = Math.max(0, parseInt(kidInput ? kidInput.value : 0) || 0);
+    const babyCnt = Math.max(0, parseInt(babyInput ? babyInput.value : 0) || 0);
+
+    const totalAdded = adultCnt + kidCnt + babyCnt;
+    if (totalAdded === 0) {
+      showToast("⚠️ Vui lòng nhập số lượng người lớn/trẻ em > 0!", true);
+      return;
+    }
+
+    const container = document.getElementById('t7-member-rows-container');
+    const existingCount = container ? container.querySelectorAll('.member-row').length : 0;
+
+    for (let i = 1; i <= adultCnt; i++) {
+      const name = (existingCount === 0 && i === 1) ? "Chủ Ví (Tôi)" : (adultCnt === 1 ? "Lớn" : `Lớn ${i}`);
+      t7_addMemberRow({ name: name, family: famName, type: 'ADULT', weight: 1.0, isMe: (existingCount === 0 && i === 1) });
+    }
+
+    for (let j = 1; j <= kidCnt; j++) {
+      const name = kidCnt === 1 ? "Trẻ" : `Trẻ ${j}`;
+      t7_addMemberRow({ name: name, family: famName, type: 'CHILD', weight: 0.5, isMe: false });
+    }
+
+    for (let k = 1; k <= babyCnt; k++) {
+      const name = babyCnt === 1 ? "Bé" : `Bé ${k}`;
+      t7_addMemberRow({ name: name, family: famName, type: 'BABY', weight: 0.0, isMe: false });
+    }
+
+    showToast(`✅ Đã thêm ${totalAdded} người cho [${famName}]!`);
+
+    // Bulletproof reset & refresh of input textboxes back to defaults (all 0s)
+    t7_resetQuickFamilyInputs();
+  }
+
+  function t7_resetQuickFamilyInputs() {
+    const famInput = document.getElementById('t7-gen-fam-name');
+    const adultInput = document.getElementById('t7-gen-adult-cnt');
+    const kidInput = document.getElementById('t7-gen-kid-cnt');
+    const babyInput = document.getElementById('t7-gen-baby-cnt');
+
+    if (famInput) {
+      famInput.value = '';
+      famInput.setAttribute('value', '');
+    }
+    if (adultInput) {
+      adultInput.value = '0';
+      adultInput.setAttribute('value', '0');
+    }
+    if (kidInput) {
+      kidInput.value = '0';
+      kidInput.setAttribute('value', '0');
+    }
+    if (babyInput) {
+      babyInput.value = '0';
+      babyInput.setAttribute('value', '0');
+    }
+
+    [famInput, adultInput, kidInput, babyInput].forEach(el => {
+      if (el) {
+        try {
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (e) {}
+      }
+    });
+
+    if (famInput) {
+      setTimeout(function() {
+        try { famInput.focus(); } catch (e) {}
+      }, 50);
+    }
+  }
+
+  // ULTRA COMPACT MEMBER ROW WITH CLEAN SHORT NAMES & FLEX TYPE DROPDOWN
+  function t7_addMemberRow(m = null) {
+    const container = document.getElementById('t7-member-rows-container');
+    if (!container) return;
+
+    const row = document.createElement('div');
+    row.className = "flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-2xs member-row text-[11px]";
+
+    const name = m ? m.name : '';
+
+    // Smart auto-inherit family name from preceding row if not specified
+    let family = m ? m.family : '';
+    if (!family) {
+      const lastFamEl = container.querySelector('.member-row:last-child .member-family');
+      family = lastFamEl ? lastFamEl.value.trim() : 'Gia đình A';
+    }
+
+    const type = m ? m.type : 'ADULT';
+    const isMe = m ? Boolean(m.isMe) : false;
+
+    row.innerHTML = `
+      <input type="text" placeholder="Tên" value="${name}" list="t7-mbr-history-list" maxlength="15" class="flex-1 bg-slate-50 border border-slate-300 rounded px-1.5 py-1 font-bold text-[11px] text-slate-800 outline-none member-name min-w-0" />
+      <input type="text" placeholder="Gia đình" value="${family}" list="t7-fam-history-list" class="w-24 bg-slate-50 border border-slate-300 rounded px-1.5 py-1 font-bold text-[11px] text-slate-800 outline-none member-family shrink-0" />
+      <select class="w-[72px] bg-slate-50 border border-slate-300 rounded px-1 py-1 font-bold text-[10px] text-slate-800 outline-none member-type shrink-0">
+        <option value="ADULT" ${type==='ADULT'?'selected':''}>👤 Lớn</option>
+        <option value="CHILD" ${type==='CHILD'?'selected':''}>🧒 Nhỏ</option>
+        <option value="BABY" ${type==='BABY'?'selected':''}>🍼 Bé</option>
+      </select>
+      <label class="flex items-center gap-0.5 text-[10px] font-bold text-blue-700 cursor-pointer select-none shrink-0 px-0.5" title="Đại diện ví cá nhân chủ app">
+        <input type="radio" name="me-radio" class="member-is-me" ${isMe?'checked':''} /> Tôi
+      </label>
+      <button type="button" onclick="this.closest('.member-row').remove()" class="text-rose-500 hover:text-rose-700 font-bold px-1 text-sm cursor-pointer shrink-0">&times;</button>
+    `;
+
+    container.appendChild(row);
+  }
+
+  function t7_saveGroupFromModal() {
+    const name = document.getElementById('t7-group-name').value.trim();
+    if (!name) {
+      showToast("⚠️ Vui lòng nhập tên chuyến đi!", true);
+      return;
+    }
+
+    const rowElems = document.querySelectorAll('#t7-member-rows-container .member-row');
+    const members = [];
+
+    rowElems.forEach((r, idx) => {
+      const mName = r.querySelector('.member-name').value.trim();
+      const mFam = r.querySelector('.member-family').value.trim();
+      const mType = r.querySelector('.member-type').value;
+      const mIsMe = r.querySelector('.member-is-me').checked;
+
+      if (mName) {
+        const cleanFam = (mFam || '1F').replace(/[^a-zA-Z0-9]/g, '');
+        const cleanName = mName.replace(/[^a-zA-Z0-9]/g, '');
+        const stableId = `MBR_${cleanFam}_${cleanName || (idx + 1)}`;
+        members.push({
+          id: stableId,
+          name: mName,
+          family: mFam || "Gia đình A",
+          type: mType,
+          weight: mType === 'CHILD' ? 0.5 : (mType === 'BABY' ? 0.0 : 1.0),
+          isMe: mIsMe
+        });
+      }
+    });
+
+    if (members.length === 0) {
+      showToast("⚠️ Cần ít nhất 1 thành viên!", true);
+      return;
+    }
+
+    const catEl = document.getElementById('t7-group-category');
+    let category = catEl ? catEl.value : (window.T7_STATE.activeCategory || 'TRIP');
+    if (category === 'FAMILY') {
+      category = 'DINING';
+    }
+
+    const existingGroupId = document.getElementById('t7-group-id').value;
+    const groupId = existingGroupId || ('GRP_TEMP_' + Date.now());
+
+    const dateEl = document.getElementById('t7-group-date');
+    const groupDate = (dateEl && dateEl.value) ? dateEl.value : new Date().toISOString().split('T')[0];
+
+    const groupData = {
+      id: groupId,
+      name: name,
+      category: category,
+      currency: document.getElementById('t7-group-currency').value,
+      status: document.getElementById('t7-group-status').value,
+      created_at: groupDate,
+      date: groupDate,
+      note: document.getElementById('t7-group-note').value.trim(),
+      members: members,
+      totalExpense: window.T7_STATE.activeGroup ? (window.T7_STATE.activeGroup.totalExpense || 0) : 0
+    };
+
+    closeModal('modal-tab7-group');
+
+    // INSTANT OPTIMISTIC LOCAL UPDATE (0ms)
+    window.T7_STATE.activeGroupId = groupData.id;
+    window.T7_STATE.activeGroup = groupData;
+    window.T7_STATE.activeCategory = category;
+    window.T7_STATE.currentView = 'DETAIL';
+
+    const groups = window.T7_STATE.groups || [];
+    const idx = groups.findIndex(g => g.id === groupData.id);
+    if (idx !== -1) groups[idx] = groupData;
+    else groups.unshift(groupData);
+    window.T7_STATE.groups = groups;
+
+    try {
+      localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(groups));
+    } catch(e) {}
+
+    t7_renderPresetFamilyChips();
+    t7_renderFamilyCardsList();
+    t7_updateHistoryDatalists();
+    t7_renderUI();
+
+    showToast("✅ Đã lưu nhóm!");
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          if (res.group) {
+            window.T7_STATE.activeGroupId = res.group.id;
+            window.T7_STATE.activeGroup = res.group;
+            const idx2 = (window.T7_STATE.groups || []).findIndex(g => g.id === groupData.id || g.id === res.group.id);
+            if (idx2 !== -1) window.T7_STATE.groups[idx2] = res.group;
+            else window.T7_STATE.groups.unshift(res.group);
+            try { localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+          }
+          t7_renderUI();
+        } else {
+          showToast(res ? res.message : "❌ Lỗi lưu nhóm", true);
+        }
+      })
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi kết nối máy chủ: " + err, true);
+      })
+      .saveSplitGroup(groupData);
+  }
+
+  function t7_confirmDeleteGroup() {
+    if (!window.T7_STATE.activeGroup) return;
+    const gId = window.T7_STATE.activeGroupId;
+    const gName = window.T7_STATE.activeGroup.name;
+
+    showConfirmModal(
+      "⚠️ Xóa Chuyến Đi",
+      `Bạn có chắc chắn muốn xóa chuyến đi "${gName}" và TOÀN BỘ khoản chi trong chuyến đi này không? Hành động này không thể hoàn tác.`,
+      function() {
+        showToast("⏳ Đang xóa chuyến đi...");
+
+        // Optimistic local deletion & cache removal
+        window.T7_STATE.groups = (window.T7_STATE.groups || []).filter(g => g.id !== gId);
+        window.T7_STATE.activeGroupId = "";
+        window.T7_STATE.activeGroup = null;
+        try {
+          localStorage.removeItem('T7_CACHE_FULL_' + gId);
+        } catch(e) {}
+        t7_renderUI();
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              showToast(res.message);
+              t7_loadAllData();
+            } else {
+              showToast(res ? res.message : "❌ Lỗi xóa chuyến đi", true);
+              t7_loadAllData();
+            }
+          })
+          .withFailureHandler(function(err) {
+            showToast("❌ Lỗi kết nối máy chủ: " + err, true);
+            t7_loadAllData();
+          })
+          .deleteSplitGroup(gId);
+      },
+      "🗑️ Xóa Vĩnh Viễn"
+    );
+  }
+
+
+
+  // 6. EXPENSE MODAL & CALCULATION CONTROLLER
+  function t7_openEditExpense(expId) {
+    if (!expId) return;
+    const exp = (window.T7_STATE.expenses || []).find(e => e.id === expId);
+    if (exp) {
+      t7_openExpenseModal(exp);
+    }
+  }
+
+  let t7_lastExpenseTapTime = {};
+
+  function t7_handleExpenseDblClick(expId, e) {
+    if (!expId) return;
+    if (e && e.target && e.target.closest('button')) return;
+    t7_openEditExpense(expId);
+  }
+
+  function t7_openExpenseModal(expenseToEdit = null) {
+    if (!window.T7_STATE.activeGroup) {
+      showToast("⚠️ Vui lòng chọn hoặc tạo chuyến đi trước!", true);
+      return;
+    }
+
+    const group = window.T7_STATE.activeGroup;
+    const title = document.getElementById('t7-expense-modal-title');
+    if (title) title.innerText = "Chi tiết khoản chi";
+
+    document.getElementById('t7-expense-id').value = expenseToEdit ? expenseToEdit.id : '';
+    document.getElementById('t7-expense-desc').value = expenseToEdit ? expenseToEdit.description : '';
+    document.getElementById('t7-expense-amount').value = expenseToEdit ? expenseToEdit.amount : '';
+    const rawExpenseDate = expenseToEdit ? (expenseToEdit.date || expenseToEdit.created_at || expenseToEdit.dateStr) : null;
+    document.getElementById('t7-expense-date').value = t7_formatDateForInput(rawExpenseDate);
+
+    // Build Payer Suggest Datalist & Select Default Payer
+    t7_populatePayerSuggestList(group, expenseToEdit);
+
+    // Wallet setup
+    if (expenseToEdit && expenseToEdit.walletName) {
+      document.getElementById('t7-expense-wallet').value = expenseToEdit.walletName;
+    }
+    t7_handlePayerInputChange();
+
+    // Read default split config per group (Defaulting to WEIGHT mode)
+    let defaultSplitConf = { splitMode: 'WEIGHT', fixedChildAmount: '', fixedBabyAmount: '' };
+    try {
+      const savedConf = localStorage.getItem('T7_DEFAULT_SPLIT_' + group.id);
+      if (savedConf) {
+        defaultSplitConf = Object.assign(defaultSplitConf, JSON.parse(savedConf));
+      }
+    } catch(e) {}
+
+    if (!expenseToEdit) {
+      document.getElementById('t7-fixed-kid-amount').value = defaultSplitConf.fixedChildAmount !== undefined ? defaultSplitConf.fixedChildAmount : '';
+      document.getElementById('t7-fixed-baby-amount').value = defaultSplitConf.fixedBabyAmount !== undefined ? defaultSplitConf.fixedBabyAmount : '';
+    } else if (expenseToEdit.extraOptions) {
+      document.getElementById('t7-fixed-kid-amount').value = expenseToEdit.extraOptions.fixedChildAmount !== undefined ? expenseToEdit.extraOptions.fixedChildAmount : '';
+      document.getElementById('t7-fixed-baby-amount').value = expenseToEdit.extraOptions.fixedBabyAmount !== undefined ? expenseToEdit.extraOptions.fixedBabyAmount : '';
+    }
+
+    // Set Split Mode (WEIGHT, FIXED_KIDS_EQUAL_ADULT, CUSTOM)
+    let mode = expenseToEdit ? expenseToEdit.splitType : (defaultSplitConf.splitMode || 'WEIGHT');
+    if (mode !== 'WEIGHT' && mode !== 'FIXED_KIDS_EQUAL_ADULT' && mode !== 'CUSTOM') {
+      mode = 'WEIGHT';
+    }
+    t7_setSplitMode(mode);
+
+    // Render Participants List & Dynamic Inputs
+    t7_renderParticipantInputs(expenseToEdit ? expenseToEdit.participants : null);
+
+    openModal('modal-tab7-expense');
+  }
+
+  function t7_populatePayerSuggestList(group, expenseToEdit = null) {
+    const datalist = document.getElementById('t7-expense-payer-suggest-list');
+    const payerInput = document.getElementById('t7-expense-payer-input');
+    const payerHidden = document.getElementById('t7-expense-payer');
+    if (!datalist || !payerInput) return;
+
+    datalist.innerHTML = '';
+    window._T7_PAYER_MAP = {};
+
+    // Build unique family options from group members
+    const familyMap = {};
+    (group.members || []).forEach(m => {
+      const famKey = m.family || m.familyTag || 'Gia đình';
+      if (!familyMap[famKey]) {
+        familyMap[famKey] = { family: famKey, repMember: m, members: [] };
+      }
+      familyMap[famKey].members.push(m);
+      if (m.isMe || (m.type === 'ADULT' && familyMap[famKey].repMember.type !== 'ADULT')) {
+        familyMap[famKey].repMember = m;
+      }
+    });
+
+    let defaultPayerLabel = '';
+    let defaultPayerId = '';
+
+    Object.keys(familyMap).forEach(famKey => {
+      const famData = familyMap[famKey];
+      const rep = famData.repMember;
+      const isMeFam = Boolean(rep.isMe || famData.members.some(m => m.isMe) || famKey.toLowerCase().includes('2f'));
+      const displayLabel = isMeFam ? (famKey.toLowerCase().includes('2f') ? '2F - tôi' : `${famKey} (Tôi)`) : famKey;
+
+      window._T7_PAYER_MAP[displayLabel.toLowerCase()] = { repId: rep.id, family: famKey, isMeFam: isMeFam };
+      window._T7_PAYER_MAP[famKey.toLowerCase()] = { repId: rep.id, family: famKey, isMeFam: isMeFam };
+      window._T7_PAYER_MAP[`${famKey.toLowerCase()} - tôi`] = { repId: rep.id, family: famKey, isMeFam: isMeFam };
+      window._T7_PAYER_MAP[`${famKey.toLowerCase()} (tôi)`] = { repId: rep.id, family: famKey, isMeFam: isMeFam };
+
+      const opt = document.createElement('option');
+      opt.value = displayLabel;
+      datalist.appendChild(opt);
+
+      if (expenseToEdit) {
+        const editPayerObj = (group.members || []).find(m => m.id === expenseToEdit.payerId || m.name === expenseToEdit.payerId) || {};
+        const editFam = editPayerObj.family || editPayerObj.familyTag || expenseToEdit.payerFamily || '';
+        if (editFam.toLowerCase().trim() === famKey.toLowerCase().trim() || expenseToEdit.payerId === rep.id) {
+          defaultPayerLabel = displayLabel;
+          defaultPayerId = rep.id;
+        }
+      } else if (isMeFam) {
+        defaultPayerLabel = displayLabel;
+        defaultPayerId = rep.id;
+      }
+    });
+
+    if (!defaultPayerLabel && Object.keys(familyMap).length > 0) {
+      const firstFam = Object.keys(familyMap)[0];
+      const rep = familyMap[firstFam].repMember;
+      defaultPayerLabel = firstFam;
+      defaultPayerId = rep.id;
+    }
+
+    payerInput.value = defaultPayerLabel;
+    if (payerHidden) payerHidden.value = defaultPayerId;
+
+    t7_handlePayerInputChange();
+  }
+
+  function t7_handlePayerInputChange() {
+    const payerInput = document.getElementById('t7-expense-payer-input');
+    const payerHidden = document.getElementById('t7-expense-payer');
+    const walletHidden = document.getElementById('t7-expense-wallet');
+    const badge = document.getElementById('t7-selected-wallet-badge');
+    const badgeName = document.getElementById('t7-selected-wallet-name');
+    if (!payerInput) return;
+
+    const val = (payerInput.value || '').trim();
+    const map = window._T7_PAYER_MAP || {};
+    const match = map[val.toLowerCase()];
+
+    let isMe = false;
+    let repId = '';
+
+    if (match) {
+      repId = match.repId;
+      isMe = match.isMeFam;
+    } else {
+      const valLower = val.toLowerCase();
+      if (valLower.includes('2f') || valLower.includes('tôi')) {
+        isMe = true;
+      }
+      const group = window.T7_STATE.activeGroup;
+      if (group && group.members && group.members.length > 0) {
+        const matchMbr = group.members.find(m => 
+          (m.family || '').toLowerCase() === valLower || 
+          (m.name || '').toLowerCase() === valLower ||
+          valLower.includes((m.family || '').toLowerCase())
+        );
+        if (matchMbr) {
+          repId = matchMbr.id;
+          if (matchMbr.isMe) isMe = true;
+        }
+      }
+    }
+
+    if (payerHidden && repId) {
+      payerHidden.value = repId;
+    }
+
+    if (isMe || val.toLowerCase().includes('2f') || val.toLowerCase().includes('tôi')) {
+      let currentWallet = walletHidden ? walletHidden.value : '';
+      if (!currentWallet) {
+        const rawWallets = window.NGUON_LIST || (window.INITIAL_DATA ? window.INITIAL_DATA.wallets : null) || [];
+        if (rawWallets.length > 0) {
+          currentWallet = typeof rawWallets[0] === 'object' ? rawWallets[0].name : String(rawWallets[0]);
+        } else {
+          currentWallet = "Thẻ Credit";
+        }
+        if (walletHidden) walletHidden.value = currentWallet;
+      }
+      if (badge && badgeName) {
+        badgeName.innerText = currentWallet;
+        badge.classList.remove('hidden');
+      }
+    } else {
+      if (walletHidden) walletHidden.value = '';
+      if (badge) badge.classList.add('hidden');
+    }
+  }
+
+  function t7_openWalletSelectModal() {
+    const container = document.getElementById('t7-wallet-select-options-list');
+    const searchInput = document.getElementById('t7-wallet-modal-search');
+    const datalist = document.getElementById('t7-wallet-modal-suggest-list');
+    if (!container) return;
+
+    const rawWallets = window.NGUON_LIST || (window.INITIAL_DATA ? window.INITIAL_DATA.wallets : null) || [];
+    window._T7_WALLETS_LIST = ["-- Không trừ ví --"];
+    rawWallets.forEach(w => {
+      const wName = typeof w === 'object' ? (w.name || w.ten) : String(w);
+      if (wName && !window._T7_WALLETS_LIST.includes(wName)) window._T7_WALLETS_LIST.push(wName);
+    });
+
+    if (datalist) {
+      datalist.innerHTML = window._T7_WALLETS_LIST.filter(w => w !== "-- Không trừ ví --").map(w => `<option value="${w}">`).join('');
+    }
+
+    const currentWallet = document.getElementById('t7-expense-wallet').value || '';
+    if (searchInput) searchInput.value = currentWallet;
+
+    t7_renderWalletSelectButtons(currentWallet);
+    openModal('modal-tab7-select-wallet');
+  }
+
+  function t7_onWalletModalSearchInput() {
+    const searchInput = document.getElementById('t7-wallet-modal-search');
+    if (!searchInput) return;
+
+    const query = (searchInput.value || '').trim();
+    const wallets = window._T7_WALLETS_LIST || [];
+
+    const exactMatch = wallets.find(w => w.toLowerCase() === query.toLowerCase() && w !== "-- Không trừ ví --");
+    if (exactMatch) {
+      t7_selectWalletFromPopup(exactMatch, exactMatch);
+      return;
+    }
+
+    t7_renderWalletSelectButtons(query);
+  }
+
+  function t7_renderWalletSelectButtons(filterQuery = '') {
+    const container = document.getElementById('t7-wallet-select-options-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const wallets = window._T7_WALLETS_LIST || ["-- Không trừ ví --"];
+    const currentWallet = document.getElementById('t7-expense-wallet').value || '';
+    const q = (filterQuery || '').trim().toLowerCase();
+
+    const filtered = wallets.filter(w => {
+      if (!q || w === "-- Không trừ ví --") return true;
+      return w.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="p-3 text-slate-400 italic text-center text-xs">Không tìm thấy ví phù hợp</div>`;
+      return;
+    }
+
+    filtered.forEach(wName => {
+      const isNone = wName === "-- Không trừ ví --";
+      const val = isNone ? "" : wName;
+      const isSelected = currentWallet === val;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `w-full text-left p-2.5 px-3 rounded-xl border text-xs font-bold transition flex justify-between items-center cursor-pointer ${
+        isSelected ? 'bg-teal-50 border-teal-500 text-teal-800 shadow-xs' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+      }`;
+      btn.innerHTML = `
+        <span>${isNone ? '❌ Không trừ ví' : '💳 ' + wName}</span>
+        ${isSelected ? '<span class="text-teal-600 font-black">✓</span>' : ''}
+      `;
+      btn.onclick = function() {
+        t7_selectWalletFromPopup(val, isNone ? '' : wName);
+      };
+      container.appendChild(btn);
+    });
+  }
+
+  function t7_selectWalletFromPopup(val, label) {
+    document.getElementById('t7-expense-wallet').value = val;
+    const badge = document.getElementById('t7-selected-wallet-badge');
+    const badgeName = document.getElementById('t7-selected-wallet-name');
+
+    if (val) {
+      if (badgeName) badgeName.innerText = label;
+      if (badge) badge.classList.remove('hidden');
+      showToast(`💳 Đã chọn trừ ví: ${label}`);
+    } else {
+      if (badge) badge.classList.add('hidden');
+    }
+
+    closeModal('modal-tab7-select-wallet');
+  }
+
+  function t7_setSplitMode(mode) {
+    window.T7_STATE.currentSplitMode = mode;
+    ['WEIGHT', 'FIXED_KIDS_EQUAL_ADULT', 'CUSTOM'].forEach(m => {
+      const btn = document.getElementById(`btn-mode-${m}`);
+      if (btn) {
+        if (m === mode) {
+          btn.className = "py-1.5 px-1 rounded-lg bg-teal-600 text-white shadow-xs transition truncate";
+        } else {
+          btn.className = "py-1.5 px-1 rounded-lg text-slate-600 hover:bg-white transition truncate";
+        }
+      }
+    });
+
+    const fixedOpt = document.getElementById('t7-fixed-kids-options');
+    if (mode === 'FIXED_KIDS_EQUAL_ADULT') {
+      fixedOpt.classList.remove('hidden');
+      t7_applyFixedKidsToRows();
+    } else {
+      fixedOpt.classList.add('hidden');
+      t7_recalculateSplitPreview();
+    }
+  }
+
+  function t7_applyFixedKidsToRows() {
+    const fixedChildAmt = Number(document.getElementById('t7-fixed-kid-amount').value) || 0;
+    const fixedBabyAmt = Number(document.getElementById('t7-fixed-baby-amount').value) || 0;
+
+    const rows = document.querySelectorAll('.part-row');
+    rows.forEach(r => {
+      const cb = r.querySelector('.part-check');
+      if (!cb) return;
+      const pType = (cb.getAttribute('data-member-type') || '').toUpperCase();
+      const customInput = r.querySelector('.part-custom');
+      if (pType === 'CHILD') {
+        customInput.value = fixedChildAmt;
+      } else if (pType === 'BABY') {
+        customInput.value = fixedBabyAmt;
+      }
+    });
+
+    t7_recalculateSplitPreview();
+  }
+
+  function t7_selectAllParticipants(selectVal) {
+    const checkboxes = document.querySelectorAll('.part-check');
+    checkboxes.forEach(cb => { cb.checked = Boolean(selectVal); });
+    t7_recalculateSplitPreview();
+  }
+
+  function t7_renderParticipantInputs(existingParticipants = null) {
+    const container = document.getElementById('t7-participants-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const group = window.T7_STATE.activeGroup;
+    if (!group || !group.members) return;
+
+    const existingMap = {};
+    if (existingParticipants && Array.isArray(existingParticipants)) {
+      existingParticipants.forEach(p => {
+        const idKey = p.memberId || p.member_id || p.id;
+        const nameKey = (p.name || p.member_name || '').trim().toLowerCase();
+        if (idKey) existingMap[idKey] = p;
+        if (nameKey) existingMap[nameKey] = p;
+      });
+    }
+
+    const fixedChildAmt = Number(document.getElementById('t7-fixed-kid-amount').value) || 3000;
+    const fixedBabyAmt = Number(document.getElementById('t7-fixed-baby-amount').value) || 0;
+
+    group.members.forEach(m => {
+      const prevData = existingParticipants ? (existingMap[m.id] || existingMap[(m.name || '').trim().toLowerCase()] || null) : null;
+      const isSelected = existingParticipants ? (prevData !== null) : true;
+      const pData = prevData || {};
+
+      const row = document.createElement('div');
+      row.className = "flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200/80 text-xs part-row";
+
+      const typeLabel = m.type === 'CHILD' ? '🧒 Trẻ' : (m.type === 'BABY' ? '🍼 Bé' : '👤 Lớn');
+      const defaultVal = m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0);
+      const defaultCustom = m.type === 'CHILD' ? fixedChildAmt : (m.type === 'BABY' ? fixedBabyAmt : '');
+
+      row.innerHTML = `
+        <label class="flex items-center gap-2 font-bold text-slate-800 cursor-pointer select-none">
+          <input type="checkbox" data-member-id="${m.id}" data-member-name="${m.name}" data-member-type="${m.type}" onchange="t7_recalculateSplitPreview()" class="part-check w-4 h-4 text-teal-600 rounded cursor-pointer" ${isSelected ? 'checked' : ''} />
+          <span>${m.name} <span class="text-[10px] font-normal text-slate-500">(${m.family} • ${typeLabel})</span></span>
+        </label>
+
+        <div class="flex items-center gap-1.5">
+          <input type="number" step="0.1" value="${pData.weight !== undefined ? pData.weight : defaultVal}" oninput="t7_recalculateSplitPreview()" class="part-weight w-14 bg-slate-50 border border-slate-300 rounded px-1.5 py-0.5 text-center text-xs font-bold text-slate-800 outline-none hidden" placeholder="Hệ số" />
+          <input type="number" step="0.1" value="${pData.percentage !== undefined ? pData.percentage : 0}" oninput="t7_recalculateSplitPreview()" class="part-pct w-14 bg-slate-50 border border-slate-300 rounded px-1.5 py-0.5 text-center text-xs font-bold text-slate-800 outline-none hidden" placeholder="%" />
+          <input type="number" value="${pData.customAmount !== undefined ? pData.customAmount : defaultCustom}" oninput="t7_recalculateSplitPreview()" class="part-custom w-20 bg-white border border-slate-300 rounded px-1.5 py-0.5 text-right text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-amber-500 hidden" placeholder="¥" />
+          <span class="part-calc-preview font-extrabold text-teal-700 min-w-[60px] text-right">0 ¥</span>
+        </div>
+      `;
+
+      container.appendChild(row);
+    });
+
+    t7_recalculateSplitPreview();
+  }
+
+  function t7_recalculateSplitPreview() {
+    const rawAmt = document.getElementById('t7-expense-amount').value.trim();
+    let totalAmt = 0;
+
+    if (/[+\-*/]/.test(rawAmt) && typeof evaluateMathExpression === 'function') {
+      totalAmt = evaluateMathExpression(rawAmt) || 0;
+    } else {
+      totalAmt = Number(rawAmt) || 0;
+    }
+
+    const mode = window.T7_STATE.currentSplitMode;
+    const rows = document.querySelectorAll('.part-row');
+    const participants = [];
+
+    // Sync select-all checkbox header state
+    const mainCb = document.getElementById('t7-select-all-participants-cb');
+    if (mainCb && rows.length > 0) {
+      const allChecked = Array.from(rows).every(r => {
+        const cb = r.querySelector('.part-check');
+        return cb && cb.checked;
+      });
+      mainCb.checked = allChecked;
+    }
+
+    rows.forEach(r => {
+      const cb = r.querySelector('.part-check');
+      const weightInput = r.querySelector('.part-weight');
+      const pctInput = r.querySelector('.part-pct');
+      const customInput = r.querySelector('.part-custom');
+      const previewSpan = r.querySelector('.part-calc-preview');
+
+      weightInput.classList.add('hidden');
+      pctInput.classList.add('hidden');
+      customInput.classList.add('hidden');
+
+      if (!cb.checked) {
+        previewSpan.innerText = "0 ¥";
+        return;
+      }
+
+      if (mode === 'WEIGHT') weightInput.classList.remove('hidden');
+      else if (mode === 'PERCENTAGE') pctInput.classList.remove('hidden');
+      else if (mode === 'CUSTOM') customInput.classList.remove('hidden');
+      else if (mode === 'FIXED_KIDS_EQUAL_ADULT') {
+        const pType = (cb.getAttribute('data-member-type') || '').toUpperCase();
+        if (pType === 'CHILD' || pType === 'BABY') {
+          customInput.classList.remove('hidden');
+        }
+      }
+
+      const rawCustom = customInput.value.trim();
+      const hasCustom = rawCustom !== '' && !isNaN(Number(rawCustom));
+      const customVal = hasCustom ? Number(rawCustom) : null;
+
+      participants.push({
+        id: cb.getAttribute('data-member-id'),
+        name: cb.getAttribute('data-member-name'),
+        type: cb.getAttribute('data-member-type'),
+        weight: Number(weightInput.value) || 1.0,
+        percentage: Number(pctInput.value) || 0,
+        customAmount: customVal !== null ? customVal : 0,
+        hasCustomOverride: hasCustom,
+        customVal: customVal,
+        spanEl: previewSpan
+      });
+    });
+
+    if (totalAmt <= 0 || participants.length === 0) {
+      document.getElementById('t7-split-total-check').innerText = "⚠️ Chưa nhập số tiền";
+      document.getElementById('t7-split-total-check').className = "text-[10px] font-bold text-amber-600";
+      participants.forEach(p => p.spanEl.innerText = "0 ¥");
+      return;
+    }
+
+    // Dynamic front-end share calculation matching backend engine logic
+    const extraOptions = { fixedChildAmount: Number(document.getElementById('t7-fixed-kid-amount').value) || 3000 };
+    
+    // Simulate share calculation
+    if (mode === 'EQUAL') {
+      const share = Math.floor(totalAmt / participants.length);
+      const rem = totalAmt - (share * participants.length);
+      participants.forEach((p, idx) => {
+        const amt = share + (idx === 0 ? rem : 0);
+        p.spanEl.innerText = `${amt.toLocaleString()} ¥`;
+      });
+    } else if (mode === 'WEIGHT') {
+      const sumW = participants.reduce((s, p) => s + p.weight, 0);
+      let sumCalc = 0;
+      if (sumW > 0) {
+        participants.forEach(p => {
+          p.calc = Math.round((p.weight / sumW) * totalAmt);
+          sumCalc += p.calc;
+        });
+        const remW = totalAmt - sumCalc;
+        if (remW !== 0 && participants.length > 0) participants[0].calc += remW;
+        participants.forEach(p => p.spanEl.innerText = `${p.calc.toLocaleString()} ¥`);
+      }
+    } else if (mode === 'FIXED_KIDS_EQUAL_ADULT') {
+      const fixedChildAmt = Number(document.getElementById('t7-fixed-kid-amount').value) || 0;
+      const fixedBabyAmt = Number(document.getElementById('t7-fixed-baby-amount').value) || 0;
+
+      let totalKidsCost = 0;
+      const kidsCosts = participants.map(p => {
+        const pType = (p.type || '').toUpperCase();
+        if (pType !== 'CHILD' && pType !== 'BABY') return null;
+        if (p.hasCustomOverride) return p.customVal;
+        return pType === 'CHILD' ? fixedChildAmt : fixedBabyAmt;
+      });
+
+      kidsCosts.forEach(cost => {
+        if (cost !== null) totalKidsCost += cost;
+      });
+
+      const adults = participants.filter(p => (p.type || '').toUpperCase() !== 'CHILD' && (p.type || '').toUpperCase() !== 'BABY');
+      const remAdultCost = totalAmt - totalKidsCost;
+
+      if (remAdultCost < 0) {
+        document.getElementById('t7-split-total-check').innerText = "⚠️ Tiền trẻ > Tổng chi!";
+        document.getElementById('t7-split-total-check').className = "text-[10px] font-bold text-rose-600";
+        return;
+      }
+
+      const adultShare = adults.length > 0 ? Math.floor(remAdultCost / adults.length) : 0;
+      const adultRem = adults.length > 0 ? (remAdultCost - (adultShare * adults.length)) : 0;
+
+      participants.forEach((p, idx) => {
+        const pType = (p.type || '').toUpperCase();
+        if (pType === 'CHILD' || pType === 'BABY') {
+          p.calc = kidsCosts[idx];
+        } else {
+          p.calc = adultShare;
+        }
+      });
+
+      if (adultRem !== 0 && adults.length > 0) {
+        const firstAdult = participants.find(p => (p.type || '').toUpperCase() !== 'CHILD' && (p.type || '').toUpperCase() !== 'BABY');
+        if (firstAdult) firstAdult.calc += adultRem;
+      }
+      participants.forEach(p => p.spanEl.innerText = `${p.calc.toLocaleString()} ¥`);
+    } else if (mode === 'PERCENTAGE') {
+      const sumP = participants.reduce((s, p) => s + p.percentage, 0);
+      let sumCalc = 0;
+      participants.forEach(p => {
+        p.calc = Math.round((p.percentage / 100.0) * totalAmt);
+        sumCalc += p.calc;
+      });
+      const remP = totalAmt - sumCalc;
+      if (remP !== 0 && participants.length > 0) participants[0].calc += remP;
+      participants.forEach(p => p.spanEl.innerText = `${p.calc.toLocaleString()} ¥`);
+
+      if (Math.abs(sumP - 100) > 0.1) {
+        const diffP = Math.abs(100 - sumP).toFixed(0);
+        document.getElementById('t7-split-total-check').innerText = `⚠️ Lệch ${diffP}%`;
+        document.getElementById('t7-split-total-check').className = "text-[10px] font-bold text-rose-600";
+        return;
+      }
+    } else if (mode === 'CUSTOM') {
+      const sumC = participants.reduce((s, p) => s + p.customAmount, 0);
+      participants.forEach(p => p.spanEl.innerText = `${p.customAmount.toLocaleString()} ¥`);
+
+      if (Math.abs(sumC - totalAmt) > 0.1) {
+        const diffC = Math.abs(totalAmt - sumC).toLocaleString();
+        document.getElementById('t7-split-total-check').innerText = `⚠️ Lệch ${diffC} ¥`;
+        document.getElementById('t7-split-total-check').className = "text-[10px] font-bold text-rose-600";
+        return;
+      }
+    }
+
+    document.getElementById('t7-split-total-check').innerText = "✅ Khớp 100%";
+    document.getElementById('t7-split-total-check').className = "text-[10px] font-bold text-emerald-600";
+  }
+
+  function t7_saveExpenseFromModal() {
+    const rawAmt = document.getElementById('t7-expense-amount').value.trim();
+    let totalAmt = 0;
+
+    if (/[+\-*/]/.test(rawAmt) && typeof evaluateMathExpression === 'function') {
+      totalAmt = evaluateMathExpression(rawAmt) || 0;
+    } else {
+      totalAmt = Number(rawAmt) || 0;
+    }
+
+    const desc = document.getElementById('t7-expense-desc').value.trim();
+    const payerInput = document.getElementById('t7-expense-payer-input');
+    const payerHidden = document.getElementById('t7-expense-payer');
+    let payerId = payerHidden ? payerHidden.value : '';
+    const payerText = payerInput ? payerInput.value.trim() : '';
+
+    if (!payerId && payerText) {
+      t7_handlePayerInputChange();
+      payerId = document.getElementById('t7-expense-payer').value;
+    }
+
+    const group = window.T7_STATE.activeGroup;
+    let payerFam = payerText;
+    if (group && group.members && payerId) {
+      const payerMbr = group.members.find(m => m.id === payerId);
+      if (payerMbr) payerFam = payerMbr.family || payerText;
+    }
+
+    if (!desc) {
+      showToast("⚠️ Vui lòng nhập nội dung chi!", true);
+      return;
+    }
+    if (totalAmt <= 0) {
+      showToast("⚠️ Số tiền phải > 0!", true);
+      return;
+    }
+    if (!payerId) {
+      showToast("⚠️ Vui lòng chọn gia đình ứng tiền!", true);
+      return;
+    }
+
+    const mode = window.T7_STATE.currentSplitMode;
+    const rows = document.querySelectorAll('.part-row');
+    const participants = [];
+
+    rows.forEach(r => {
+      const cb = r.querySelector('.part-check');
+      if (cb && cb.checked) {
+        const rawCustom = r.querySelector('.part-custom').value.trim();
+        const customAmt = (rawCustom !== '' && !isNaN(Number(rawCustom))) ? Number(rawCustom) : null;
+        participants.push({
+          memberId: cb.getAttribute('data-member-id'),
+          name: cb.getAttribute('data-member-name'),
+          type: cb.getAttribute('data-member-type'),
+          weight: Number(r.querySelector('.part-weight').value) || 1.0,
+          percentage: Number(r.querySelector('.part-pct').value) || 0,
+          customAmount: customAmt
+        });
+      }
+    });
+
+    if (participants.length === 0) {
+      showToast("⚠️ Chọn ít nhất 1 người tham gia gánh tiền!", true);
+      return;
+    }
+
+    const fixedChildAmt = Number(document.getElementById('t7-fixed-kid-amount').value) || 3000;
+    const fixedBabyAmt = Number(document.getElementById('t7-fixed-baby-amount').value) || 0;
+
+    // Save default preferred split configuration per group
+    try {
+      if (window.T7_STATE.activeGroupId) {
+        localStorage.setItem('T7_DEFAULT_SPLIT_' + window.T7_STATE.activeGroupId, JSON.stringify({
+          splitMode: mode,
+          fixedChildAmount: fixedChildAmt,
+          fixedBabyAmount: fixedBabyAmt
+        }));
+      }
+    } catch(e) {}
+
+    const expenseData = {
+      id: document.getElementById('t7-expense-id').value,
+      groupId: window.T7_STATE.activeGroupId,
+      date: document.getElementById('t7-expense-date').value,
+      description: desc,
+      amount: totalAmt,
+      payerId: payerId,
+      payerFamily: payerFam,
+      walletName: document.getElementById('t7-expense-wallet').value,
+      splitType: mode,
+      participants: participants,
+      extraOptions: {
+        fixedChildAmount: fixedChildAmt,
+        fixedBabyAmount: fixedBabyAmt
+      }
+    };
+
+    closeModal('modal-tab7-expense');
+    showToast("⚡ Đã lưu khoản chi!");
+
+    // OPTIMISTIC LOCAL UPDATE FOR INSTANT UI RESPONSE (<0.01s)
+    const activeGroupId = window.T7_STATE.activeGroupId;
+    const tempExpense = {
+      id: expenseData.id || ('EXP_TEMP_' + Date.now()),
+      groupId: activeGroupId,
+      date: expenseData.date,
+      description: expenseData.description,
+      amount: expenseData.amount,
+      payerId: expenseData.payerId,
+      payerFamily: expenseData.payerFamily,
+      walletName: expenseData.walletName,
+      splitType: expenseData.splitType,
+      participants: expenseData.participants,
+      extraOptions: expenseData.extraOptions
+    };
+
+    if (!window.T7_STATE.expenses) window.T7_STATE.expenses = [];
+    if (expenseData.id) {
+      const idx = window.T7_STATE.expenses.findIndex(e => e.id === expenseData.id);
+      if (idx >= 0) window.T7_STATE.expenses[idx] = tempExpense;
+      else window.T7_STATE.expenses.unshift(tempExpense);
+    } else {
+      window.T7_STATE.expenses.unshift(tempExpense);
+    }
+    window.T7_STATE.memberBalances = t7_computeLocalBalances();
+    t7_renderUI();
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          if (res.groupData && res.groupData.success) {
+            window.T7_STATE.activeGroup = res.groupData.group || window.T7_STATE.activeGroup;
+            window.T7_STATE.expenses = res.groupData.expenses || [];
+            window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
+            window.T7_STATE.settlements = res.groupData.settlements || [];
+            try {
+              localStorage.setItem('T7_CACHE_FULL_' + activeGroupId, JSON.stringify(res.groupData));
+            } catch(e) {}
+            t7_renderUI();
+          } else {
+            t7_loadActiveGroupData(activeGroupId);
+          }
+        } else {
+          showToast(res ? res.message : "❌ Lỗi lưu khoản chi", true);
+          t7_loadActiveGroupData(activeGroupId);
+        }
+      })
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi lưu khoản chi: " + err, true);
+        t7_loadActiveGroupData(activeGroupId);
+      })
+      .saveSplitExpense(expenseData);
+  }
+
+  function t7_confirmDeleteExpense(expId, expDesc) {
+    showConfirmModal(
+      "⚠️ Xóa Khoản Chi",
+      `Bạn có chắc chắn muốn xóa khoản chi "${expDesc}" không?`,
+      function() {
+        showToast("⚡ Đã xóa khoản chi!");
+        const activeGroupId = window.T7_STATE.activeGroupId;
+        if (window.T7_STATE.expenses) {
+          window.T7_STATE.expenses = window.T7_STATE.expenses.filter(e => e.id !== expId);
+          window.T7_STATE.memberBalances = t7_computeLocalBalances();
+          try {
+            localStorage.setItem('T7_CACHE_FULL_' + activeGroupId, JSON.stringify({
+              success: true,
+              group: window.T7_STATE.activeGroup,
+              expenses: window.T7_STATE.expenses,
+              memberBalances: window.T7_STATE.memberBalances,
+              settlements: window.T7_STATE.settlements
+            }));
+          } catch(e) {}
+          t7_renderUI();
+        }
+
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              showToast(res.message);
+              if (res.groupData && res.groupData.success) {
+                window.T7_STATE.activeGroup = res.groupData.group || window.T7_STATE.activeGroup;
+                window.T7_STATE.expenses = res.groupData.expenses || [];
+                window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
+                window.T7_STATE.settlements = res.groupData.settlements || [];
+                try {
+                  localStorage.setItem('T7_CACHE_FULL_' + activeGroupId, JSON.stringify(res.groupData));
+                } catch(e) {}
+                t7_renderUI();
+              } else {
+                t7_loadActiveGroupData(activeGroupId);
+              }
+            } else {
+              showToast(res ? res.message : "❌ Lỗi xóa khoản chi", true);
+              t7_loadActiveGroupData(activeGroupId);
+            }
+          })
+          .withFailureHandler(function(err) {
+            showToast("❌ Lỗi xóa khoản chi: " + err, true);
+            t7_loadActiveGroupData(activeGroupId);
+          })
+          .deleteSplitExpense(expId);
+      },
+      "🗑️ Xóa Khoản Chi"
+    );
+  }
+
+  // 7. FINALIZE TRIP & EXPORT NET DEBT HANDLERS & DATE FORMATTERS
+  function t7_formatDateForInput(rawDate) {
+    if (!rawDate) {
+      return new Date().toISOString().split('T')[0];
+    }
+    if (rawDate instanceof Date) {
+      if (isNaN(rawDate.getTime())) return new Date().toISOString().split('T')[0];
+      const y = rawDate.getFullYear();
+      const m = String(rawDate.getMonth() + 1).padStart(2, '0');
+      const d = String(rawDate.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    const str = String(rawDate).trim();
+    if (!str) return new Date().toISOString().split('T')[0];
+
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return str;
+    }
+    // ISO string 2026-09-22T08:00:00
+    if (str.includes('T')) {
+      const parts = str.split('T');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
+        return parts[0];
+      }
+    }
+    // DD/MM/YYYY or DD-MM-YYYY
+    const dmyMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+    if (dmyMatch) {
+      const day = dmyMatch[1].padStart(2, '0');
+      const month = dmyMatch[2].padStart(2, '0');
+      const year = dmyMatch[3];
+      return `${year}-${month}-${day}`;
+    }
+    // YYYY/MM/DD
+    const ymdMatch = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+    if (ymdMatch) {
+      const year = ymdMatch[1];
+      const month = ymdMatch[2].padStart(2, '0');
+      const day = ymdMatch[3].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    // Fallback Date object parsing
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      const y = parsed.getFullYear();
+      const m = String(parsed.getMonth() + 1).padStart(2, '0');
+      const d = String(parsed.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function t7_formatExpenseDate(dStr, short = false) {
+    if (!dStr) return '';
+    const isoStr = t7_formatDateForInput(dStr);
+    const parts = isoStr.split('-');
+    if (parts.length === 3) {
+      return short ? `${parts[2]}/${parts[1]}` : `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return String(dStr);
+  }
+
+  function t7_openFinalizeModal() {
+    let group = window.T7_STATE.activeGroup;
+    if (!group && window.T7_STATE.activeGroupId) {
+      group = (window.T7_STATE.groups || []).find(g => g.id === window.T7_STATE.activeGroupId);
+      if (group) window.T7_STATE.activeGroup = group;
+    }
+    if (!group) {
+      if ((window.T7_STATE.groups || []).length > 0) {
+        group = window.T7_STATE.groups[0];
+        window.T7_STATE.activeGroup = group;
+        window.T7_STATE.activeGroupId = group.id;
+      } else {
+        group = { name: "Báo Cáo Công Nợ", members: [] };
+        window.T7_STATE.activeGroup = group;
+      }
+    }
+
+    const catType = (group.category === 'DINING' || (group.name || '').toLowerCase().includes('ăn') || (group.name || '').toLowerCase().includes('lòng') || (group.name || '').toLowerCase().includes('tiệc')) ? '🍲 Ăn uống' : '✈️ Chuyến đi';
+    
+    const groupNameEl = document.getElementById('t7-finalize-group-name');
+    if (groupNameEl) {
+      groupNameEl.innerText = group.name ? `${catType}: ${group.name}` : catType;
+    }
+
+    // Populate family dropdown options dynamically
+    const selectEl = document.getElementById('t7-finalize-member-select');
+    if (selectEl) {
+      selectEl.innerHTML = '';
+      
+      const optAll = document.createElement('option');
+      optAll.value = 'ALL';
+      optAll.innerText = '📌 Tất Cả Gia Đình (Báo Cáo Tổng Hợp)';
+      selectEl.appendChild(optAll);
+
+      const familyMap = {};
+      (group.members || []).forEach(m => {
+        const tag = m.familyTag || m.family || m.name;
+        if (tag) {
+          if (!familyMap[tag]) familyMap[tag] = [];
+          if (m.name && !familyMap[tag].includes(m.name)) familyMap[tag].push(m.name);
+        }
+      });
+
+      Object.keys(familyMap).forEach(tag => {
+        const opt = document.createElement('option');
+        opt.value = tag;
+        opt.innerText = `🏠 ${tag}`;
+        selectEl.appendChild(opt);
+      });
+      
+      selectEl.value = 'ALL';
+    }
+
+    try {
+      t7_renderFinalizeReportView();
+    } catch(err) {
+      console.error("Error rendering finalize report view:", err);
+    }
+
+    if (typeof openModal === 'function') {
+      openModal('modal-tab7-finalize');
+    } else {
+      const modalEl = document.getElementById('modal-tab7-finalize');
+      if (modalEl) modalEl.classList.remove('hidden');
+    }
+  }
+
+  function t7_getTargetMemberIds(group, selectedTarget) {
+    const targetSet = new Set();
+    const members = group.members || [];
+    if (!selectedTarget || selectedTarget === 'ALL') {
+      members.forEach(m => { if (m.id) targetSet.add(m.id); });
+      return targetSet;
+    }
+
+    const selLower = selectedTarget.toLowerCase().trim();
+
+    members.forEach(m => {
+      const mId = m.id || m.member_id || '';
+      const mName = (m.name || m.member_name || '').toLowerCase().trim();
+      const mFam = (m.familyTag || m.family || m.family_name || '').toLowerCase().trim();
+
+      let isMatch = false;
+      if (mFam && (selLower.includes(mFam) || mFam.includes(selLower))) isMatch = true;
+      if (mName && (selLower.includes(mName) || mName.includes(selLower))) isMatch = true;
+      if (mId && selLower.includes(mId.toLowerCase())) isMatch = true;
+
+      if (isMatch && mId) {
+        targetSet.add(mId);
+      }
+    });
+
+    return targetSet;
+  }
+
+  function t7_isExpensePaidByFamily(exp, selectedTarget, groupMembers) {
+    if (!selectedTarget || selectedTarget === 'ALL') return true;
+
+    const selLower = String(selectedTarget).toLowerCase().trim();
+    const members = groupMembers || [];
+
+    const targetMemberSet = new Set();
+    members.forEach(m => {
+      const mId = String(m.id || m.member_id || '').trim();
+      const mName = String(m.name || m.member_name || '').toLowerCase().trim();
+      const mFam = String(m.family || m.family_name || m.familyTag || '').toLowerCase().trim();
+
+      if ((mFam && (selLower === mFam || selLower.includes(mFam) || mFam.includes(selLower))) ||
+          (mName && (selLower === mName || selLower.includes(mName) || mName.includes(selLower))) ||
+          (mId && selLower.includes(mId.toLowerCase()))) {
+        if (mId) targetMemberSet.add(mId);
+      }
+    });
+
+    const expPayerRaw = String(exp.payerId || exp.payer_id || exp.payerMemberID || exp.payer || exp.payerName || exp.payer_name || '').trim();
+    const expPayerLower = expPayerRaw.toLowerCase();
+    const expPayerFam = String(exp.payerFamily || exp.payer_family || '').toLowerCase().trim();
+
+    if (expPayerFam && (selLower === expPayerFam || selLower.includes(expPayerFam) || expPayerFam.includes(selLower))) {
+      return true;
+    }
+    if (expPayerLower && (selLower === expPayerLower || selLower.includes(expPayerLower) || expPayerLower.includes(selLower))) {
+      return true;
+    }
+
+    const payerMember = members.find(m => {
+      const mId = String(m.id || m.member_id || '').trim();
+      const mName = String(m.name || m.member_name || '').toLowerCase().trim();
+      const mFam = String(m.family || m.family_name || m.familyTag || '').toLowerCase().trim();
+      return (mId && (mId === expPayerRaw || mId.toLowerCase() === expPayerLower)) ||
+             (mName && mName === expPayerLower) ||
+             (mFam && mFam === expPayerLower);
+    });
+
+    if (payerMember) {
+      const pFam = String(payerMember.family || payerMember.family_name || payerMember.familyTag || '').toLowerCase().trim();
+      if (pFam && (selLower === pFam || selLower.includes(pFam) || pFam.includes(selLower))) {
+        return true;
+      }
+      if (targetMemberSet.has(payerMember.id || payerMember.member_id)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function t7_calculateReportSummaryData(group, rawExps, selectedTarget) {
+    group = group || {};
+    rawExps = rawExps || [];
+    selectedTarget = selectedTarget || 'ALL';
+
+    const groupMembers = group.members || [];
+    const totalAdults = groupMembers.filter(m => !m.type || m.type === 'ADULT').length;
+    const totalKids = groupMembers.filter(m => m.type === 'CHILD').length;
+    const totalBabies = groupMembers.filter(m => m.type === 'BABY').length;
+    const totalPurchaseAmount = rawExps.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const weightedHeads = (totalAdults * 1.0) + (totalKids * 0.5);
+    const adultRate = weightedHeads > 0 ? Math.round(totalPurchaseAmount / weightedHeads) : (totalAdults > 0 ? Math.round(totalPurchaseAmount / totalAdults) : 0);
+    const kidRate = totalKids > 0 ? Math.round(adultRate * 0.5) : 0;
+    const babyRate = 0;
+
+    let totalAdvanced = 0;
+    let advancedExps = [];
+
+    rawExps.forEach(exp => {
+      if (t7_isExpensePaidByFamily(exp, selectedTarget, groupMembers)) {
+        totalAdvanced += Number(exp.amount) || 0;
+        advancedExps.push(exp);
+      }
+    });
+
+    let totalShare = 0;
+    const selLower = selectedTarget.toLowerCase().trim();
+    const targetMemberIds = t7_getTargetMemberIds(group, selectedTarget);
+
+    if (selectedTarget === 'ALL') {
+      totalShare = totalPurchaseAmount;
+    } else {
+      let splitShareSum = 0;
+      let hasSplits = false;
+
+      rawExps.forEach(exp => {
+        if (Array.isArray(exp.participants) && exp.participants.length > 0) {
+          exp.participants.forEach(p => {
+            const pId = p.memberId || p.id;
+            const pObj = (groupMembers.find(m => m.id === pId || String(m.name || '').toLowerCase() === String(p.name || pId || '').toLowerCase().trim())) || {};
+            const pFam = (pObj.family || pObj.familyTag || p.family || '').toLowerCase().trim();
+            const pName = (pObj.name || p.name || '').toLowerCase().trim();
+
+            if (targetMemberIds.has(pId) || (pFam && (selLower === pFam || selLower.includes(pFam) || pFam.includes(selLower))) || (pName && (selLower === pName || selLower.includes(pName) || pName.includes(selLower)))) {
+              splitShareSum += Number(p.calculatedAmount) || 0;
+              hasSplits = true;
+            }
+          });
+        }
+      });
+
+      if (hasSplits) {
+        totalShare = splitShareSum;
+      } else {
+        const anyExpHasParticipants = rawExps.some(exp => Array.isArray(exp.participants) && exp.participants.length > 0);
+        if (anyExpHasParticipants) {
+          totalShare = 0;
+        } else {
+          const targetMembers = groupMembers.filter(m => targetMemberIds.has(m.id) || (m.family && (selLower.includes(m.family.toLowerCase()) || m.family.toLowerCase().includes(selLower))) || (m.familyTag && (selLower.includes(m.familyTag.toLowerCase()) || m.familyTag.toLowerCase().includes(selLower))));
+          const tAdults = targetMembers.filter(m => !m.type || m.type === 'ADULT').length;
+          const tKids = targetMembers.filter(m => m.type === 'CHILD').length;
+          const tBabies = targetMembers.filter(m => m.type === 'BABY').length;
+
+          if (tAdults > 0 || tKids > 0 || tBabies > 0) {
+            totalShare = (tAdults * adultRate) + (tKids * kidRate) + (tBabies * babyRate);
+          } else {
+            const targetWeight = targetMembers.reduce((sum, m) => sum + (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0 : 1.0)), 0);
+            const totalGroupWeight = groupMembers.reduce((sum, m) => sum + (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0 : 1.0)), 0) || 1;
+            const ratio = totalGroupWeight > 0 ? (targetWeight / totalGroupWeight) : 0;
+            totalShare = Math.round(totalPurchaseAmount * ratio);
+          }
+        }
+      }
+    }
+
+    const netBalance = (selectedTarget === 'ALL') ? 0 : (totalAdvanced - totalShare);
+
+    return {
+      totalAdults,
+      totalKids,
+      totalBabies,
+      totalPurchaseAmount,
+      adultRate,
+      kidRate,
+      babyRate,
+      totalAdvanced,
+      advancedExps,
+      totalShare,
+      netBalance
+    };
+  }
+
+  function t7_renderFinalizeReportView() {
+    const selectedTarget = document.getElementById('t7-finalize-member-select')?.value || 'ALL';
+    const group = window.T7_STATE.activeGroup || {};
+    const groupName = group.name || "";
+    const catType = (group.category === 'DINING' || groupName.toLowerCase().includes('ăn') || groupName.toLowerCase().includes('lòng') || groupName.toLowerCase().includes('tiệc')) ? '🥣 Ăn uống' : '✈️ Chuyến đi';
+
+    const titleSubEl = document.getElementById('t7-card-group-subtitle');
+    const titleDateEl = document.getElementById('t7-card-group-date');
+    const targetLabelEl = document.getElementById('t7-card-target-label');
+    const mockBadge = document.getElementById('t7-finalize-mock-badge');
+    const purchaseValEl = document.getElementById('t7-card-total-purchase');
+
+    const adultCntEl = document.getElementById('t7-card-adult-cnt');
+    const adultRateEl = document.getElementById('t7-card-adult-rate');
+    const kidCntEl = document.getElementById('t7-card-kid-cnt');
+    const kidRateEl = document.getElementById('t7-card-kid-rate');
+    const babyCntEl = document.getElementById('t7-card-baby-cnt');
+    const babyRateEl = document.getElementById('t7-card-baby-rate');
+
+    const advValEl = document.getElementById('t7-card-advanced-val');
+    const shareValEl = document.getElementById('t7-card-share-val');
+    const netValEl = document.getElementById('t7-card-net-val');
+    const advBoxEl = document.getElementById('t7-card-advanced-detail-box');
+
+    let rawExps = window.T7_STATE.expenses || [];
+    let rawStls = window.T7_STATE.settlements || [];
+
+    if (mockBadge) {
+      mockBadge.classList.add('hidden');
+    }
+
+    const selLower = selectedTarget.toLowerCase().trim();
+    const summaryData = t7_calculateReportSummaryData(group, rawExps, selectedTarget);
+
+    const exportDateEl = document.getElementById('t7-card-export-date');
+    const todayStr = t7_formatExpenseDate(new Date().toISOString().split('T')[0]);
+    const gDate = t7_formatExpenseDate(group.created_at);
+
+    if (purchaseValEl) purchaseValEl.innerText = summaryData.totalPurchaseAmount.toLocaleString();
+    if (adultCntEl) {
+      adultCntEl.innerText = `👤 ${summaryData.totalAdults} Lớn`;
+      adultCntEl.style.display = summaryData.totalAdults > 0 ? '' : 'none';
+    }
+    if (kidCntEl) {
+      kidCntEl.innerText = `🧒 ${summaryData.totalKids} em`;
+      kidCntEl.style.display = summaryData.totalKids > 0 ? '' : 'none';
+    }
+    if (babyCntEl) {
+      babyCntEl.innerText = `🍼 ${summaryData.totalBabies} bé`;
+      babyCntEl.style.display = summaryData.totalBabies > 0 ? '' : 'none';
+    }
+
+    // Calculate formula breakdown & effective rate per adult for selected target family
+    const shareFormulaEl = document.getElementById('t7-card-share-formula');
+    let effAdultRate = summaryData.adultRate;
+    let effKidRate = summaryData.kidRate;
+
+    let formattedShareVal = summaryData.totalShare.toLocaleString() + " ¥";
+
+    if (selectedTarget !== 'ALL') {
+      const targetMembers = (group.members || []).filter(m =>
+        (m.family || m.family_name || m.familyTag || m.name || '').toLowerCase().includes(selLower) ||
+        selLower.includes((m.family || m.family_name || m.familyTag || m.name || '').toLowerCase())
+      );
+      const fAdults = targetMembers.filter(m => String(m.member_type || m.type || m.age_group || 'ADULT').toUpperCase() === 'ADULT').length;
+      const fKids = targetMembers.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'CHILD').length;
+      const fBabies = targetMembers.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'BABY').length;
+
+      const fWeight = (fAdults * 1.0) + (fKids * 0.5);
+      if (summaryData.totalShare > 0 && fWeight > 0 && fAdults > 0) {
+        effAdultRate = Math.round(summaryData.totalShare / fWeight);
+        effKidRate = Math.round(effAdultRate * 0.5);
+      }
+
+      const formulaParts = [];
+      if (fAdults > 0) formulaParts.push(`${fAdults} Lớn × ${effAdultRate.toLocaleString()} ¥`);
+      if (fKids > 0) formulaParts.push(`${fKids} em × ${effKidRate.toLocaleString()} ¥`);
+      if (fBabies > 0) formulaParts.push(`${fBabies} bé × 0 ¥`);
+
+      if (formulaParts.length > 0 && summaryData.totalShare > 0) {
+        formattedShareVal = `${formulaParts.join(' + ')} = ${summaryData.totalShare.toLocaleString()} ¥`;
+      }
+    }
+
+    if (adultRateEl) adultRateEl.innerHTML = `<strong>${effAdultRate.toLocaleString()} ¥</strong> / 1Lớn`;
+    if (kidRateEl) kidRateEl.innerHTML = `<strong>${effKidRate.toLocaleString()} ¥</strong> / 1em`;
+    if (babyRateEl) babyRateEl.innerHTML = `<strong>0 ¥</strong> / 1bé`;
+
+    if (titleSubEl) {
+      titleSubEl.innerText = groupName ? `${catType}: ${groupName}` : catType;
+    }
+    if (titleDateEl) {
+      titleDateEl.innerText = gDate || '';
+    }
+    if (exportDateEl) {
+      exportDateEl.innerText = todayStr || gDate || '';
+    }
+    if (targetLabelEl) {
+      targetLabelEl.innerText = `CÔNG NỢ : ${selectedTarget === 'ALL' ? 'TẤT CẢ GIA ĐÌNH' : selectedTarget.toUpperCase()}`;
+    }
+
+    const advTotalHeaderEl = document.getElementById('t7-card-advanced-total-header');
+    const expTotalHeaderEl = document.getElementById('t7-card-expense-total-header');
+    if (advTotalHeaderEl) advTotalHeaderEl.innerText = summaryData.totalAdvanced.toLocaleString() + " ¥";
+    if (expTotalHeaderEl) {
+      expTotalHeaderEl.innerText = summaryData.totalPurchaseAmount.toLocaleString() + " ¥";
+    }
+
+    if (advValEl) advValEl.innerText = summaryData.totalAdvanced.toLocaleString() + " ¥";
+    if (shareValEl) shareValEl.innerText = formattedShareVal;
+    if (netValEl) {
+      if (selectedTarget === 'ALL') {
+        netValEl.className = "t7-summary-value t7-summary-diff-pos";
+        netValEl.innerText = "+0 ¥";
+      } else if (summaryData.netBalance >= 0) {
+        netValEl.className = "t7-summary-value t7-summary-diff-pos";
+        netValEl.innerText = `+${summaryData.netBalance.toLocaleString()} ¥`;
+      } else {
+        netValEl.className = "t7-summary-value t7-summary-diff-neg";
+        netValEl.innerText = `-${Math.abs(summaryData.netBalance).toLocaleString()} ¥`;
+      }
+    }
+
+    // Settlements for preview
+    let displayStls = rawStls;
+    if (selectedTarget !== 'ALL') {
+      displayStls = rawStls.filter(s => {
+        const from = (s.fromName || '').toLowerCase();
+        const to = (s.toName || '').toLowerCase();
+        return from.includes(selLower) || to.includes(selLower);
+      });
+    }
+
+    // Render Settlements
+    const preview = document.getElementById('t7-finalize-settlements-preview');
+    if (preview) {
+      preview.innerHTML = '';
+      displayStls.forEach(s => {
+        const row = document.createElement('div');
+        row.className = "flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200 shadow-2xs text-xs";
+        let meTag = '';
+        if (s.toIsMe) meTag = '<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1 rounded">Thu Ví Tôi</span>';
+        else if (s.fromIsMe) meTag = '<span class="text-[9px] bg-rose-100 text-rose-800 font-bold px-1 rounded">Trả Ví Tôi</span>';
+
+        row.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-800">${s.fromName} ➔ ${s.toName}</div>
+            ${meTag}
+          </div>
+          <span class="font-extrabold text-emerald-700">${s.amount.toLocaleString()} ¥</span>
+        `;
+        preview.appendChild(row);
+      });
+    }
+
+    // Hide Advanced Items Section completely if 0 items were advanced or totalAdvanced === 0
+    if (advBoxEl) {
+      if (summaryData.advancedExps.length === 0 || summaryData.totalAdvanced === 0) {
+        advBoxEl.classList.add('hidden');
+        advBoxEl.style.display = 'none';
+      } else {
+        advBoxEl.classList.remove('hidden');
+        advBoxEl.style.display = 'block';
+      }
+    }
+
+    // Render Advanced Expenses Detail (Khoản ứng)
+    const advDetailContainer = document.getElementById('t7-finalize-advanced-detail');
+    if (advDetailContainer) {
+      advDetailContainer.innerHTML = '';
+      if (summaryData.advancedExps.length > 0 && summaryData.totalAdvanced > 0) {
+        summaryData.advancedExps.forEach((exp) => {
+          const item = document.createElement('div');
+          item.className = "t7-detail-row";
+          const title = exp.description || exp.name || exp.title || exp.item || exp.category || 'Khoản ứng';
+          const dShort = t7_formatExpenseDate(exp.date || exp.dateStr || exp.created_at, true);
+          const payerFamName = exp.payerFamily || exp.payer_family || t7_getPayerFamilyName(exp.payerId || exp.payer_id || exp.payerMemberID, exp.payerName || exp.payer_name || exp.payer);
+
+          item.innerHTML = `
+            <span class="t7-detail-date">${dShort || ''}</span>
+            <span class="t7-detail-name font-bold">${title} ${payerFamName ? `<span class="text-slate-400 font-normal">(${payerFamName} ứng)</span>` : ''}</span>
+            <span class="t7-detail-money">${(Number(exp.amount) || 0).toLocaleString()} ¥</span>
+          `;
+          advDetailContainer.appendChild(item);
+        });
+      }
+    }
+
+    // Render All Expenses Detail (Khoản chi: ghi rõ số lượng & đơn giá trên đầu người)
+    const expDetailContainer = document.getElementById('t7-finalize-expenses-detail');
+    if (expDetailContainer) {
+      expDetailContainer.innerHTML = '';
+
+      rawExps.forEach((exp) => {
+        const title = exp.description || exp.name || exp.title || exp.item || exp.category || 'Khoản chi';
+        const dShort = t7_formatExpenseDate(exp.date || exp.dateStr || exp.created_at, true);
+        const eAmt = Number(exp.amount) || 0;
+
+        const parts = (exp.participants && exp.participants.length > 0)
+          ? exp.participants
+          : (group.members || []);
+
+        const totalAdultsInExp = parts.filter(p => {
+          const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.member_id || p.id) || m.name === (p.name || p.member_name));
+          const pType = String((pMbr ? pMbr.type || pMbr.member_type : p.type) || 'ADULT').toUpperCase();
+          return pType === 'ADULT';
+        }).length;
+
+        const totalKidsInExp = parts.filter(p => {
+          const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.member_id || p.id) || m.name === (p.name || p.member_name));
+          const pType = String((pMbr ? pMbr.type || pMbr.member_type : p.type) || '').toUpperCase();
+          return pType === 'CHILD';
+        }).length;
+
+        const totalBabiesInExp = parts.filter(p => {
+          const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.member_id || p.id) || m.name === (p.name || p.member_name));
+          const pType = String((pMbr ? pMbr.type || pMbr.member_type : p.type) || '').toUpperCase();
+          return pType === 'BABY';
+        }).length;
+
+        const totalWeightInExp = (totalAdultsInExp * 1.0) + (totalKidsInExp * 0.5);
+        const expRatePerAdult = (eAmt > 0 && totalWeightInExp > 0 && totalAdultsInExp > 0) ? Math.round(eAmt / totalWeightInExp) : 0;
+
+        const displayAmount = eAmt;
+        const hcParts = [];
+        if (totalAdultsInExp > 0) hcParts.push(`👤 ${totalAdultsInExp} Lớn`);
+        if (totalKidsInExp > 0) hcParts.push(`🧒 ${totalKidsInExp} em`);
+        if (totalBabiesInExp > 0) hcParts.push(`🍼 ${totalBabiesInExp} bé`);
+        const hcStr = hcParts.length > 0 ? hcParts.join(' ') : `👤 ${parts.length} Lớn`;
+
+        const rateStr = expRatePerAdult > 0 ? `${expRatePerAdult.toLocaleString()} ¥/1Lớn` : '';
+        const infoDetail = [hcStr, rateStr].filter(Boolean).join(' • ');
+
+        const item = document.createElement('div');
+        item.className = "t7-expense-row";
+        item.innerHTML = `
+          <span class="t7-detail-date">${dShort || ''}</span>
+          <span class="t7-detail-name font-bold">${title} ${infoDetail ? `<span class="text-slate-400 font-normal">(${infoDetail})</span>` : ''}</span>
+          <span class="t7-expense-money">${displayAmount.toLocaleString()} ¥</span>
+        `;
+        expDetailContainer.appendChild(item);
+      });
+    }
+  }
+
+  function t7_copyReportImageToClipboard() {
+    const cardEl = document.getElementById('t7-report-card-canvas');
+    const btn = document.getElementById('btn-t7-copy-img');
+    if (!cardEl || typeof html2canvas === 'undefined') {
+      showToast("❌ Thư viện chụp ảnh html2canvas chưa sẵn sàng!", true);
+      return;
+    }
+
+    const origText = btn ? btn.innerHTML : '<span>📸</span> <span>Xuất Ảnh</span>';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "⏳ Đang tạo ảnh...";
+    }
+
+    html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      onclone: function(clonedDoc) {
+        const clonedCard = clonedDoc.getElementById('t7-report-card-canvas');
+        if (clonedCard) {
+          clonedCard.style.maxHeight = 'none';
+          clonedCard.style.overflow = 'visible';
+          clonedCard.style.height = 'auto';
+        }
+      }
+    }).then(canvas => {
+      canvas.toBlob(blob => {
+        if (!blob) {
+          if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+          showToast("❌ Lỗi tạo file ảnh!", true);
+          return;
+        }
+        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+          navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ]).then(() => {
+            if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+            showToast("✅ Đã sao chép ảnh báo cáo! Bạn có thể dán (Ctrl+V) gửi ngay.");
+          }).catch(err => {
+            if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+            t7_downloadReportImage();
+          });
+        } else {
+          if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+          t7_downloadReportImage();
+        }
+      }, 'image/png');
+    }).catch(err => {
+      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+      showToast("❌ Lỗi xuất ảnh: " + err, true);
+    });
+  }
+
+  function t7_downloadReportImage() {
+    const cardEl = document.getElementById('t7-report-card-canvas');
+    const btn = document.getElementById('btn-t7-download-img');
+    if (!cardEl || typeof html2canvas === 'undefined') {
+      showToast("❌ Thư viện chụp ảnh html2canvas chưa sẵn sàng!", true);
+      return;
+    }
+
+    const origText = btn ? btn.innerHTML : '<span>📥</span> <span>Tải File</span>';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = "⏳ Đang tải...";
+    }
+
+    html2canvas(cardEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      onclone: function(clonedDoc) {
+        const clonedCard = clonedDoc.getElementById('t7-report-card-canvas');
+        if (clonedCard) {
+          clonedCard.style.maxHeight = 'none';
+          clonedCard.style.overflow = 'visible';
+          clonedCard.style.height = 'auto';
+        }
+      }
+    }).then(canvas => {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+      const selectedVal = (document.getElementById('t7-finalize-member-select')?.value || 'BaoCao').replace(/[^a-zA-Z0-9_\-]/g, '_');
+      const link = document.createElement('a');
+      link.download = `BaoCao_ChiTra_${selectedVal}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast("✅ Đã tải file ảnh báo cáo thành công!");
+    }).catch(err => {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
+      showToast("❌ Lỗi tải ảnh: " + err, true);
+    });
+  }
+
+  function t7_copyFinalizeReport() {
+    const selectedTarget = document.getElementById('t7-finalize-member-select')?.value || 'ALL';
+    const group = window.T7_STATE.activeGroup || {};
+    const groupName = group.name || "";
+    const catType = (group.category === 'DINING' || groupName.toLowerCase().includes('ăn') || groupName.toLowerCase().includes('lòng') || groupName.toLowerCase().includes('tiệc')) ? '🍲 Ăn uống' : '✈️ Chuyến đi';
+
+    let exps = window.T7_STATE.expenses || [];
+    const summaryData = t7_calculateReportSummaryData(group, exps, selectedTarget);
+
+    const advStr = summaryData.totalAdvanced.toLocaleString() + ' ¥';
+    const shareStr = summaryData.totalShare.toLocaleString() + ' ¥';
+    const netStr = (selectedTarget === 'ALL') ? '+0 ¥' : (summaryData.netBalance >= 0 ? `+${summaryData.netBalance.toLocaleString()} ¥` : `-${Math.abs(summaryData.netBalance).toLocaleString()} ¥`);
+    const gDate = t7_formatExpenseDate(group.created_at || new Date().toISOString().split('T')[0]);
+
+    let text = `📊 BÁO CÁO CÔNG NỢ & CHI TRẢ - ${selectedTarget.toUpperCase()}\n`;
+    text += `${catType}: ${groupName.toUpperCase()}\n`;
+    if (gDate) text += `📅 Ngày: ${gDate}\n`;
+    text += `=====================================\n\n`;
+
+    text += `[MỤC 2: CHI TIẾT CHUYẾN ĐÍ & CHI PHÍ ĐẦU NGƯỜI]\n`;
+    text += `- 🛒 Tổng tiền chuyến đi: ${summaryData.totalPurchaseAmount.toLocaleString()} ¥\n`;
+    text += `- 👥 Người lớn: ${summaryData.totalAdults} Lớn (${summaryData.adultRate.toLocaleString()} ¥/1Lớn) ; Trẻ em: ${summaryData.totalKids} em (${summaryData.kidRate.toLocaleString()} ¥/1em) ; Em bé: ${summaryData.totalBabies} bé (0 ¥/1bé)\n\n`;
+
+    text += `[MỤC 3: TỔNG HỢP CÔNG NỢ TÀI CHÍNH]\n`;
+    text += `- 💵 Đã ứng: ${advStr}\n`;
+    text += `- 📊 Phải trả: ${shareStr}\n`;
+    text += `- ⚖️ Bù trừ: ${netStr}\n`;
+    text += `=====================================\n\n`;
+
+    // CHI TIẾT CÁC KHOẢN ỨNG (Only output if advanced > 0)
+    let advText = '';
+    let advCount = 0;
+    summaryData.advancedExps.forEach((e) => {
+      advCount++;
+      const title = e.description || e.name || e.title || e.item || e.category || 'Khoản ứng';
+      const dShort = t7_formatExpenseDate(e.date || e.dateStr || e.created_at, true);
+      const dText = dShort ? ` (${dShort})` : '';
+      advText += `- ${advCount}. ${title}${dText}: ${(Number(e.amount) || 0).toLocaleString()} ¥\n`;
+    });
+
+    if (advCount > 0) {
+      text += `💵 CHI TIẾT CÁC KHOẢN ỨNG (${selectedTarget.toUpperCase()}):\n` + advText + `\n`;
+    }
+
+    // CHI TIẾT CÁC KHOẢN CHI
+    text += `🧾 CHI TIẾT CÁC KHOẢN CHI:\n`;
+    exps.forEach((e, i) => {
+      const title = e.description || e.name || e.title || e.item || e.category || 'Khoản chi';
+      const dShort = t7_formatExpenseDate(e.date || e.dateStr || e.created_at, true);
+      const dText = dShort ? ` (${dShort})` : '';
+      text += `- ${i + 1}. ${title}${dText}: ${(Number(e.amount) || 0).toLocaleString()} ¥\n`;
+    });
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("📋 Đã sao chép báo cáo công nợ vào bộ nhớ tạm!");
+      }).catch(() => {
+        showToast("⚠️ Không thể tự động chép, hãy chọn thủ công.", true);
+      });
+    } else {
+      showToast("📋 Đã xuất báo cáo!", false);
+    }
+  }
+
+  function t7_executeFinalizeTrip() {
+    const gId = window.T7_STATE.activeGroupId;
+    if (!gId) return;
+
+    closeModal('modal-tab7-finalize');
+    showToast("⏳ Đang kết thúc chuyến đi & xuất công nợ...");
+
+    // Optimistic status update & cache clearance
+    if (window.T7_STATE.activeGroup) {
+      window.T7_STATE.activeGroup.status = 'CLOSED';
+    }
+    if (Array.isArray(window.T7_STATE.groups)) {
+      const gObj = window.T7_STATE.groups.find(g => g.id === gId);
+      if (gObj) gObj.status = 'CLOSED';
+    }
+    try {
+      localStorage.removeItem('T7_CACHE_FULL_' + gId);
+      localStorage.removeItem('T7_CACHE_GROUPS');
+      for (let k in localStorage) {
+        if (k.startsWith('T2_CACHE_DATA')) localStorage.removeItem(k);
+      }
+    } catch(e) {}
+    t7_renderUI();
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          showToast(res.message);
+          try {
+            for (let k in localStorage) {
+              if (k.startsWith('T2_CACHE_DATA')) localStorage.removeItem(k);
+            }
+          } catch(e) {}
+          t7_loadAllData();
+          t7_loadActiveGroupData(gId);
+          // Reload Tab 4 & Tab 2 data if functions exist
+          if (typeof reloadTab4Data === 'function') reloadTab4Data();
+          if (typeof reloadTab1Data === 'function') reloadTab1Data();
+          if (typeof reloadTab2Data === 'function') reloadTab2Data();
+          if (typeof fetchTab2Transactions === 'function') fetchTab2Transactions(true);
+          if (typeof loadTab2Data === 'function') loadTab2Data(true);
+
+          setTimeout(function() {
+            if (typeof switchAppTab === 'function') {
+              switchAppTab('tab2', 'text-pink-600');
+            } else {
+              const tab2Nav = document.querySelector('.nav-item.tab2');
+              if (tab2Nav) tab2Nav.click();
+            }
+          }, 350);
+        } else {
+          showToast(res ? res.message : "❌ Lỗi chốt nợ", true);
+        }
+      })
+      .finalizeTripAndExportDebts(gId, { consolidateByFamily: true });
+  }
+
+  function t7_reopenCurrentGroup() {
+    const gId = window.T7_STATE.activeGroupId;
+    if (!gId) return;
+
+    showToast("⏳ Đang mở lại chuyến đi...");
+
+    if (window.T7_STATE.activeGroup) {
+      window.T7_STATE.activeGroup.status = 'OPEN';
+    }
+    if (Array.isArray(window.T7_STATE.groups)) {
+      const gObj = window.T7_STATE.groups.find(g => g.id === gId);
+      if (gObj) gObj.status = 'OPEN';
+    }
+    try {
+      localStorage.removeItem('T7_CACHE_FULL_' + gId);
+      localStorage.removeItem('T7_CACHE_GROUPS');
+    } catch(e) {}
+    t7_renderUI();
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          showToast(res.message);
+          t7_loadAllData();
+          t7_loadActiveGroupData(gId);
+        } else {
+          showToast(res ? res.message : "❌ Lỗi mở lại nhóm", true);
+        }
+      })
+      .reopenSplitGroup(gId);
+  }
+
+  // AUTO INIT LISTENERS
+  document.addEventListener('DOMContentLoaded', function() {
+    initTab7();
+  });
+</script>
