@@ -11564,25 +11564,6 @@
       });
     });
 
-    if (!deletedSet.has('2f') && !familyMap.has('2f')) {
-      familyMap.set('2f', {
-        name: '2F',
-        members: [
-          { name: 'Chi', type: 'ADULT', weight: 1.0, isMe: true },
-          { name: 'Chít', type: 'CHILD', weight: 0.5, isMe: true }
-        ]
-      });
-    }
-    if (!deletedSet.has('1f') && !familyMap.has('1f')) {
-      familyMap.set('1f', {
-        name: '1F',
-        members: [
-          { name: 'A Huân 1F', type: 'ADULT', weight: 1.0, isMe: false },
-          { name: 'Tuyết Anh 1F', type: 'ADULT', weight: 1.0, isMe: false }
-        ]
-      });
-    }
-
     return familyMap;
   }
 
@@ -11622,8 +11603,6 @@
     familyMap.forEach((val) => {
       if (val && val.name) catSet.add(val.name.trim());
     });
-
-    ["1F", "2F", "3F", "4F", "Gia đình A", "Gia đình B", "Gia đình C"].forEach(f => catSet.add(f));
 
     datalist.innerHTML = Array.from(catSet).map(name => `<option value="${name}">`).join('');
   }
@@ -11975,10 +11954,6 @@
 
     if (famObj && famObj.members && famObj.members.length > 0) {
       famObj.members.forEach(m => {
-        const mName = (m.name || m.member_name || '').trim();
-        if (cleanFam.toLowerCase() === '2f' && (mName === 'Quậy (Tôi)' || mName === 'Quậy' || mName.toLowerCase().startsWith('quậy'))) {
-          return;
-        }
         t7_addMemberRow({
           name: m.name,
           family: cleanFam,
@@ -11996,7 +11971,6 @@
           if (m.family && m.family.trim().toLowerCase() === cleanFam.toLowerCase()) {
             const key = (m.name || '').trim().toLowerCase();
             if (key && !memberMap.has(key)) {
-              if (cleanFam.toLowerCase() === '2f' && (key === 'quậy (tôi)' || key === 'quậy' || key.startsWith('quậy'))) return;
               memberMap.set(key, m);
             }
           }
@@ -12040,7 +12014,7 @@
         if (Array.isArray(parsed)) return parsed;
       }
     } catch(e) {}
-    return ['1F', '2F', '3F'];
+    return [];
   }
 
   function t7_saveCustomPresetFamilies(fams) {
@@ -12169,8 +12143,8 @@
     if (presetFamSuggest) presetFamSuggest.innerHTML = '';
 
     const groups = window.T7_STATE.groups || [];
-    const famSet = new Set(["1F", "2F", "3F", "Gia đình A", "Gia đình B", "Gia đình C"]);
-    const mbrSet = new Set(["Chủ Ví (Tôi)", "Vợ / Chồng", "Con nhỏ", "Bạn A", "Bạn B"]);
+    const famSet = new Set();
+    const mbrSet = new Set();
 
     try {
       const familyMap = t7_getFamilyDatabaseMap();
