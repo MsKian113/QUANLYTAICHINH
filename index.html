@@ -7944,7 +7944,7 @@
       if (!res || !Array.isArray(res.groupedInventory)) return null;
       const cleanName = (spName || '').trim().toLowerCase();
       const item = res.groupedInventory.find(g => (g.tenSP || '').trim().toLowerCase() === cleanName);
-      return item ? Number(item.totalQty || 0) : 0;
+      return item ? Number(item.totalQty || 0) : null;
   }
 
   function updateStockInfoHelper(inputId) {
@@ -8265,12 +8265,12 @@
       }
 
       if (hasStockError) {
-          // Hiển thị dòng báo đỏ và viền đỏ trực tiếp tại ô textbox từng dòng
+          showToast("⚠️ Số lượng xuất bán vượt quá tồn kho khả dụng!", true);
           items.forEach(row => {
               const spInput = row.querySelector('.ban-sp-input');
               if (spInput && spInput.id) updateStockInfoHelper(spInput.id);
           });
-          return; // Chặn lưu đơn mà KHÔNG hiện popup toast
+          return;
       }
 
       const payload = {
