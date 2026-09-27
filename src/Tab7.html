@@ -1993,7 +1993,7 @@
     const oldNameInput = document.getElementById('t7-fam-old-name');
     const oldName = oldNameInput ? oldNameInput.value.trim() : '';
 
-    const isFamMe = Boolean(document.getElementById('t7-fam-is-me-cb')?.checked || famName.toLowerCase().includes('2f') || famName.toLowerCase().includes('tôi'));
+    const isFamMe = Boolean(document.getElementById('t7-fam-is-me-cb')?.checked);
 
     const container = document.getElementById('t7-fam-member-rows-container');
     const rowEls = container ? container.querySelectorAll('.fam-member-row') : [];
@@ -2010,7 +2010,19 @@
       else if (mType === 'BABY') w = 0.0;
 
       if (mName) {
-        rawMembers.push({ id: mId, member_id: mId, name: mName, member_name: mName, type: mType, member_type: mType, weight: w, isMe: mIsRep, isRep: mIsRep, is_me: mIsRep });
+        rawMembers.push({
+          id: mId,
+          member_id: mId,
+          name: mName,
+          member_name: mName,
+          type: mType,
+          member_type: mType,
+          weight: w,
+          isRep: mIsRep,
+          isMe: isFamMe,
+          is_me: isFamMe,
+          isme: isFamMe
+        });
       }
     });
 
@@ -2021,8 +2033,6 @@
 
     if (!rawMembers.some(m => m.isRep)) {
       rawMembers[0].isRep = true;
-      rawMembers[0].isMe = true;
-      rawMembers[0].is_me = true;
     }
 
     const members = rawMembers.map((m) => ({
@@ -2075,6 +2085,9 @@
         .saveSplitFamilyBatch({
           family_name: famName,
           old_name: oldName,
+          is_me: isFamMe,
+          isMe: isFamMe,
+          isme: isFamMe,
           members: members,
           removed_members: removedMembers
         });

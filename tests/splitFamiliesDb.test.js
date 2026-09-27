@@ -96,6 +96,7 @@ test('SplitFamilies: saveSplitFamilyBatch sets sort_order = 1 for representative
 
   const batchRes = Server_Tab7.saveSplitFamilyBatch({
     family_name: '2F',
+    is_me: true,
     members: [
       { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: false },
       { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: true },
@@ -106,23 +107,28 @@ test('SplitFamilies: saveSplitFamilyBatch sets sort_order = 1 for representative
   assert.equal(batchRes.success, true);
   const fam = batchRes.families.find(f => f.family_name === '2F');
   assert.ok(fam);
+  assert.equal(fam.isMe, true);
   assert.equal(fam.repMember.member_name, 'Chi');
 
   const chi = fam.members.find(m => m.member_name === 'Chi');
   assert.equal(chi.sort_order, 1);
   assert.equal(chi.isRep, true);
+  assert.equal(chi.isMe, true);
 
   const quay = fam.members.find(m => m.member_name === 'Quậy');
   assert.equal(quay.sort_order, "");
   assert.equal(quay.isRep, false);
+  assert.equal(quay.isMe, true);
 
   const chit = fam.members.find(m => m.member_name === 'Chít');
   assert.equal(chit.sort_order, "");
   assert.equal(chit.isRep, false);
+  assert.equal(chit.isMe, true);
 
   // Switch representative back from Quậy to Chi
   const batchRes3 = Server_Tab7.saveSplitFamilyBatch({
     family_name: '2F',
+    is_me: true,
     members: [
       { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: false },
       { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: true },
