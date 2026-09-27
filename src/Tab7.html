@@ -1645,7 +1645,7 @@
       window.T7_STATE.splitFamilies.forEach(f => {
         const key = (f.family_name || f.family_id || '').trim().toLowerCase();
         if (!key || deletedSet.has(key)) return;
-        const isFamMe = Boolean(f.isMe || (f.members && f.members.some(m => m.isMe || m.is_me)) || key.includes('2f') || key.includes('tôi'));
+        const isFamMe = Boolean(f.isMe || f.is_me || f.isme || (f.members && f.members.some(m => Boolean(m.isMe || m.is_me || m.isme))));
 
         const memberDedupeMap = new Map();
         (f.members || []).forEach(m => {
@@ -1654,16 +1654,16 @@
           const normKey = cleanName.toLowerCase();
           if (!normKey) return;
 
-          const isMRep = Boolean(m.isRep || m.isMe || m.is_me || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
+          const isMRep = Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
 
           if (memberDedupeMap.has(normKey)) {
             const existing = memberDedupeMap.get(normKey);
             if (isMRep) {
-              existing.isMe = true;
               existing.isRep = true;
               existing.sort_order = 1;
               existing.sortOrder = 1;
             }
+            if (isFamMe) existing.isMe = true;
           } else {
             memberDedupeMap.set(normKey, {
               id: m.member_id || m.id,
@@ -1675,7 +1675,7 @@
               sort_order: isMRep ? 1 : "",
               sortOrder: isMRep ? 1 : "",
               status: m.status,
-              isMe: isMRep,
+              isMe: isFamMe,
               isRep: isMRep
             });
           }
@@ -1704,9 +1704,9 @@
                 if (!familyMap.has(key)) {
                   const cleanedMembers = (f.members || []).map(m => {
                     const cleanName = t7_normalizeMemberName(m.name || m.member_name || '') || (m.name || m.member_name || '');
-                    return { ...m, name: cleanName, member_name: cleanName };
+                    return { ...m, name: cleanName, member_name: cleanName, isMe: Boolean(f.isMe || m.isMe || m.is_me || m.isme) };
                   });
-                  familyMap.set(key, { ...f, members: cleanedMembers });
+                  familyMap.set(key, { ...f, members: cleanedMembers, isMe: Boolean(f.isMe) });
                 } else {
                   const existingFam = familyMap.get(key);
                   (f.members || []).forEach(m => {
@@ -1716,7 +1716,7 @@
                     if (normKey) {
                       const existing = existingFam.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
                       if (existing) {
-                        if (m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1") existing.isMe = true;
+                        if (existingFam.isMe || m.isMe || m.is_me || m.isme) existing.isMe = true;
                       } else {
                         existingFam.members.push({
                           id: m.id || m.member_id || '',
@@ -1725,7 +1725,7 @@
                           type: m.type || m.member_type || 'ADULT',
                           member_type: m.type || m.member_type || 'ADULT',
                           weight: m.weight !== undefined ? m.weight : 1.0,
-                          isMe: Boolean(m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1")
+                          isMe: Boolean(existingFam.isMe || m.isMe || m.is_me || m.isme)
                         });
                       }
                     }
@@ -1747,7 +1747,7 @@
           if (deletedSet.has(key)) return;
 
           if (!familyMap.has(key)) {
-            familyMap.set(key, { name: famName, members: [] });
+            familyMap.set(key, { name: famName, members: [], isMe: false });
           }
           const famObj = familyMap.get(key);
           if (famObj.explicit) return;
@@ -1759,7 +1759,7 @@
           if (normKey) {
             const existing = famObj.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
             if (existing) {
-              if (m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1") existing.isMe = true;
+              if (famObj.isMe || m.isMe || m.is_me || m.isme) existing.isMe = true;
             } else {
               famObj.members.push({
                 id: m.id || m.member_id || '',
@@ -1768,7 +1768,7 @@
                 type: m.type || m.member_type || 'ADULT',
                 member_type: m.type || m.member_type || 'ADULT',
                 weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-                isMe: Boolean(m.isMe || m.is_me || m.isRep || m.sort_order === 1 || m.sort_order === "1")
+                isMe: Boolean(famObj.isMe || m.isMe || m.is_me || m.isme)
               });
             }
           }
@@ -1872,7 +1872,7 @@
               <span>Gia đình ${fam.name}</span>
             </h3>
             <span class="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded shrink-0">${summaryText}</span>
-            ${Boolean(fam.isMe || (members && members.some(m => m.isMe || m.is_me)) || fam.name.toLowerCase().includes('2f') || fam.name.toLowerCase().includes('tôi')) ? '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded shrink-0">⭐ Gia đình Tôi</span>' : ''}
+            ${Boolean(fam.isMe || (members && members.some(m => m.isMe || m.is_me || m.isme))) ? '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded shrink-0">⭐ Gia đình Tôi</span>' : ''}
           </div>
           <p class="text-[10px] text-slate-500 truncate mt-0.5" title="${memberNamesStr}">${memberNamesStr || 'Chưa có thành viên'}</p>
         </div>
@@ -1946,7 +1946,7 @@
       if (famNameToEdit) {
         const familyMap = t7_getFamilyDatabaseMap();
         const famObj = familyMap.get(famNameToEdit.trim().toLowerCase());
-        isMe = famObj ? Boolean(famObj.isMe || (famObj.members && famObj.members.some(m => m.isMe || m.is_me))) : famNameToEdit.toLowerCase().includes('2f');
+        isMe = famObj ? Boolean(famObj.isMe) : false;
       } else {
         isMe = false;
       }
@@ -2870,8 +2870,8 @@
     Object.keys(familyMap).forEach(famKey => {
       const famData = familyMap[famKey];
       const rep = famData.repMember;
-      const isMeFam = Boolean(rep.isMe || famData.members.some(m => m.isMe) || famKey.toLowerCase().includes('2f'));
-      const displayLabel = isMeFam ? (famKey.toLowerCase().includes('2f') ? '2F - tôi' : `${famKey} (Tôi)`) : famKey;
+      const isMeFam = Boolean(famData.isMe || (rep && (rep.isMe || rep.is_me || rep.isme)) || famData.members.some(m => Boolean(m.isMe || m.is_me || m.isme)));
+      const displayLabel = isMeFam ? `${famKey} (Tôi)` : famKey;
 
       window._T7_PAYER_MAP[displayLabel.toLowerCase()] = { repId: rep.id, family: famKey, isMeFam: isMeFam };
       window._T7_PAYER_MAP[famKey.toLowerCase()] = { repId: rep.id, family: famKey, isMeFam: isMeFam };
@@ -2928,9 +2928,6 @@
       isMe = match.isMeFam;
     } else {
       const valLower = val.toLowerCase();
-      if (valLower.includes('2f') || valLower.includes('tôi')) {
-        isMe = true;
-      }
       const group = window.T7_STATE.activeGroup;
       if (group && group.members && group.members.length > 0) {
         const matchMbr = group.members.find(m => 
@@ -2940,7 +2937,7 @@
         );
         if (matchMbr) {
           repId = matchMbr.id;
-          if (matchMbr.isMe) isMe = true;
+          if (matchMbr.isMe || matchMbr.is_me || matchMbr.isme) isMe = true;
         }
       }
     }
@@ -2949,7 +2946,7 @@
       payerHidden.value = repId;
     }
 
-    if (isMe || val.toLowerCase().includes('2f') || val.toLowerCase().includes('tôi')) {
+    if (isMe) {
       let currentWallet = walletHidden ? walletHidden.value : '';
       if (!currentWallet) {
         const rawWallets = window.NGUON_LIST || (window.INITIAL_DATA ? window.INITIAL_DATA.wallets : null) || [];
