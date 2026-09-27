@@ -756,7 +756,8 @@ function saveSplitGroup(groupData, ssTarget) {
       else if (m.weight !== undefined && m.weight !== null) defaultWeight = Number(m.weight);
       if (isNaN(defaultWeight)) defaultWeight = 1.0;
 
-      var sortOrder = Number(m.sortOrder || m.sort_order) || (idx + 1);
+      var isRepMem = Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
+      var sortOrder = isRepMem ? 1 : "";
 
       return {
         groupMemberId: gmId,
