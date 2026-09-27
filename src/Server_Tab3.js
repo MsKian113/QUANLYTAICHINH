@@ -1251,11 +1251,43 @@ function updateWarehouseStatus(targetId, newStatus, reason) {
 }
 
 /**
+ * Helper to safely get or create STOCK_TRANSFER sheet with standard headers
+ */
+function getOrCreateStockTransferSheetHelper(ssTarget) {
+  try {
+    var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    if (!ss) return null;
+
+    var sheets = ss.getSheets();
+    for (var i = 0; i < sheets.length; i++) {
+      var name = sheets[i].getName().trim().toUpperCase();
+      if (name === "STOCK_TRANSFER" || name === "STOCK TRANSFER" || name === "CHUYEN_KHO" || name === "CHUYEN KHO" || name === "CHUYENKHO") {
+        return sheets[i];
+      }
+    }
+
+    var ckSheet = ss.insertSheet("STOCK_TRANSFER");
+    ckSheet.appendRow([
+      "ID Chuyển", "Ngày Giờ", "ID Mua", "Sản Phẩm", "Kho Đi", "Kho Đến", "Số Lượng", "Người Thao Tác", "Ghi Chú"
+    ]);
+    var ckHeaderRange = ckSheet.getRange(1, 1, 1, 9);
+    if (typeof ckHeaderRange.setFontWeight === 'function') ckHeaderRange.setFontWeight("bold");
+    if (typeof ckHeaderRange.setBackground === 'function') ckHeaderRange.setBackground("#e2e8f0");
+    return ckSheet;
+  } catch (err) {
+    if (ssTarget && typeof ssTarget.getSheetByName === 'function') {
+      return ssTarget.getSheetByName("STOCK_TRANSFER") || ssTarget.getSheetByName("CHUYEN_KHO") || null;
+    }
+    return null;
+  }
+}
+
+/**
  * 5.2. CHUYỂN KHO THÔNG MINH THEO SẢN PHẨM & KHO NGUỒN
  */
-function transferWarehouseBatch(spName, fromWarehouse, toWarehouse) {
+function transferWarehouseBatch(spName, fromWarehouse, toWarehouse, ssTarget) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
 
     const pSheet = ss.getSheetByName(SHEET_PURCHASE) || ss.getSheetByName("MuaHang");
@@ -1267,7 +1299,7 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse) {
 
     if (!spTarget || !toWh) return { success: false, message: "❌ Vui lòng chọn sản phẩm và kho đích hợp lệ!" };
 
-    const isCancel = (toWh === 'CANCEL' || toWh === 'BỊ HỦY' || toWh === 'BỊ HỦY - CHỜ HOÀN');
+    const isCancel = (toWh === 'CANCEL' || toWh === 'BỊ HỦY' || toWh === 'BỊ HỦY - CHỜ HOÀN' || toWh === 'Hủy');
     const data = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 10).getValues();
 
     if (isCancel) {
@@ -1286,6 +1318,10 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse) {
 
     let updatedCount = 0;
     const targetStatus = isCancel ? "Hủy" : toWh;
+    const ckSheet = getOrCreateStockTransferSheetHelper(ss);
+    const nowStr = typeof Utilities !== 'undefined' && Utilities.formatDate 
+      ? Utilities.formatDate(new Date(), "Asia/Tokyo", "dd/MM/yyyy HH:mm:ss")
+      : new Date().toLocaleString("vi-VN");
 
     for (let i = 0; i < data.length; i++) {
       const rowSp = String(data[i][4] || "").trim();
@@ -1293,8 +1329,24 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse) {
       const rowId = String(data[i][0] || "").trim();
       if (rowSp === spTarget && (!fromWh || fromWh === 'ALL' || rowWh === fromWh)) {
         const rowIndex = i + 2;
+        const fromWhActual = rowWh || "Chờ Ship";
         pSheet.getRange(rowIndex, 4).setValue(targetStatus);
         updatedCount++;
+
+        if (ckSheet) {
+          const qtyVal = parseBizMoney(data[i][5]) || 1;
+          ckSheet.appendRow([
+            "CK_" + Date.now() + "_" + updatedCount,
+            nowStr,
+            rowId || String(rowIndex),
+            spTarget,
+            fromWhActual,
+            targetStatus,
+            qtyVal,
+            "Admin",
+            `Chuyển kho sản phẩm "${spTarget}" từ ${fromWhActual} sang ${targetStatus}`
+          ]);
+        }
 
         if (isCancel) {
           pSheet.getRange(rowIndex, 10).setValue("CHO_HOAN_TIEN");
@@ -1330,9 +1382,9 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse) {
 /**
  * 5.3. CẬP NHẬT TRẠNG THÁI KHO CHO NHIỀU ĐƠN HÀNG CÙNG LÚC
  */
-function updateBatchWarehouseStatus(itemIds, newStatus) {
+function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
     if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
 
     const pSheet = ss.getSheetByName(SHEET_PURCHASE) || ss.getSheetByName("MuaHang");
@@ -1378,17 +1430,8 @@ function updateBatchWarehouseStatus(itemIds, newStatus) {
       }
     }
 
-    // Ensure STOCK_TRANSFER sheet exists
-    let ckSheet = ss.getSheetByName(SHEET_STOCK_TRANSFER) || ss.getSheetByName("CHUYEN_KHO") || ss.getSheetByName("ChuyenKho");
-    if (!ckSheet) {
-      ckSheet = ss.insertSheet(SHEET_STOCK_TRANSFER);
-      ckSheet.appendRow([
-        "ID Chuyển", "Ngày Giờ", "ID Mua", "Sản Phẩm", "Kho Đi", "Kho Đến", "Số Lượng", "Người Thao Tác", "Ghi Chú"
-      ]);
-      const ckHeaderRange = ckSheet.getRange(1, 1, 1, 9);
-      if (typeof ckHeaderRange.setFontWeight === 'function') ckHeaderRange.setFontWeight("bold");
-      if (typeof ckHeaderRange.setBackground === 'function') ckHeaderRange.setBackground("#e2e8f0");
-    }
+    // Ensure STOCK_TRANSFER sheet exists safely without exception
+    const ckSheet = getOrCreateStockTransferSheetHelper(ss);
 
     let updatedCount = 0;
     const nowStr = typeof Utilities !== 'undefined' && Utilities.formatDate 
@@ -1398,7 +1441,19 @@ function updateBatchWarehouseStatus(itemIds, newStatus) {
     for (let i = 0; i < data.length; i++) {
       const rowId = String(data[i][0] || "").trim();
       const rowIndexStr = String(i + 2);
-      const matchKey = Object.prototype.hasOwnProperty.call(transferMap, rowId) ? rowId : (Object.prototype.hasOwnProperty.call(transferMap, rowIndexStr) ? rowIndexStr : null);
+      let matchKey = null;
+      if (Object.prototype.hasOwnProperty.call(transferMap, rowId)) {
+        matchKey = rowId;
+      } else if (Object.prototype.hasOwnProperty.call(transferMap, rowIndexStr)) {
+        matchKey = rowIndexStr;
+      } else {
+        for (let k in transferMap) {
+          if (k && (k === rowId || k === rowIndexStr || (rowId && k.toLowerCase() === rowId.toLowerCase()))) {
+            matchKey = k;
+            break;
+          }
+        }
+      }
 
       if (matchKey !== null) {
         const rowIndex = i + 2;
@@ -1414,17 +1469,19 @@ function updateBatchWarehouseStatus(itemIds, newStatus) {
           pSheet.getRange(rowIndex, 4).setValue(targetStatus);
           updatedCount++;
 
-          ckSheet.appendRow([
-            "CK_" + Date.now() + "_" + updatedCount,
-            nowStr,
-            rowId || rowIndexStr,
-            spName,
-            fromWh,
-            targetStatus,
-            origQty,
-            "Admin",
-            `Chuyển toàn bộ ${origQty} SP`
-          ]);
+          if (ckSheet) {
+            ckSheet.appendRow([
+              "CK_" + Date.now() + "_" + updatedCount,
+              nowStr,
+              rowId || rowIndexStr,
+              spName,
+              fromWh,
+              targetStatus,
+              origQty,
+              "Admin",
+              `Chuyển toàn bộ ${origQty} SP từ ${fromWh} sang ${targetStatus}`
+            ]);
+          }
 
           if (isCancel) {
             pSheet.getRange(rowIndex, 10).setValue("CHO_HOAN_TIEN");
@@ -1480,17 +1537,19 @@ function updateBatchWarehouseStatus(itemIds, newStatus) {
 
           updatedCount++;
 
-          ckSheet.appendRow([
-            "CK_" + Date.now() + "_" + updatedCount,
-            nowStr,
-            rowId || rowIndexStr,
-            spName,
-            fromWh,
-            targetStatus,
-            reqQty,
-            "Admin",
-            `Tách dòng: Chuyển ${reqQty}/${origQty} SP`
-          ]);
+          if (ckSheet) {
+            ckSheet.appendRow([
+              "CK_" + Date.now() + "_" + updatedCount,
+              nowStr,
+              rowId || rowIndexStr,
+              spName,
+              fromWh,
+              targetStatus,
+              reqQty,
+              "Admin",
+              `Tách dòng: Chuyển ${reqQty}/${origQty} SP từ ${fromWh} sang ${targetStatus}`
+            ]);
+          }
         }
       }
     }
