@@ -176,21 +176,19 @@
         var script = document.createElement('script');
         var isDone = false;
 
+        function cleanup() {
+          if (isDone) return;
+          isDone = true;
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          delete window[callbackName];
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+
         var timeoutId = setTimeout(function() {
           if (isDone) return;
           cleanup();
-          fetch(scriptUrl, { method: 'GET', redirect: 'follow' })
-          .then(function(res) { return res.json(); })
-          .then(function(data) { if (successCb) successCb(data); })
-          .catch(function(err) { if (failureCb) failureCb(err); });
-        }, 2500);
-
-        function cleanup() {
-          isDone = true;
-          if (script.parentNode) script.parentNode.removeChild(script);
-          delete window[callbackName];
-          clearTimeout(timeoutId);
-        }
+          if (failureCb) failureCb(new Error("Hệ thống kết nối Google phản hồi quá 30 giây"));
+        }, 30000);
 
         window[callbackName] = function(data) {
           cleanup();
@@ -199,13 +197,7 @@
 
         script.onerror = function(err) {
           cleanup();
-          fetch(window.GAS_API_URL + "?action=" + encodeURIComponent(actionName) + "&payload=" + payloadStr, { method: 'GET', redirect: 'follow' })
-          .then(function(res) { return res.json(); })
-          .then(function(data) { if (successCb) successCb(data); })
-          .catch(function(err2) {
-            console.error("API error for " + actionName, err2);
-            if (failureCb) failureCb(err2);
-          });
+          if (failureCb) failureCb(new Error("Không thể kết nối đến máy chủ Google Apps Script"));
         };
 
         script.src = scriptUrl;
