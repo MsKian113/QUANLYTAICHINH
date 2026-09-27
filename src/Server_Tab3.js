@@ -1442,13 +1442,22 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
       const rowId = String(data[i][0] || "").trim();
       const rowIndexStr = String(i + 2);
       let matchKey = null;
-      if (Object.prototype.hasOwnProperty.call(transferMap, rowId)) {
+
+      if (rowId && Object.prototype.hasOwnProperty.call(transferMap, rowId)) {
         matchKey = rowId;
       } else if (Object.prototype.hasOwnProperty.call(transferMap, rowIndexStr)) {
         matchKey = rowIndexStr;
       } else {
         for (let k in transferMap) {
-          if (k && (k === rowId || k === rowIndexStr || (rowId && k.toLowerCase() === rowId.toLowerCase()))) {
+          const kClean = String(k || "").trim();
+          const kNoRow = kClean.replace(/^ROW_/i, "");
+          if (
+            (rowId && kClean.toLowerCase() === rowId.toLowerCase()) ||
+            kClean === rowIndexStr ||
+            kNoRow === rowIndexStr ||
+            (rowId && kClean.startsWith(rowId + "_")) ||
+            (rowId && rowId.startsWith(kClean + "_"))
+          ) {
             matchKey = k;
             break;
           }
@@ -1554,9 +1563,14 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
       }
     }
 
+    if (updatedCount === 0) {
+      return { success: false, message: "❌ Không tìm thấy đơn hàng phù hợp để chuyển kho." };
+    }
+
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    const freshData = getBusinessData(null, null, ss);
     const statusDisp = isCancel ? 'Hủy' : newWh;
-    return { success: true, message: `✅ Đã chuyển ${updatedCount} đơn hàng sang "${statusDisp}"!` };
+    return { success: true, message: `✅ Đã chuyển ${updatedCount} đơn hàng sang "${statusDisp}"!`, freshData: freshData };
   } catch (err) {
     return { success: false, message: "❌ Lỗi: " + err.toString() };
   }

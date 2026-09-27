@@ -809,7 +809,23 @@ function saveSplitGroup(groupData, ssTarget) {
 
     // Automatically sync/upsert group members into Master SplitFamilies database
     try {
+      var existingFamRes = getSplitFamilies(ssTarget);
+      var existingFams = existingFamRes && existingFamRes.families ? existingFamRes.families : [];
+
       members.forEach(function(m) {
+        var existingFam = existingFams.find(function(f) {
+          return String(f.family_id).toLowerCase() === String(m.familyId).toLowerCase() ||
+                 String(f.family_name).toLowerCase() === String(m.family).toLowerCase();
+        });
+
+        var existingMem = existingFam ? existingFam.members.find(function(mem) {
+          return String(mem.member_id).toLowerCase() === String(m.id).toLowerCase() ||
+                 String(mem.member_name).toLowerCase() === String(m.name).toLowerCase();
+        }) : null;
+
+        var famIsMe = existingFam ? Boolean(existingFam.isMe) : Boolean(m.isMe || m.is_me || m.isme);
+        var memSortOrder = existingMem ? existingMem.sort_order : (m.isRep ? 1 : "");
+
         saveSplitFamilyMember({
           family_id: m.familyId,
           family_name: m.family,
@@ -817,7 +833,10 @@ function saveSplitGroup(groupData, ssTarget) {
           member_name: m.name,
           member_type: m.type,
           default_weight: m.weight,
-          sort_order: m.sortOrder || 99,
+          sort_order: memSortOrder,
+          is_me: famIsMe,
+          isMe: famIsMe,
+          isme: famIsMe,
           status: "ACTIVE"
         }, ssTarget);
       });
