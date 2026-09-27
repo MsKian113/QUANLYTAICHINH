@@ -50,7 +50,7 @@ const polyfillScript = `
           .then(function(res) { return res.json(); })
           .then(function(data) { if (successCb) successCb(data); })
           .catch(function(err) { if (failureCb) failureCb(err); });
-        }, 15000);
+        }, 2500);
 
         function cleanup() {
           isDone = true;

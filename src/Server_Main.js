@@ -132,6 +132,7 @@ function doPost(e) {
       "finalizeTripAndExportDebts": function(d, a) { return typeof finalizeTripAndExportDebts === 'function' ? finalizeTripAndExportDebts(a[0] || d.groupId || d, a[1] || d.exportOptions) : { success: false }; },
       "getTab7FullGroupData": function(d, a) { return typeof getTab7FullGroupData === 'function' ? getTab7FullGroupData(a[0] || d.groupId || d) : { success: false }; },
       "saveSplitFamilyMember": function(d, a) { return typeof saveSplitFamilyMember === 'function' ? saveSplitFamilyMember(a[0] || d) : { success: false }; },
+      "saveSplitFamilyBatch": function(d, a) { return typeof saveSplitFamilyBatch === 'function' ? saveSplitFamilyBatch(a[0] || d) : { success: false }; },
       "deleteSplitFamilyMember": function(d, a) { return typeof deleteSplitFamilyMember === 'function' ? deleteSplitFamilyMember(a[0] || d) : { success: false }; },
       "deleteSplitFamilyEntirely": function(d, a) { return typeof deleteSplitFamilyEntirely === 'function' ? deleteSplitFamilyEntirely(a[0] || d) : { success: false }; },
       "reopenSplitGroup": function(d, a) { return typeof reopenSplitGroup === 'function' ? reopenSplitGroup(a[0] || d) : { success: false }; },
