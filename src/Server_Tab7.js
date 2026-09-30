@@ -255,11 +255,9 @@ function standardizeSplitFamiliesSheet(ssTarget) {
 
     if (valuesChanged) {
       // Clear entire sheet content including extra columns and rewrite header + 8-column data
-      if (typeof sheet.clearContents === 'function') {
-        sheet.clearContents();
-      } else {
-        sheet.getRange(1, 1, sheet.getLastRow(), Math.max(sheet.getLastColumn(), 10)).clearContent();
-      }
+      var lastR = Math.max(sheet.getLastRow(), 1);
+      var lastC = Math.max(sheet.getLastColumn(), 10);
+      sheet.getRange(1, 1, lastR, lastC).clearContent();
 
       sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]]);
       if (convertedRows.length > 0) {

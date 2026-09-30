@@ -20,7 +20,7 @@ function createMockTab5DB() {
   const tables = {
     LichMua: [
       ["ID", "NgayMua", "TaiKhoan", "CuaHang", "TenSanPham", "SoNgayCooldown", "NgayKhaDung", "TrangThai", "MaDonTab3", "GhiChu"],
-      ["LM0001", "2026-09-01", "Joshin KA", "Joshin", "Film Fuji Instax Mini 11", 30, "2026-10-01", "DANG_CHO", "", "Đang chờ cooldown"],
+      ["LM0001", "2026-09-15", "Joshin KA", "Joshin", "Film Fuji Instax Mini 11", 30, "2026-10-15", "DANG_CHO", "", "Đang chờ cooldown"],
       ["LM0002", "2026-09-05", "Yodo KA", "Yodobashi", "Film Mini Instax", 13, "2026-09-18", "KET_THUC", "", "Đơn bị hủy - đã kết thúc cooldown"]
     ],
     Categories: [

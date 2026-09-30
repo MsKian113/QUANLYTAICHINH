@@ -11637,13 +11637,14 @@
     // 1. Primary Source of Truth: Server SplitFamilies sheet data
     if (isServerLoaded) {
       window.T7_STATE.splitFamilies.forEach(f => {
-        const key = (f.family_name || f.family_id || '').trim().toLowerCase();
+        const famName = String(f.family_name || f.name || f.family_id || '').trim();
+        const key = famName.toLowerCase();
         if (!key) return;
         const isFamMe = Boolean(f.isMe || f.is_me || f.isme);
 
         const memberDedupeMap = new Map();
         (f.members || []).forEach(m => {
-          const rawName = (m.member_name || m.name || '').trim();
+          const rawName = String(m.member_name || m.name || '').trim();
           const cleanName = t7_normalizeMemberName(rawName) || rawName;
           const normKey = cleanName.toLowerCase();
           if (!normKey) return;
@@ -11674,12 +11675,15 @@
           }
         });
 
+        const membersArr = Array.from(memberDedupeMap.values());
+        const repM = membersArr.find(m => m.is_rep) || membersArr[0] || f.repMember;
+
         familyMap.set(key, {
-          id: f.family_id,
-          name: f.family_name,
-          repMember: f.repMember,
+          id: f.family_id || ('FAM-' + key),
+          name: famName,
+          repMember: repM,
           isMe: isFamMe,
-          members: Array.from(memberDedupeMap.values()),
+          members: membersArr,
           explicit: true
         });
       });
@@ -11810,15 +11814,19 @@
     }
 
     families.forEach(fam => {
+      if (!fam) return;
+      const famName = String(fam.name || fam.family_name || fam.id || '').trim();
+      if (!famName) return;
+
       const card = document.createElement('div');
-      const escapedFamName = fam.name.replace(/'/g, "\\'");
-      card.onclick = () => t7_openAddFamilyModal(fam.name);
+      const escapedFamName = famName.replace(/'/g, "\\'");
+      card.onclick = () => t7_openAddFamilyModal(famName);
       card.className = "bg-white rounded-xl px-3 py-2 border border-slate-200 shadow-2xs hover:border-indigo-400 hover:bg-slate-50/90 transition cursor-pointer flex justify-between items-center gap-2";
 
       const members = fam.members || [];
-      const adultCnt = members.filter(m => (m.type || 'ADULT') === 'ADULT').length;
-      const kidCnt = members.filter(m => m.type === 'CHILD').length;
-      const babyCnt = members.filter(m => m.type === 'BABY').length;
+      const adultCnt = members.filter(m => (m.type || m.member_type || 'ADULT') === 'ADULT').length;
+      const kidCnt = members.filter(m => (m.type || m.member_type) === 'CHILD').length;
+      const babyCnt = members.filter(m => (m.type || m.member_type) === 'BABY').length;
 
       let summaryParts = [];
       if (adultCnt > 0) summaryParts.push(`${adultCnt} Lớn`);
@@ -11829,17 +11837,20 @@
       const summaryText = `${members.length} thành viên${detailsBadge}`;
 
       const memberNamesStr = members.map(m => {
-        const icon = m.type === 'CHILD' ? '🧒' : (m.type === 'BABY' ? '🍼' : '👤');
+        const mName = String(m.name || m.member_name || '').trim();
+        if (!mName) return '';
+        const mType = m.type || m.member_type || 'ADULT';
+        const icon = mType === 'CHILD' ? '🧒' : (mType === 'BABY' ? '🍼' : '👤');
         const isRep = Boolean(m.is_rep !== undefined ? m.is_rep : (m.isRep || m.repstatus || m.rep_status));
-        return `${icon} ${m.name}${isRep ? ' 👑' : ''}`;
-      }).join(' • ');
+        return `${icon} ${mName}${isRep ? ' 👑' : ''}`;
+      }).filter(Boolean).join(' • ');
 
       card.innerHTML = `
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5 flex-wrap">
             <h3 class="font-extrabold text-xs text-slate-800 flex items-center gap-1 shrink-0">
               <span>🏡</span>
-              <span>Gia đình ${fam.name}</span>
+              <span>Gia đình ${famName}</span>
             </h3>
             <span class="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded shrink-0">${summaryText}</span>
             ${Boolean(fam.isMe || (members && members.some(m => m.isMe || m.is_me || m.isme))) ? '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded shrink-0">⭐ Gia đình Tôi</span>' : ''}
