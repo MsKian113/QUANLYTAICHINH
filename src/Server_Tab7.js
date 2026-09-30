@@ -798,7 +798,7 @@ function getSplitGroups(ssTarget) {
             id: id,
             name: col1Str,
             currency: String(row[2] || "JPY").trim(),
-            created_at: row[3] ? String(row[3]) : "",
+            created_at: row[3] ? formatDateToYYYYMMDD(row[3]) : "",
             note: String(row[4] || "").trim(),
             status: String(row[5] || "OPEN").trim().toUpperCase(),
             category: legacyCat,
@@ -816,7 +816,7 @@ function getSplitGroups(ssTarget) {
       var groupName = String(row[2] || "").trim();
       var currency = String(row[3] || "JPY").trim();
       var status = String(row[4] || "OPEN").trim().toUpperCase();
-      var createdAt = row[5] ? String(row[5]) : "";
+      var createdAt = row[5] ? formatDateToYYYYMMDD(row[5]) : "";
       
       var groupMemberId = String(row[6] || "").trim();
       var memberId = String(row[7] || "").trim();
@@ -1452,7 +1452,7 @@ function getSplitExpenses(groupId, ssTarget) {
           expMap[id] = {
             id: id,
             groupId: gId,
-            date: row[2] ? String(row[2]) : "",
+            date: row[2] ? formatDateToYYYYMMDD(row[2]) : "",
             description: String(row[3] || "").trim(),
             amount: Number(row[4]) || 0,
             payerId: String(row[5] || "").trim(),
@@ -1469,7 +1469,7 @@ function getSplitExpenses(groupId, ssTarget) {
       // ExpenseID(0), GroupID(1), ExpenseDate(2), Description(3), Amount(4), PayerMemberID(5),
       // PayerName(6), PaymentSource(7), SplitMode(8), RoundUnit(9), SplitMemberID(10),
       // SplitMemberName(11), InputValue(12), CalculatedAmount(13), CalculationNote(14), Status(15)
-      var expenseDate = row[2] ? String(row[2]) : "";
+      var expenseDate = row[2] ? formatDateToYYYYMMDD(row[2]) : "";
       var description = String(row[3] || "").trim();
       var amount = Number(row[4]) || 0;
       var payerId = String(row[5] || "").trim();

@@ -11,16 +11,22 @@ function doGet(e) {
   try {
     const m = (new Date().getMonth() + 1).toString();
     const y = new Date().getFullYear().toString();
-    let initialData = "null";
+    let initialDataStr = null;
+
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
       const cache = CacheService.getScriptCache();
       const cacheKey = "APP_DATA_V18_" + m + "_" + y;
-      let cached = cache.get(cacheKey) || cache.get("APP_DATA_GLOBAL_LATEST_V18");
-      if (cached && cached.length < 90000) {
-        initialData = cached;
+      initialDataStr = cache.get(cacheKey) || cache.get("APP_DATA_GLOBAL_LATEST_V18");
+    }
+
+    if (!initialDataStr && typeof getAppData === 'function') {
+      const freshData = getAppData(m, y);
+      if (freshData && freshData.success) {
+        initialDataStr = JSON.stringify(freshData);
       }
     }
-    tmp.initialDataJson = JSON.stringify(initialData);
+
+    tmp.initialDataJson = initialDataStr ? initialDataStr : JSON.stringify("null");
   } catch (err) {
     tmp.initialDataJson = JSON.stringify("null");
   }

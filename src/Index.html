@@ -510,6 +510,9 @@
             window.CATEGORIES_RAW = res.categories;
             window.DESC_LIST = res.categories.map(item => item.name).filter(Boolean);
         }
+        if (res.orderCounts) {
+            window.t1_orderCounts = res.orderCounts;
+        }
         if (res.wallets && res.wallets.length > 0) {
             window.NGUON_LIST = res.wallets;
             if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;

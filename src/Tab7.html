@@ -3558,17 +3558,21 @@
       return `${y}-${m}-${d}`;
     }
     const str = String(rawDate).trim();
-    if (!str) return new Date().toISOString().split('T')[0];
-
-    // YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-      return str;
+    if (!str || str === 'undefined' || str === 'null' || str === 'Invalid Date') {
+      return new Date().toISOString().split('T')[0];
     }
-    // ISO string 2026-09-22T08:00:00
-    if (str.includes('T')) {
-      const parts = str.split('T');
-      if (/^\d{4}-\d{2}-\d{2}$/.test(parts[0])) {
-        return parts[0];
+
+    // YYYY-MM-DD or YYYY-M-D
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(str)) {
+      const parts = str.split('-');
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+    }
+    // ISO string 2026-09-22T08:00:00 or GMT date string
+    if (str.includes('T') || str.includes(' ')) {
+      const firstPart = str.split('T')[0].split(' ')[0];
+      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(firstPart)) {
+        const parts = firstPart.split('-');
+        return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
       }
     }
     // DD/MM/YYYY or DD-MM-YYYY
@@ -3601,8 +3605,9 @@
   function t7_formatExpenseDate(dStr, short = false) {
     if (!dStr) return '';
     const isoStr = t7_formatDateForInput(dStr);
+    if (!isoStr) return String(dStr);
     const parts = isoStr.split('-');
-    if (parts.length === 3) {
+    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
       return short ? `${parts[2]}/${parts[1]}` : `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
     return String(dStr);
