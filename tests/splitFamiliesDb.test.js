@@ -266,7 +266,7 @@ test('SplitGroups: saves and reads 15 flat relational columns for 3 families 7 m
 test('standardizeSplitFamiliesSheet standardizes 8 columns and ensures 1 rep per family and 1 isme family', () => {
   const ss = createMockSpreadsheet();
   const sheet = ss.insertSheet('SplitFamilies');
-  sheet.appendRow(['family_id', 'family_name', 'member_id', 'member_name', 'member_type', 'default_weight', 'isme', 'repstatus']);
+  sheet.appendRow(['family_id', 'family_name', 'member_id', 'member_name', 'member_type', 'default_weight', 'isme', 'is_rep']);
   sheet.appendRow(['FAM-10001', '1F', 'MEB-10001', 'Member 1', 'ADULT', 1, false, false]);
   sheet.appendRow(['FAM-10001', '1F', 'MEB-10002', 'Member 2', 'ADULT', 1, false, false]);
   sheet.appendRow(['FAM-10002', '2F', 'MEB-10003', 'Member 3', 'ADULT', 1, true, true]);

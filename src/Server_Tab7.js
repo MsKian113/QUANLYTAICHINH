@@ -52,12 +52,12 @@ function getSplitFamiliesSheetHelper(ssTarget) {
   var sheet = ss.getSheetByName(SHEET_SPLIT_FAMILIES);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_SPLIT_FAMILIES);
-    sheet.appendRow(["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]);
+    sheet.appendRow(["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]);
   } else if (sheet.getLastColumn() > 8) {
-    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]]);
+    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]]);
     try { sheet.deleteColumns(9, sheet.getLastColumn() - 8); } catch (e) {}
   } else if (sheet.getLastColumn() < 8) {
-    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]]);
+    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]]);
   }
 
   // Auto-seed default sample families if sheet only has header row or is empty
@@ -261,7 +261,7 @@ function standardizeSplitFamiliesSheet(ssTarget) {
         sheet.getRange(1, 1, sheet.getLastRow(), Math.max(sheet.getLastColumn(), 10)).clearContent();
       }
 
-      sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]]);
+      sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]]);
       if (convertedRows.length > 0) {
         sheet.getRange(2, 1, convertedRows.length, 8).setValues(convertedRows);
       }
@@ -1019,46 +1019,11 @@ function saveSplitGroup(groupData, ssTarget) {
         m.family,
         m.type,
         m.weight,
-        m.sortOrder,
+        "",
         m.status
       ]);
     });
     appendRowsBatchHelper(sheet, memberRows);
-
-    // Automatically sync/upsert group members into Master SplitFamilies database
-    try {
-      var existingFamRes = getSplitFamilies(ssTarget);
-      var existingFams = existingFamRes && existingFamRes.families ? existingFamRes.families : [];
-
-      members.forEach(function(m) {
-        var existingFam = existingFams.find(function(f) {
-          return String(f.family_id).toLowerCase() === String(m.familyId).toLowerCase() ||
-                 String(f.family_name).toLowerCase() === String(m.family).toLowerCase();
-        });
-
-        var existingMem = existingFam ? existingFam.members.find(function(mem) {
-          return String(mem.member_id).toLowerCase() === String(m.id).toLowerCase() ||
-                 String(mem.member_name).toLowerCase() === String(m.name).toLowerCase();
-        }) : null;
-
-        var famIsMe = existingFam ? Boolean(existingFam.isMe) : Boolean(m.isMe || m.is_me || m.isme);
-        var memSortOrder = existingMem ? existingMem.sort_order : (m.isRep ? 1 : "");
-
-        saveSplitFamilyMember({
-          family_id: m.familyId,
-          family_name: m.family,
-          member_id: m.id,
-          member_name: m.name,
-          member_type: m.type,
-          default_weight: m.weight,
-          sort_order: memSortOrder,
-          is_me: famIsMe,
-          isMe: famIsMe,
-          isme: famIsMe,
-          status: "ACTIVE"
-        }, ssTarget);
-      });
-    } catch (e) {}
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
 
@@ -1844,7 +1809,7 @@ function calculateGroupBalances(groupIdOrGroupObj, ssTarget, preFetchedExpenses)
       var netBalance = paid - owed;
       netZeroSum += netBalance;
 
-      var sortOrder = Number(m.sortOrder || m.sort_order) || 99;
+      var isRepMem = Boolean(m.is_rep !== undefined ? m.is_rep : (m.isRep || m.repstatus || m.rep_status));
 
       memberBalances.push({
         memberId: m.id,
@@ -1852,7 +1817,8 @@ function calculateGroupBalances(groupIdOrGroupObj, ssTarget, preFetchedExpenses)
         family: m.family || "Gia đình",
         type: m.type,
         isMe: Boolean(m.isMe || m.is_me || (m.name && String(m.name).toLowerCase().includes('tôi')) || (m.family && String(m.family).toLowerCase().includes('2f'))),
-        sortOrder: sortOrder,
+        is_rep: isRepMem,
+        isRep: isRepMem,
         paid: paid,
         owed: owed,
         netBalance: netBalance
@@ -1894,7 +1860,6 @@ function calculateOptimalSettlements(groupIdOrGroupObj, options, ssTarget, preFe
             family: famKey,
             repId: mb.memberId,
             repName: mb.name,
-            repSortOrder: mb.sortOrder || 99,
             isMe: mb.isMe,
             netBalance: 0,
             membersCount: 0
@@ -1906,10 +1871,9 @@ function calculateOptimalSettlements(groupIdOrGroupObj, options, ssTarget, preFe
           familyMap[famKey].repId = mb.memberId;
           familyMap[famKey].repName = mb.name;
           familyMap[famKey].isMe = true;
-        } else if (!familyMap[famKey].isMe && ((mb.sortOrder || 99) < familyMap[famKey].repSortOrder)) {
+        } else if (!familyMap[famKey].isMe && (mb.is_rep || mb.isRep)) {
           familyMap[famKey].repId = mb.memberId;
           familyMap[famKey].repName = mb.name;
-          familyMap[famKey].repSortOrder = mb.sortOrder || 99;
         }
       });
 

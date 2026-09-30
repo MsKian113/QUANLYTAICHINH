@@ -1668,12 +1668,13 @@
           const normKey = cleanName.toLowerCase();
           if (!normKey) return;
 
-          const isMRep = Boolean(m.isRep || m.repstatus || m.rep_status);
+          const isMRep = Boolean(m.is_rep !== undefined ? m.is_rep : (m.isRep || m.repstatus || m.rep_status));
 
           if (memberDedupeMap.has(normKey)) {
             const existing = memberDedupeMap.get(normKey);
             if (isMRep) {
               existing.isRep = true;
+              existing.is_rep = true;
               existing.repstatus = true;
             }
           } else {
@@ -1685,7 +1686,9 @@
               member_type: m.member_type || m.type || 'ADULT',
               weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
               isMe: isFamMe,
+              is_me: isFamMe,
               isRep: isMRep,
+              is_rep: isMRep,
               repstatus: isMRep
             });
           }
@@ -1847,7 +1850,7 @@
 
       const memberNamesStr = members.map(m => {
         const icon = m.type === 'CHILD' ? '🧒' : (m.type === 'BABY' ? '🍼' : '👤');
-        const isRep = Boolean(m.isRep || m.repstatus || m.rep_status);
+        const isRep = Boolean(m.is_rep !== undefined ? m.is_rep : (m.isRep || m.repstatus || m.rep_status));
         return `${icon} ${m.name}${isRep ? ' 👑' : ''}`;
       }).join(' • ');
 
@@ -1905,7 +1908,7 @@
           name: m.name || m.member_name || ''
         }));
 
-        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep || m.repstatus || m.rep_status));
+        let repIdx = famObj.members.findIndex(m => Boolean(m.is_rep !== undefined ? m.is_rep : (m.isRep || m.repstatus || m.rep_status)));
         if (repIdx < 0) {
           repIdx = famObj.members.findIndex(m => Boolean(m.isMe || m.is_me));
         }
@@ -2018,14 +2021,16 @@
       return;
     }
 
-    if (!rawMembers.some(m => m.isRep)) {
+    if (!rawMembers.some(m => Boolean(m.is_rep !== undefined ? m.is_rep : m.isRep))) {
+      rawMembers[0].is_rep = true;
       rawMembers[0].isRep = true;
     }
 
     const members = rawMembers.map((m) => ({
       ...m,
-      repstatus: Boolean(m.isRep),
-      isRep: Boolean(m.isRep)
+      is_rep: Boolean(m.is_rep !== undefined ? m.is_rep : m.isRep),
+      isRep: Boolean(m.is_rep !== undefined ? m.is_rep : m.isRep),
+      repstatus: Boolean(m.is_rep !== undefined ? m.is_rep : m.isRep)
     }));
 
     // Find removed members for deactivation
