@@ -1200,9 +1200,9 @@ function cancelPreOrderOrder(targetId) {
 /**
  * 5. CẬP NHẬT TRẠNG THÁI KHO CHO SẢN PHẨM INVENTORY
  */
-function updateWarehouseStatus(targetId, newStatus, reason) {
+function updateWarehouseStatus(targetId, newStatus, reason, ssTarget) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
     if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
 
     const pSheet = ss.getSheetByName(SHEET_PURCHASE) || ss.getSheetByName("MuaHang");
@@ -1213,33 +1213,87 @@ function updateWarehouseStatus(targetId, newStatus, reason) {
     const maxCol = Math.max(pSheet.getLastColumn(), 17);
     const data = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, maxCol).getValues();
 
+    let matched = false;
+    const targetStatus = isCancel ? "Hủy" : newStatus;
+    const ckSheet = getOrCreateStockTransferSheetHelper(ss);
+    const ckRows = [];
+    let cancelLimitId = null;
+
     for (let i = 0; i < data.length; i++) {
       const rowId = String(data[i][0] || "").trim();
       const rowIndexStr = String(i + 2);
-      if ((rowId && rowId === targetStr) || rowIndexStr === targetStr) {
+      const rIdLower = rowId.toLowerCase();
+      const targetLower = targetStr.toLowerCase();
+
+      const isMatch = (
+        (rowId && rIdLower === targetLower) ||
+        rowIndexStr === targetStr ||
+        (rowId && (rIdLower.startsWith(targetLower + "-") || rIdLower.startsWith(targetLower + "_"))) ||
+        (rowId && (targetLower.startsWith(rIdLower + "-") || targetLower.startsWith(rIdLower + "_")))
+      );
+
+      if (isMatch) {
         const currentWh = String(data[i][3] || "").trim();
         const currentWhLower = currentWh.toLowerCase();
-        const isPendingWh = (currentWh === "Chờ Ship" || currentWhLower.includes("chusen"));
+        const isPendingWh = (currentWh === "Chờ Ship" || currentWhLower.includes("chờ ship") || currentWhLower.includes("chusen"));
         if (isCancel && !isPendingWh) {
           return { success: false, message: "❌ Chỉ đơn hàng ở trạng thái 'Chờ Ship' hoặc 'Chusen' mới được Hủy!" };
         }
         const rowIndex = i + 2;
-        const targetStatus = isCancel ? "Hủy" : newStatus;
-        pSheet.getRange(rowIndex, 4).setValue(targetStatus);
+        const fromWh = currentWh || "Chờ Ship";
+        const spName = String(data[i][4] || "").trim();
+        const origQty = parseBizMoney(data[i][5]);
+
+        data[i][3] = targetStatus;
+
+        const lowerWhCheck = targetStatus.toLowerCase();
+        const isWhInStock = !lowerWhCheck.includes("chờ ship") && !lowerWhCheck.includes("chusen") && !lowerWhCheck.includes("hủy") && !lowerWhCheck.includes("cancel");
+
+        if (isWhInStock) {
+          const curTon = parseBizMoney(data[i][11]);
+          if (!curTon || curTon <= 0) {
+            data[i][11] = origQty || 1;
+          }
+        } else if (!isCancel) {
+          data[i][11] = "";
+        }
+
+        if (ckSheet) {
+          const nowStr = typeof Utilities !== 'undefined' && Utilities.formatDate 
+            ? Utilities.formatDate(new Date(), "Asia/Tokyo", "dd/MM/yyyy HH:mm:ss")
+            : new Date().toLocaleString("vi-VN");
+          ckRows.push([
+            "CK_" + Date.now() + "_1",
+            nowStr,
+            rowId || rowIndexStr,
+            spName,
+            fromWh,
+            targetStatus,
+            origQty || 1,
+            "Admin",
+            reason || `Chuyển đơn hàng từ ${fromWh} sang ${targetStatus}`
+          ]);
+        }
 
         if (isCancel) {
-          pSheet.getRange(rowIndex, 10).setValue("CHO_HOAN_TIEN");
-          pSheet.getRange(rowIndex, 12).setValue(0);
-          if (pSheet.getLastColumn() >= 17) {
-            pSheet.getRange(rowIndex, 17).setValue("KET_THUC");
-          }
-
-          if (typeof updatePurchaseLimitStatus === 'function') {
-            updatePurchaseLimitStatus(rowId, "KET_THUC");
-          }
+          data[i][9] = "CHO_HOAN_TIEN";
+          data[i][11] = 0;
+          if (maxCol >= 17) data[i][16] = "KET_THUC";
+          cancelLimitId = rowId;
         }
+        matched = true;
         break;
       }
+    }
+
+    if (!matched) return { success: false, message: "❌ Không tìm thấy đơn hàng cần chuyển kho." };
+
+    pSheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+    if (ckSheet && ckRows.length > 0) {
+      ckSheet.getRange(ckSheet.getLastRow() + 1, 1, ckRows.length, ckRows[0].length).setValues(ckRows);
+    }
+    if (cancelLimitId && typeof updatePurchaseLimitStatus === 'function') {
+      updatePurchaseLimitStatus(cancelLimitId, "KET_THUC");
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -1258,10 +1312,17 @@ function getOrCreateStockTransferSheetHelper(ssTarget) {
     var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
     if (!ss) return null;
 
+    var existing = ss.getSheetByName("STOCK_TRANSFER") || 
+                   ss.getSheetByName("STOCK TRANSFER") || 
+                   ss.getSheetByName("CHUYEN_KHO") || 
+                   ss.getSheetByName("Chuyển Kho") || 
+                   ss.getSheetByName("Chuyen Kho");
+    if (existing) return existing;
+
     var sheets = ss.getSheets();
     for (var i = 0; i < sheets.length; i++) {
-      var name = sheets[i].getName().trim().toUpperCase();
-      if (name === "STOCK_TRANSFER" || name === "STOCK TRANSFER" || name === "CHUYEN_KHO" || name === "CHUYEN KHO" || name === "CHUYENKHO") {
+      var name = String(sheets[i].getName() || "").trim().toUpperCase();
+      if (name.includes("STOCK_TRANSFER") || name.includes("STOCK TRANSFER") || name.includes("CHUYEN") || name.includes("CHUYỂN")) {
         return sheets[i];
       }
     }
@@ -1275,9 +1336,15 @@ function getOrCreateStockTransferSheetHelper(ssTarget) {
     if (typeof ckHeaderRange.setBackground === 'function') ckHeaderRange.setBackground("#e2e8f0");
     return ckSheet;
   } catch (err) {
-    if (ssTarget && typeof ssTarget.getSheetByName === 'function') {
-      return ssTarget.getSheetByName("STOCK_TRANSFER") || ssTarget.getSheetByName("CHUYEN_KHO") || null;
-    }
+    try {
+      var ssFallback = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+      if (ssFallback) {
+        return ssFallback.getSheetByName("STOCK_TRANSFER") || 
+               ssFallback.getSheetByName("STOCK TRANSFER") || 
+               ssFallback.getSheetByName("CHUYEN_KHO") || 
+               ssFallback.getSheetByName("Chuyển Kho") || null;
+      }
+    } catch(e2) {}
     return null;
   }
 }
@@ -1294,21 +1361,24 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse, ssTarget) {
     if (!pSheet || pSheet.getLastRow() < 2) return { success: false, message: "❌ Không tìm thấy sheet MuaHang." };
 
     const spTarget = String(spName || "").trim();
+    const spTargetLower = spTarget.toLowerCase();
     const fromWh = String(fromWarehouse || "").trim();
+    const fromWhLower = fromWh.toLowerCase();
     const toWh = String(toWarehouse || "").trim();
 
     if (!spTarget || !toWh) return { success: false, message: "❌ Vui lòng chọn sản phẩm và kho đích hợp lệ!" };
 
     const isCancel = (toWh === 'CANCEL' || toWh === 'BỊ HỦY' || toWh === 'BỊ HỦY - CHỜ HOÀN' || toWh === 'Hủy');
-    const data = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, 10).getValues();
+    const maxCol = Math.max(pSheet.getLastColumn(), 17);
+    const data = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, maxCol).getValues();
 
     if (isCancel) {
       for (let i = 0; i < data.length; i++) {
-        const rowSp = String(data[i][4] || "").trim();
+        const rowSp = String(data[i][4] || "").trim().toLowerCase();
         const rowWh = String(data[i][3] || "").trim();
         const rowWhLower = rowWh.toLowerCase();
-        const isRowPendingWh = (rowWh === 'Chờ Ship' || rowWhLower.includes('chusen'));
-        if (rowSp === spTarget && (!fromWh || fromWh === 'ALL' || rowWh === fromWh)) {
+        const isRowPendingWh = (rowWh === 'Chờ Ship' || rowWhLower.includes('chờ ship') || rowWhLower.includes('chusen'));
+        if (rowSp === spTargetLower && (!fromWh || fromWh === 'ALL' || fromWhLower === 'all' || rowWhLower === fromWhLower)) {
           if (!isRowPendingWh) {
             return { success: false, message: "❌ Chỉ đơn hàng ở trạng thái 'Chờ Ship' hoặc 'Chusen' mới được Hủy!" };
           }
@@ -1323,19 +1393,23 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse, ssTarget) {
       ? Utilities.formatDate(new Date(), "Asia/Tokyo", "dd/MM/yyyy HH:mm:ss")
       : new Date().toLocaleString("vi-VN");
 
+    const ckRows = [];
+    const cancelLimitRowIds = [];
+
     for (let i = 0; i < data.length; i++) {
-      const rowSp = String(data[i][4] || "").trim();
+      const rowSp = String(data[i][4] || "").trim().toLowerCase();
       const rowWh = String(data[i][3] || "").trim();
+      const rowWhLower = rowWh.toLowerCase();
       const rowId = String(data[i][0] || "").trim();
-      if (rowSp === spTarget && (!fromWh || fromWh === 'ALL' || rowWh === fromWh)) {
+      if (rowSp === spTargetLower && (!fromWh || fromWh === 'ALL' || fromWhLower === 'all' || rowWhLower === fromWhLower)) {
         const rowIndex = i + 2;
         const fromWhActual = rowWh || "Chờ Ship";
-        pSheet.getRange(rowIndex, 4).setValue(targetStatus);
+        data[i][3] = targetStatus;
         updatedCount++;
 
         if (ckSheet) {
           const qtyVal = parseBizMoney(data[i][5]) || 1;
-          ckSheet.appendRow([
+          ckRows.push([
             "CK_" + Date.now() + "_" + updatedCount,
             nowStr,
             rowId || String(rowIndex),
@@ -1349,26 +1423,31 @@ function transferWarehouseBatch(spName, fromWarehouse, toWarehouse, ssTarget) {
         }
 
         if (isCancel) {
-          pSheet.getRange(rowIndex, 10).setValue("CHO_HOAN_TIEN");
-          pSheet.getRange(rowIndex, 12).setValue(0);
-          if (pSheet.getLastColumn() >= 17) {
-            pSheet.getRange(rowIndex, 17).setValue("KET_THUC");
-          }
-
-          if (typeof updatePurchaseLimitStatus === 'function') {
-            updatePurchaseLimitStatus(rowId, "KET_THUC");
-          }
+          data[i][9] = "CHO_HOAN_TIEN";
+          data[i][11] = 0;
+          if (maxCol >= 17) data[i][16] = "KET_THUC";
+          cancelLimitRowIds.push(rowId);
         } else if (targetStatus !== "Chờ Ship" && !targetStatus.toLowerCase().includes("chusen")) {
           const curTon = parseBizMoney(data[i][11]);
           if (!curTon || curTon <= 0) {
-            pSheet.getRange(rowIndex, 12).setValue(parseBizMoney(data[i][5]));
+            data[i][11] = parseBizMoney(data[i][5]);
           }
+        } else {
+          data[i][11] = "";
         }
       }
     }
 
     if (updatedCount === 0) {
       return { success: false, message: "❌ Không tìm thấy sản phẩm phù hợp ở kho nguồn." };
+    }
+
+    pSheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+    if (ckSheet && ckRows.length > 0) {
+      ckSheet.getRange(ckSheet.getLastRow() + 1, 1, ckRows.length, ckRows[0].length).setValues(ckRows);
+    }
+    if (cancelLimitRowIds.length > 0 && typeof updatePurchaseLimitStatus === 'function') {
+      cancelLimitRowIds.forEach(id => updatePurchaseLimitStatus(id, "KET_THUC"));
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -1421,10 +1500,29 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
       for (let i = 0; i < data.length; i++) {
         const rowId = String(data[i][0] || "").trim();
         const rowIndexStr = String(i + 2);
-        if (Object.prototype.hasOwnProperty.call(transferMap, rowId) || Object.prototype.hasOwnProperty.call(transferMap, rowIndexStr)) {
-          const currentWh = String(data[i][3] || "").trim();
-          if (currentWh !== "Chờ Ship" && !currentWh.toLowerCase().includes("chờ ship")) {
-            return { success: false, message: "❌ Chỉ đơn hàng ở trạng thái 'Chờ Ship' mới được Hủy!" };
+        let isTargetRow = false;
+
+        for (let k in transferMap) {
+          const kClean = String(k || "").trim().toLowerCase();
+          const kNoRow = kClean.replace(/^row_/i, "");
+          const rIdLower = rowId.toLowerCase();
+          if (
+            (rowId && rIdLower === kClean) ||
+            kClean === rowIndexStr ||
+            kNoRow === rowIndexStr ||
+            (rowId && (rIdLower.startsWith(kClean + "-") || rIdLower.startsWith(kClean + "_"))) ||
+            (rowId && (kClean.startsWith(rIdLower + "-") || kClean.startsWith(rIdLower + "_")))
+          ) {
+            isTargetRow = true;
+            break;
+          }
+        }
+
+        if (isTargetRow) {
+          const currentWh = String(data[i][3] || "").trim().toLowerCase();
+          const isPendingWh = (currentWh === "chờ ship" || currentWh.includes("chờ ship") || currentWh.includes("chusen"));
+          if (!isPendingWh) {
+            return { success: false, message: "❌ Chỉ đơn hàng ở trạng thái 'Chờ Ship' hoặc 'Chusen' mới được Hủy!" };
           }
         }
       }
@@ -1438,6 +1536,10 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
       ? Utilities.formatDate(new Date(), "Asia/Tokyo", "dd/MM/yyyy HH:mm:ss")
       : new Date().toLocaleString("vi-VN");
 
+    const ckRows = [];
+    const newSplitRows = [];
+    const cancelLimitRowIds = [];
+
     for (let i = 0; i < data.length; i++) {
       const rowId = String(data[i][0] || "").trim();
       const rowIndexStr = String(i + 2);
@@ -1449,14 +1551,16 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
         matchKey = rowIndexStr;
       } else {
         for (let k in transferMap) {
-          const kClean = String(k || "").trim();
-          const kNoRow = kClean.replace(/^ROW_/i, "");
+          const kClean = String(k || "").trim().toLowerCase();
+          const kNoRow = kClean.replace(/^row_/i, "");
+          const rIdLower = rowId.toLowerCase();
+
           if (
-            (rowId && kClean.toLowerCase() === rowId.toLowerCase()) ||
+            (rowId && rIdLower === kClean) ||
             kClean === rowIndexStr ||
             kNoRow === rowIndexStr ||
-            (rowId && kClean.startsWith(rowId + "_")) ||
-            (rowId && rowId.startsWith(kClean + "_"))
+            (rowId && (rIdLower.startsWith(kClean + "-") || rIdLower.startsWith(kClean + "_"))) ||
+            (rowId && (kClean.startsWith(rIdLower + "-") || kClean.startsWith(rIdLower + "_")))
           ) {
             matchKey = k;
             break;
@@ -1475,11 +1579,11 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
 
         if (reqQty === null || reqQty >= origQty || origQty <= 1) {
           // Full transfer
-          pSheet.getRange(rowIndex, 4).setValue(targetStatus);
+          data[i][3] = targetStatus;
           updatedCount++;
 
           if (ckSheet) {
-            ckSheet.appendRow([
+            ckRows.push([
               "CK_" + Date.now() + "_" + updatedCount,
               nowStr,
               rowId || rowIndexStr,
@@ -1493,21 +1597,16 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
           }
 
           if (isCancel) {
-            pSheet.getRange(rowIndex, 10).setValue("CHO_HOAN_TIEN");
-            pSheet.getRange(rowIndex, 12).setValue(0);
-            if (pSheet.getLastColumn() >= 17) {
-              pSheet.getRange(rowIndex, 17).setValue("KET_THUC");
-            }
-
-            if (typeof updatePurchaseLimitStatus === 'function') {
-              updatePurchaseLimitStatus(rowId || rowIndexStr, "KET_THUC");
-            }
+            data[i][9] = "CHO_HOAN_TIEN";
+            data[i][11] = 0;
+            if (lastCol >= 17) data[i][16] = "KET_THUC";
+            cancelLimitRowIds.push(rowId || rowIndexStr);
           } else if (targetStatus.toLowerCase().includes("chờ ship") || targetStatus.toLowerCase().includes("chusen")) {
-            pSheet.getRange(rowIndex, 12).setValue("");
+            data[i][11] = "";
           } else {
             const curTon = parseBizMoney(data[i][11]);
             if (!curTon || curTon <= 0) {
-              pSheet.getRange(rowIndex, 12).setValue(origQty);
+              data[i][11] = origQty;
             }
           }
         } else {
@@ -1516,38 +1615,35 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
           const remainingTotal = remainingQty * origPrice;
           const newTonKhoOrig = Math.max(0, origTonKho - reqQty);
 
-          // 1. Update original row
-          pSheet.getRange(rowIndex, 6).setValue(remainingQty);
-          pSheet.getRange(rowIndex, 8).setValue(remainingTotal);
-          pSheet.getRange(rowIndex, 12).setValue(newTonKhoOrig);
+          data[i][5] = remainingQty;
+          data[i][7] = remainingTotal;
+          data[i][11] = newTonKhoOrig;
 
-          // 2. Append split row for transferred items
           const newRowId = (rowId ? rowId : rowIndexStr) + "_CK";
           const newGhiChu = (String(data[i][10] || "").trim() + ` [Tách từ #${rowId || rowIndexStr}]`).trim();
-          pSheet.appendRow([
-            newRowId,
-            data[i][1], // Date
-            data[i][2], // Store
-            targetStatus, // Target warehouse
-            spName,
-            reqQty, // Transferred Qty
-            origPrice, // Unit Price
-            reqQty * origPrice, // Transferred Total
-            data[i][8], // Wallet
-            data[i][9], // Card Status
-            newGhiChu,
-            reqQty, // Transferred TonKho
-            data[i][12], // Statement Date
-            data[i][13], // Account
-            data[i][14], // Cooldown
-            data[i][15], // Available Date
-            data[i][16]  // Status
-          ]);
+          const isTargetInStock = !targetStatus.toLowerCase().includes("chờ ship") && !targetStatus.toLowerCase().includes("chusen") && !targetStatus.toLowerCase().includes("hủy") && !targetStatus.toLowerCase().includes("cancel");
+          const splitTonKho = isTargetInStock ? reqQty : "";
 
+          const newRow = [...data[i]];
+          newRow[0] = newRowId;
+          newRow[3] = targetStatus;
+          newRow[5] = reqQty;
+          newRow[7] = reqQty * origPrice;
+          newRow[10] = newGhiChu;
+          newRow[11] = splitTonKho;
+
+          if (isCancel) {
+            newRow[9] = "CHO_HOAN_TIEN";
+            newRow[11] = 0;
+            if (lastCol >= 17) newRow[16] = "KET_THUC";
+            cancelLimitRowIds.push(newRowId);
+          }
+
+          newSplitRows.push(newRow);
           updatedCount++;
 
           if (ckSheet) {
-            ckSheet.appendRow([
+            ckRows.push([
               "CK_" + Date.now() + "_" + updatedCount,
               nowStr,
               rowId || rowIndexStr,
@@ -1565,6 +1661,23 @@ function updateBatchWarehouseStatus(itemIds, newStatus, ssTarget) {
 
     if (updatedCount === 0) {
       return { success: false, message: "❌ Không tìm thấy đơn hàng phù hợp để chuyển kho." };
+    }
+
+    // Batch write updated data
+    pSheet.getRange(2, 1, data.length, data[0].length).setValues(data);
+
+    // Batch append new split rows if any
+    if (newSplitRows.length > 0) {
+      pSheet.getRange(lastRow + 1, 1, newSplitRows.length, newSplitRows[0].length).setValues(newSplitRows);
+    }
+
+    // Batch append stock transfer logs if any
+    if (ckSheet && ckRows.length > 0) {
+      ckSheet.getRange(ckSheet.getLastRow() + 1, 1, ckRows.length, ckRows[0].length).setValues(ckRows);
+    }
+
+    if (cancelLimitRowIds.length > 0 && typeof updatePurchaseLimitStatus === 'function') {
+      cancelLimitRowIds.forEach(id => updatePurchaseLimitStatus(id, "KET_THUC"));
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();

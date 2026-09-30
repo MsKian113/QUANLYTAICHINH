@@ -227,11 +227,11 @@
 </div>
 
 <!-- MODAL: GHI THÊM / SỬA KHOẢN NỢ -->
-<div id="modal-add-debt" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-add-debt')">
+<div id="modal-add-debt" class="modal-overlay">
 <div class="modal-content !overflow-visible rounded-b-2xl border-t-4 border-indigo-500 !p-4 max-w-md w-full">
   <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
     <h3 id="add-debt-title" class="text-xs font-bold text-slate-900">Ghi Nợ Mới</h3>
-    <button onclick="closeModal('modal-add-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    <button type="button" onclick="closeModal('modal-add-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
   </div>
   
   <div class="space-y-2.5 text-xs">
@@ -265,17 +265,17 @@
         <input type="text" id="add-debt-note" placeholder="Lý do cho vay / mượn..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400" />
     </div>
 
-    <button onclick="submitAddDebt()" id="btn-add-debt-submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Lưu Khoản Nợ</button>
+    <button type="button" onclick="submitAddDebt()" id="btn-add-debt-submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Lưu Khoản Nợ</button>
   </div>
 </div>
 </div>
 
 <!-- MODAL: THANH TOÁN NỢ -->
-<div id="modal-pay-debt" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-pay-debt')">
+<div id="modal-pay-debt" class="modal-overlay">
 <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full mb-16 shadow-2xl">
   <div class="flex justify-between items-center mb-1 border-b pb-1.5">
     <h3 id="pay-debt-title" class="text-xs font-bold text-slate-900">Thanh Toán Nợ</h3>
-    <button onclick="closeModal('modal-pay-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    <button type="button" onclick="closeModal('modal-pay-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
   </div>
   <p class="text-[10px] text-slate-500 mb-2">Tiền sẽ được tự động cập nhật vào Ví/Thẻ tương ứng và gạch nợ.</p>
 
@@ -349,30 +349,41 @@
       return `${yyyy}-${mm}-${dd}`;
   }
 
-  function reloadTab4Data() {
+  function applyTab4Data(res) {
+      if (!res || !res.success) return;
+      if (res.summary) {
+          const net = res.summary.net || 0;
+          const netEl = document.getElementById('debt-dashboard-net');
+          const recEl = document.getElementById('debt-dashboard-receivables');
+          const payEl = document.getElementById('debt-dashboard-payables');
+          if (netEl) netEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
+          if (recEl) recEl.innerText = (res.summary.receivables || 0).toLocaleString() + ' ¥';
+          if (payEl) payEl.innerText = (res.summary.payables || 0).toLocaleString() + ' ¥';
+      }
+      if (res.partners) {
+          window.PARTNER_LIST = res.partners;
+      }
+      window.TAB4_DEBTS = res.debts || [];
+      if (typeof renderDebtCardsList === 'function') {
+          renderDebtCardsList(window.TAB4_DEBTS);
+      }
+  }
+
+  function reloadTab4Data(forceRefresh) {
       const monthSelect = document.getElementById('t4-filter-month');
       const yearSelect = document.getElementById('t4-filter-year');
       const month = monthSelect ? monthSelect.value : 'ALL';
       const year = yearSelect ? yearSelect.value : 'ALL';
 
-      if (typeof reloadTab3Data === 'function') {
-          reloadTab3Data();
+      if (!forceRefresh && window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
+          renderDebtCardsList(window.TAB4_DEBTS);
+          return;
       }
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab4Data === 'function') {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
-                  if (res.summary) {
-                      const net = res.summary.net || 0;
-                      document.getElementById('debt-dashboard-net').innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
-                      document.getElementById('debt-dashboard-receivables').innerText = (res.summary.receivables || 0).toLocaleString() + ' ¥';
-                      document.getElementById('debt-dashboard-payables').innerText = (res.summary.payables || 0).toLocaleString() + ' ¥';
-                  }
-                  if (res.partners) {
-                      window.PARTNER_LIST = res.partners;
-                  }
-                  window.TAB4_DEBTS = res.debts || [];
-                  renderDebtCardsList(window.TAB4_DEBTS);
+                  applyTab4Data(res);
               } else if (res && res.message) {
                   showToast("❌ " + res.message, true);
               }

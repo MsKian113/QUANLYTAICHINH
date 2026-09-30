@@ -1,0 +1,593 @@
+<!-- HEADER TAB 3 (Tông Xanh Ngọc) -->
+<div class="pt-10 pb-4 px-5 text-white bg-teal-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
+  <h1 class="text-lg font-bold">📦 Kinh Doanh</h1>
+  <div class="flex gap-2">
+      <select id="t3-filter-month" onchange="reloadTab3Data()" class="bg-teal-700/80 border border-teal-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      <select id="t3-filter-year" onchange="reloadTab3Data()" class="bg-teal-700/80 border border-teal-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+  </div>
+</div>
+
+<!-- KHU VỰC CUỘN CHÍNH -->
+<div class="flex-1 overflow-y-auto p-4 pb-6 flex flex-col relative z-0 min-h-0">
+  
+  <!-- DASHBOARD KINH DOANH -->
+  <div class="bg-gradient-to-br from-teal-500 to-emerald-700 text-white p-3.5 sm:p-4 rounded-2xl shadow-md relative overflow-hidden mb-3 shrink-0">
+    <p class="text-[10px] uppercase tracking-wider text-teal-100">Lợi Nhuận Gộp Tháng Này</p>
+    <h2 id="biz-dashboard-net" class="text-2xl font-bold mt-0.5">0 ¥</h2>
+    <div class="flex gap-2 mt-2.5 pt-2.5 border-t border-teal-400/50">
+         <div class="flex-1">
+             <p class="text-[9px] text-teal-100 uppercase font-bold mb-0.5">Tổng Bán</p>
+             <p id="biz-dashboard-sales" class="text-xs font-bold text-white">0 ¥</p>
+         </div>
+         <div class="flex-1 border-l border-teal-400/50 pl-2">
+             <p class="text-[9px] text-teal-100 uppercase font-bold mb-0.5">Vốn Hàng Xuất</p>
+             <p id="biz-dashboard-cogs" class="text-xs font-bold text-teal-200">0 ¥</p>
+         </div>
+    </div>
+    <p id="biz-dashboard-stock" class="text-[9px] text-teal-100 absolute top-3 right-3 bg-black/20 px-2 py-0.5 rounded">Tồn kho: 0 ¥</p>
+  </div>
+
+  <!-- TABS NẰM NGAY DƯỚI DASHBOARD -->
+  <div class="flex p-1 bg-slate-200 rounded-xl mb-4 shrink-0">
+      <button onclick="switchBizTab('mua')" id="btn-biz-mua" class="flex-1 py-2 text-xs font-bold bg-white text-teal-600 rounded-lg shadow-sm cursor-pointer transition">1. Nhập Mua</button>
+      <button onclick="switchBizTab('ban')" id="btn-biz-ban" class="flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition">2. Xuất Bán</button>
+      <button onclick="switchBizTab('kho')" id="btn-biz-kho" class="flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition">3. QL Kho</button>
+  </div>
+
+  <!-- 1. FORM NHẬP MUA HÀNG -->
+  <div id="biz-mua" class="space-y-4 bg-white p-4 border border-slate-200 rounded-2xl shadow-sm shrink-0">
+    
+    <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1. Ngày mua</label>
+        <input type="date" id="mua-ngay" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-teal-500" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 relative z-[60]">
+        <div class="relative">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">2. Nơi Mua</label>
+            <input type="text" id="mua-noi" autocomplete="off" placeholder="Amazon, Donki..." 
+                   oninput="renderSuggest('mua-noi', 'noimua')" onfocus="renderSuggest('mua-noi', 'noimua')" onblur="hideSuggest('mua-noi')"
+                   class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-teal-500" />
+            <div id="box-mua-noi" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-40 overflow-y-auto z-50"></div>
+        </div>
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Trạng thái Kho</label>
+            <select id="mua-trangthai-kho" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2 py-2 text-xs font-bold text-teal-700 outline-none focus:border-teal-500 cursor-pointer">
+                <option value="Chờ Ship">📦 Chờ Ship</option>
+                <option value="Kho Nhật">🟢 Kho Nhật</option>
+                <option value="Kho VN">✴️ Kho VN</option>
+            </select>
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">3. Danh Sách Sản Phẩm Mua</label>
+        <div id="mua-items-container" class="space-y-3 border-l-2 border-teal-200 pl-3 ml-1 mb-3"></div>
+        <button onclick="addMuaItem()" class="text-xs font-bold text-teal-600 bg-teal-50 hover:bg-teal-100 transition px-3 py-2 rounded-lg cursor-pointer">➕ Thêm Sản Phẩm Khác</button>
+    </div>
+    
+    <div class="relative z-[40]">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">4. Nguồn tiền mua</label>
+        <input type="text" id="mua-nguon" autocomplete="off" placeholder="Thẻ hoặc Ví..." oninput="renderSuggest('mua-nguon', 'nguon', false)" onfocus="renderSuggest('mua-nguon', 'nguon', true)" onclick="renderSuggest('mua-nguon', 'nguon', true)" onmousedown="renderSuggest('mua-nguon', 'nguon', true)" onblur="hideSuggest('mua-nguon')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 outline-none focus:border-teal-500" />
+        <div id="box-mua-nguon" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-40 overflow-y-auto z-50"></div>
+    </div>
+    
+    <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl mt-3 space-y-3 relative z-[30]">
+        <label class="flex items-start gap-2 cursor-pointer group">
+            <input type="checkbox" id="chk-pre-order" class="mt-0.5 accent-blue-600 w-4 h-4 cursor-pointer" />
+            <div>
+                <p class="text-xs font-bold text-slate-800 group-hover:text-blue-700">Hàng Pre-order (Chờ trừ thẻ)</p>
+                <p class="text-[9px] text-slate-500 leading-tight mt-0.5">Đơn sẽ lưu vào Kho nhưng chưa trừ tiền ở Ví/Thẻ ngay.</p>
+            </div>
+        </label>
+        
+        <label class="flex items-start gap-2 cursor-pointer border-t border-blue-100/50 pt-3 group">
+            <input type="checkbox" id="chk-muon-the" onchange="toggleDoitac()" class="mt-0.5 accent-blue-600 w-4 h-4 cursor-pointer" />
+            <div>
+                <p class="text-xs font-bold text-slate-800 group-hover:text-blue-700">Mượn thẻ/tiền đối tác (Sinh Công Nợ)</p>
+                <p class="text-[9px] text-slate-500 leading-tight mt-0.5">Ghi thẳng vào sổ nợ, không trừ tiền thẻ của mình.</p>
+            </div>
+        </label>
+        
+        <div id="div-doitac" class="hidden pl-6 relative z-50">
+            <input type="text" id="mua-doitac" autocomplete="off" placeholder="Gõ tên đối tác cho mượn..." oninput="renderSuggest('mua-doitac', 'doitac', false)" onfocus="renderSuggest('mua-doitac', 'doitac', true)" onclick="renderSuggest('mua-doitac', 'doitac', true)" onmousedown="renderSuggest('mua-doitac', 'doitac', true)" onblur="hideSuggest('mua-doitac')" class="w-full bg-white border border-blue-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 shadow-inner relative z-20" />
+            <div id="box-mua-doitac" class="suggest-box absolute left-6 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-2xl hidden max-h-32 overflow-y-auto z-[100]"></div>
+        </div>
+    </div>
+    
+    <button onclick="submitPurchaseOrder()" id="btn-save-mua" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold shadow-md transition mt-4 cursor-pointer relative z-10">Lưu Toàn Bộ Đơn Mua Hàng</button>
+  </div>
+
+  <!-- 2. FORM XUẤT BÁN HÀNG -->
+  <div id="biz-ban" class="space-y-4 bg-white p-4 border border-slate-200 rounded-2xl shadow-sm hidden shrink-0">
+    
+    <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1. Ngày bán</label>
+        <input type="date" id="ban-ngay" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-teal-500" />
+    </div>
+
+    <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">2. Danh Sách Sản Phẩm Xuất Kho</label>
+        <div id="ban-items-container" class="space-y-3 border-l-2 border-amber-200 pl-3 ml-1 mb-3"></div>
+        <button onclick="addBanItem()" class="text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 transition px-3 py-2 rounded-lg cursor-pointer">➕ Thêm Hàng Để Bán</button>
+    </div>
+
+    <div class="relative z-40 mt-2 border-t pt-3">
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">3. Thu Tiền Vào Ví</label>
+        <input type="text" id="ban-nguon" autocomplete="off" placeholder="Ví Tiền Mặt..." oninput="renderSuggest('ban-nguon', 'nguon', false)" onfocus="renderSuggest('ban-nguon', 'nguon', true)" onclick="renderSuggest('ban-nguon', 'nguon', true)" onmousedown="renderSuggest('ban-nguon', 'nguon', true)" onblur="hideSuggest('ban-nguon')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-teal-500" />
+        <div id="box-ban-nguon" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-40 overflow-y-auto z-50"></div>
+    </div>
+    
+    <div class="bg-amber-50 border border-amber-100 p-3 rounded-xl mt-3 relative z-10">
+        <label class="flex items-start gap-2 cursor-pointer group">
+            <input type="checkbox" id="chk-khach-no" class="mt-0.5 accent-amber-600 w-4 h-4 cursor-pointer" />
+            <div>
+                <p class="text-xs font-bold text-slate-800 group-hover:text-amber-700">Khách Nợ (Chưa thanh toán)</p>
+                <p class="text-[9px] text-slate-500 leading-tight mt-0.5">Tiền chưa cộng vào ví lúc này. Giao dịch sẽ đẩy sang mục "Chờ Thu Tiền" để theo dõi.</p>
+            </div>
+        </label>
+    </div>
+    
+    <button onclick="validateAndSaveBan()" id="btn-save-ban" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold shadow-md transition mt-4 cursor-pointer relative z-10">Xuất Bán Đơn Hàng Này</button>
+  </div>
+
+  <!-- 3. QUẢN LÝ KHO -->
+  <div id="biz-kho" class="space-y-4 hidden pb-4 shrink-0">
+    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-2 border-b pb-2">
+            <h4 class="text-xs font-bold text-blue-600 uppercase">💳 Pre-order (Chờ Trừ Thẻ)</h4>
+            <span id="pre-order-count" class="text-[9px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold">0 Đơn</span>
+        </div>
+        <div id="pre-order-container" class="space-y-2"></div>
+    </div>
+
+    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-2 border-b pb-2">
+            <h4 class="text-xs font-bold text-rose-500 uppercase">💸 Khách Nợ (Chờ Thu Tiền)</h4>
+            <span id="debt-sales-count" class="text-[9px] bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold">0 Đơn</span>
+        </div>
+        <div id="debt-sales-container" class="space-y-2"></div>
+    </div>
+
+    <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center mb-2 border-b pb-2">
+            <h4 class="text-xs font-bold text-amber-600 uppercase">📦 Tồn Kho & Luân Chuyển</h4>
+        </div>
+        <div id="inventory-container" class="space-y-2"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function t3_initDateFilters() {
+      const monthSelect = document.getElementById('t3-filter-month');
+      const yearSelect = document.getElementById('t3-filter-year');
+      if(!monthSelect || !yearSelect) return;
+      
+      const d = new Date();
+      const currMonth = d.getMonth() + 1;
+      const currYear = d.getFullYear();
+
+      let monthHTML = '<option value="ALL">Cả năm</option>';
+      for (let i = 1; i <= 12; i++) {
+          let selected = (i === currMonth) ? 'selected' : '';
+          monthHTML += `<option value="${i}" ${selected}>Tháng ${i}</option>`;
+      }
+      monthSelect.innerHTML = monthHTML;
+
+      let yearHTML = '';
+      for (let y = 2024; y <= currYear + 1; y++) {
+          let selected = (y === currYear) ? 'selected' : '';
+          yearHTML += `<option value="${y}" ${selected}>Năm ${y}</option>`;
+      }
+      yearSelect.innerHTML = yearHTML;
+  }
+
+  function renderBizInventoryLists(res) {
+      const preContainer = document.getElementById('pre-order-container');
+      const debtContainer = document.getElementById('debt-sales-container');
+      const invContainer = document.getElementById('inventory-container');
+      const preCount = document.getElementById('pre-order-count');
+      const debtCount = document.getElementById('debt-sales-count');
+
+      const preOrders = res ? res.preOrders || [] : [];
+      const debtSales = res ? res.debtSales || [] : [];
+      const inventory = res ? res.inventory || [] : [];
+
+      if (preCount) preCount.innerText = `${preOrders.length} Đơn`;
+      if (debtCount) debtCount.innerText = `${debtSales.length} Đơn`;
+
+      if (preContainer) {
+          if (preOrders.length === 0) {
+              preContainer.innerHTML = '<div class="text-center py-3 text-xs text-slate-400">Không có đơn pre-order nào.</div>';
+          } else {
+              preContainer.innerHTML = preOrders.map(item => `
+                  <div class="flex justify-between items-center p-2.5 border rounded-xl bg-blue-50/50 text-xs" id="item-preorder-${item.id}">
+                      <div>
+                          <p class="font-bold text-slate-800">${item.tenSP}</p>
+                          <p class="text-[10px] text-slate-500 mt-0.5">SL: ${item.qty} | Mua: ${item.ngayMua}</p>
+                          <p class="text-[10px] font-bold text-blue-600 mt-0.5">Nguồn: ${item.nguonTien || 'Thẻ'}</p>
+                      </div>
+                      <div class="text-right flex flex-col gap-1 items-end">
+                          <p class="font-bold text-slate-700">${(item.total || 0).toLocaleString()} ¥</p>
+                          <button class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer" onclick="showToast('✅ Đã xác nhận trừ thẻ thực tế!')">✅ Báo Trừ Thẻ</button>
+                          <button class="bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer" onclick="handleCancelPreOrder('${item.tenSP}', 'item-preorder-${item.id}')">❌ Hủy Đơn</button>
+                      </div>
+                  </div>
+              `).join('');
+          }
+      }
+
+      if (debtContainer) {
+          if (debtSales.length === 0) {
+              debtContainer.innerHTML = '<div class="text-center py-3 text-xs text-slate-400">Không có đơn khách nợ.</div>';
+          } else {
+              debtContainer.innerHTML = debtSales.map(item => `
+                  <div class="flex justify-between items-center p-2.5 border rounded-xl bg-rose-50/50 text-xs">
+                      <div>
+                          <p class="font-bold text-slate-800">${item.tenSP}</p>
+                          <p class="text-[10px] text-slate-500 mt-0.5">SL: ${item.qty} | Bán: ${item.ngayBan}</p>
+                      </div>
+                      <div class="text-right">
+                          <p class="font-bold text-rose-600 mb-1">${(item.total || 0).toLocaleString()} ¥</p>
+                          <button class="bg-rose-500 hover:bg-rose-600 text-white px-2.5 py-1 rounded text-[10px] font-bold cursor-pointer" onclick="showToast('💰 Đã ghi nhận thu tiền đơn hàng!')">💰 Đã Thu Tiền</button>
+                      </div>
+                  </div>
+              `).join('');
+          }
+      }
+
+      if (invContainer) {
+          if (inventory.length === 0) {
+              invContainer.innerHTML = '<div class="text-center py-3 text-xs text-slate-400">Chưa có dữ liệu tồn kho.</div>';
+          } else {
+              invContainer.innerHTML = inventory.map(item => `
+                  <div class="flex justify-between items-center p-2.5 border rounded-xl bg-amber-50/30 text-xs" id="item-kho-${item.id}">
+                      <div>
+                          <p class="font-bold text-slate-800">${item.tenSP}</p>
+                          <p class="text-[10px] text-slate-500 mt-0.5">Tồn: ${item.qty} | Giá vốn: ${(item.price || 0).toLocaleString()} ¥</p>
+                      </div>
+                      <select onchange="handleTransferStatus(this, '${item.tenSP}', 'item-kho-${item.id}')" class="text-[10px] font-bold border border-amber-200 rounded-lg px-1.5 py-1 bg-white text-slate-700 outline-none cursor-pointer">
+                          <option value="Chờ Ship" ${item.trangThaiKho === 'Chờ Ship' ? 'selected' : ''}>📦 Chờ Ship</option>
+                          <option value="Kho Nhật" ${item.trangThaiKho === 'Kho Nhật' ? 'selected' : ''}>🟢 Kho Nhật</option>
+                          <option value="Kho VN" ${item.trangThaiKho === 'Kho VN' ? 'selected' : ''}>✴️ Kho VN</option>
+                          <option value="CANCEL" class="text-rose-600 font-bold">❌ Bị Hủy (Hoàn Tiền)</option>
+                      </select>
+                  </div>
+              `).join('');
+          }
+      }
+  }
+
+  function reloadTab3Data() {
+      const monthSelect = document.getElementById('t3-filter-month');
+      const yearSelect = document.getElementById('t3-filter-year');
+      if(!monthSelect || !yearSelect) return;
+      const month = monthSelect.value;
+      const year = yearSelect.value;
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getBusinessData === 'function') {
+          google.script.run.withSuccessHandler(function(res) {
+              if(res && res.success) {
+                  if (res.summary) {
+                      document.getElementById('biz-dashboard-net').innerText = (res.summary.net >= 0 ? '+' : '') + res.summary.net.toLocaleString() + ' ¥';
+                      document.getElementById('biz-dashboard-sales').innerText = res.summary.sales.toLocaleString() + ' ¥';
+                      document.getElementById('biz-dashboard-cogs').innerText = res.summary.cogs.toLocaleString() + ' ¥';
+                      const stockEl = document.getElementById('biz-dashboard-stock');
+                      if (stockEl) stockEl.innerText = "Tồn kho: " + (res.summary.stockValue || 0).toLocaleString() + ' ¥';
+                  }
+
+                  // Đổ danh sách kho động từ Categories Cột H vào select
+                  if (Array.isArray(res.warehouses) && res.warehouses.length > 0) {
+                      const whSelect = document.getElementById('mua-trangthai-kho');
+                      if (whSelect) {
+                          whSelect.innerHTML = res.warehouses.map(w => `<option value="${w}">${w}</option>`).join('');
+                      }
+                  }
+
+                  renderBizInventoryLists(res);
+
+                  // Cập nhật suggest data từ database thật
+                  if (res.products) window.bizSuggestData.sp = res.products;
+                  if (res.suppliers) window.bizSuggestData.noimua = res.suppliers;
+                  if (res.sources) window.bizSuggestData.nguon = res.sources;
+              }
+          }).getBusinessData(month, year);
+      }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+      t3_initDateFilters();
+      const today = new Date().toISOString().split('T')[0];
+      const mNgay = document.getElementById('mua-ngay');
+      const bNgay = document.getElementById('ban-ngay');
+      if (mNgay) mNgay.value = today;
+      if (bNgay) bNgay.value = today;
+
+      setTimeout(() => {
+          if(document.getElementById('mua-items-container') && typeof addMuaItem === 'function') addMuaItem();
+          if(document.getElementById('ban-items-container') && typeof addBanItem === 'function') addBanItem();
+          reloadTab3Data();
+      }, 100);
+  });
+
+  window.bizSuggestData = window.bizSuggestData || {
+      sp: [],
+      spKho: [],
+      nguon: [],
+      doitac: [],
+      noimua: []
+  };
+
+  window.t3_suggestTimeouts = window.t3_suggestTimeouts || {};
+
+  function toggleDoitac() {
+      const chk = document.getElementById('chk-muon-the');
+      const div = document.getElementById('div-doitac');
+      if (!chk || !div) return;
+      if(chk.checked) {
+          div.classList.remove('hidden');
+          const dtInput = document.getElementById('mua-doitac');
+          if (dtInput) dtInput.focus();
+      } else {
+          div.classList.add('hidden');
+          const dtInput = document.getElementById('mua-doitac');
+          if (dtInput) dtInput.value = '';
+      }
+  }
+
+  let muaIdSeq = 0;
+  function addMuaItem() {
+      muaIdSeq++;
+      const id = 'mua-sp-' + muaIdSeq;
+      const zIndex = 50 - (muaIdSeq % 20); 
+      const html = `
+          <div class="relative mua-item-row bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-2" id="row-${id}" style="z-index:${zIndex}">
+              <button onclick="document.getElementById('row-${id}').remove()" class="absolute top-2 right-2 text-rose-500 font-bold hover:bg-rose-100 px-2 py-0.5 rounded cursor-pointer">&times;</button>
+              <div class="relative w-[90%]">
+                  <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Tên Sản Phẩm Mua</label>
+                  <input type="text" id="${id}" autocomplete="off" placeholder="Gõ tên..." 
+                         oninput="renderSuggest('${id}', 'sp')" onfocus="renderSuggest('${id}', 'sp')" onblur="hideSuggest('${id}')"
+                         class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-teal-500 shadow-inner mua-sp-input">
+                  <div id="box-${id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-[100]"></div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Số lượng</label>
+                      <input type="number" value="1" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-teal-500 mua-qty-input">
+                  </div>
+                  <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Giá mua (¥)</label>
+                      <input type="number" placeholder="0" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-rose-500 outline-none focus:border-teal-500 mua-price-input">
+                  </div>
+              </div>
+          </div>
+      `;
+      const container = document.getElementById('mua-items-container');
+      if (container) container.insertAdjacentHTML('beforeend', html);
+  }
+
+  let banIdSeq = 0;
+  function addBanItem() {
+      banIdSeq++;
+      const id = 'ban-sp-' + banIdSeq;
+      const zIndex = 50 - (banIdSeq % 20); 
+      const html = `
+          <div class="relative ban-item-row bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-2" id="row-${id}" style="z-index:${zIndex}">
+              <button onclick="document.getElementById('row-${id}').remove()" class="absolute top-2 right-2 text-rose-500 font-bold hover:bg-rose-100 px-2 py-0.5 rounded cursor-pointer">&times;</button>
+              <div class="relative w-[90%]">
+                  <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Chọn Hàng Kho Để Xuất Bán</label>
+                  <input type="text" id="${id}" autocomplete="off" placeholder="Gõ tìm trong kho..." 
+                         oninput="renderSuggest('${id}', 'sp')" onfocus="renderSuggest('${id}', 'sp')" onblur="hideSuggest('${id}')"
+                         class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-amber-500 shadow-inner ban-sp-input">
+                  <div id="box-${id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-[100]"></div>
+              </div>
+              <div class="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Số lượng bán</label>
+                      <input type="number" value="1" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-teal-500 ban-qty-input">
+                  </div>
+                  <div>
+                      <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Giá xuất bán (¥)</label>
+                      <input type="number" placeholder="0" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-bold text-emerald-600 outline-none focus:border-teal-500 ban-price-input">
+                  </div>
+              </div>
+          </div>
+      `;
+      const container = document.getElementById('ban-items-container');
+      if (container) container.insertAdjacentHTML('beforeend', html);
+  }
+
+  function resetPurchaseForm() {
+      const today = new Date().toISOString().split('T')[0];
+      if (document.getElementById('mua-ngay')) document.getElementById('mua-ngay').value = today;
+      if (document.getElementById('mua-noi')) document.getElementById('mua-noi').value = '';
+      if (document.getElementById('mua-nguon')) document.getElementById('mua-nguon').value = '';
+      if (document.getElementById('mua-doitac')) document.getElementById('mua-doitac').value = '';
+      if (document.getElementById('chk-pre-order')) document.getElementById('chk-pre-order').checked = false;
+      if (document.getElementById('chk-muon-the')) {
+          document.getElementById('chk-muon-the').checked = false;
+          toggleDoitac();
+      }
+      const container = document.getElementById('mua-items-container');
+      if (container) {
+          container.innerHTML = '';
+          muaIdSeq = 0;
+          addMuaItem();
+      }
+  }
+
+  function resetSalesForm() {
+      const today = new Date().toISOString().split('T')[0];
+      if (document.getElementById('ban-ngay')) document.getElementById('ban-ngay').value = today;
+      if (document.getElementById('ban-nguon')) document.getElementById('ban-nguon').value = '';
+      if (document.getElementById('chk-khach-no')) document.getElementById('chk-khach-no').checked = false;
+      const container = document.getElementById('ban-items-container');
+      if (container) {
+          container.innerHTML = '';
+          banIdSeq = 0;
+          addBanItem();
+      }
+  }
+
+  function submitPurchaseOrder() {
+      const btn = document.getElementById('btn-save-mua');
+      const rows = document.querySelectorAll('.mua-item-row');
+      if (rows.length === 0) {
+          showToast("⚠️ Vui lòng thêm ít nhất 1 sản phẩm!", true);
+          return;
+      }
+
+      const items = [];
+      for (let i = 0; i < rows.length; i++) {
+          const row = rows[i];
+          const tenSP = row.querySelector('.mua-sp-input').value.trim();
+          const qty = parseInt(row.querySelector('.mua-qty-input').value) || 0;
+          const priceInputVal = row.querySelector('.mua-price-input').value.trim();
+
+          if (!tenSP) {
+              showToast(`⚠️ Sản phẩm dòng ${i + 1} chưa nhập tên!`, true);
+              return;
+          }
+          if (qty <= 0) {
+              showToast(`⚠️ Dòng ${i + 1}: Số lượng phải > 0!`, true);
+              return;
+          }
+          if (priceInputVal === '') {
+              showToast(`⚠️ Dòng ${i + 1}: Vui lòng nhập số tiền mua!`, true);
+              return;
+          }
+          const price = parseFloat(priceInputVal);
+          if (isNaN(price)) {
+              showToast(`⚠️ Dòng ${i + 1}: Số tiền mua không hợp lệ!`, true);
+              return;
+          }
+          items.push({ tenSP, qty, price });
+      }
+
+      const payload = {
+          ngay: document.getElementById('mua-ngay') ? document.getElementById('mua-ngay').value : '',
+          noiMua: document.getElementById('mua-noi') ? document.getElementById('mua-noi').value : '',
+          trangThaiKho: document.getElementById('mua-trangthai-kho') ? document.getElementById('mua-trangthai-kho').value : 'Chờ Ship',
+          nguonTien: document.getElementById('mua-nguon') ? document.getElementById('mua-nguon').value : '',
+          isPreOrder: document.getElementById('chk-pre-order') ? document.getElementById('chk-pre-order').checked : false,
+          isMuonThe: document.getElementById('chk-muon-the') ? document.getElementById('chk-muon-the').checked : false,
+          doiTacMuon: document.getElementById('mua-doitac') ? document.getElementById('mua-doitac').value : '',
+          items: items
+      };
+
+      if (btn) { btn.disabled = true; btn.classList.add('opacity-50'); btn.innerText = "Đang lưu đơn..."; }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.savePurchaseOrder === 'function') {
+          google.script.run.withSuccessHandler(function(res) {
+              if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); btn.innerText = "Lưu Toàn Bộ Đơn Mua Hàng"; }
+              if (res && res.success) {
+                  showToast(res.message || "✅ Đã lưu đơn mua hàng!");
+                  resetPurchaseForm();
+                  reloadTab3Data();
+              } else {
+                  showToast("❌ " + (res ? res.message : "Lỗi lưu đơn mua"), true);
+              }
+          }).withFailureHandler(function(err) {
+              if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); btn.innerText = "Lưu Toàn Bộ Đơn Mua Hàng"; }
+              showToast("❌ Lỗi kết nối: " + err, true);
+          }).savePurchaseOrder(payload);
+      } else {
+          if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); btn.innerText = "Lưu Toàn Bộ Đơn Mua Hàng"; }
+          showToast("✅ Đã lưu đơn mua hàng (Demo Mode)!");
+          resetPurchaseForm();
+      }
+  }
+
+  function validateAndSaveBan() {
+      const btn = document.getElementById('btn-save-ban');
+      const items = document.querySelectorAll('.ban-item-row');
+      if (items.length === 0) { showToast("⚠️ Vui lòng thêm ít nhất 1 sản phẩm để xuất bán!", true); return; }
+
+      const payloadItems = [];
+      for (let i = 0; i < items.length; i++) {
+          const row = items[i];
+          const spName = row.querySelector('.ban-sp-input').value.trim();
+          const qty = parseInt(row.querySelector('.ban-qty-input').value) || 0;
+          const priceInputVal = row.querySelector('.ban-price-input').value.trim();
+          
+          if (!spName) { showToast(`⚠️ Dòng ${i+1}: Bạn chưa chọn sản phẩm nào từ kho!`, true); return; }
+          if (qty <= 0) { showToast(`⚠️ Dòng ${i+1}: Số lượng bán phải lớn hơn 0!`, true); return; }
+          if (priceInputVal === '') { showToast(`⚠️ Dòng ${i+1}: Vui lòng nhập giá bán!`, true); return; }
+          const price = parseFloat(priceInputVal);
+          if (isNaN(price) || price <= 0) { showToast(`⚠️ Dòng ${i+1}: Vui lòng nhập giá bán hợp lệ!`, true); return; }
+          
+          payloadItems.push({ tenSP: spName, qty: qty, price: price });
+      }
+
+      const payload = {
+          ngay: document.getElementById('ban-ngay') ? document.getElementById('ban-ngay').value : '',
+          nhanTienVao: document.getElementById('ban-nguon') ? document.getElementById('ban-nguon').value : '',
+          isKhachNo: document.getElementById('chk-khach-no') ? document.getElementById('chk-khach-no').checked : false,
+          items: payloadItems
+      };
+
+      if (btn) { btn.disabled = true; btn.classList.add('opacity-50'); btn.innerText = "Đang xuất bán..."; }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveSalesOrder === 'function') {
+          google.script.run.withSuccessHandler(function(res) {
+              if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); btn.innerText = "Xuất Bán Đơn Hàng Này"; }
+              if (res && res.success) {
+                  showToast(res.message || "✅ Đã xuất bán đơn hàng!");
+                  resetSalesForm();
+                  reloadTab3Data();
+              } else {
+                  showToast("❌ " + (res ? res.message : "Lỗi xuất bán"), true);
+              }
+          }).withFailureHandler(function(err) {
+              if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); btn.innerText = "Xuất Bán Đơn Hàng Này"; }
+              showToast("❌ Lỗi kết nối: " + err, true);
+          }).saveSalesOrder(payload);
+      } else {
+          if (btn) { btn.disabled = false; btn.classList.remove('opacity-50'); btn.innerText = "Xuất Bán Đơn Hàng Này"; }
+          showToast("✅ Đã lưu đơn xuất bán (Demo Mode)!");
+          resetSalesForm();
+      }
+  }
+
+  function handleCancelPreOrder(itemName, rowId) {
+      showConfirmModal("⚠️ Hủy Đơn Đặt Trước", `Bạn có chắc chắn muốn HỦY đơn đặt trước: ${itemName} không?`, function() {
+          showToast(`✅ Đã hủy đơn ${itemName}! Hệ thống đã tự động XÓA khoản sao kê chờ trừ thẻ.`);
+          const el = document.getElementById(rowId);
+          if (el) el.remove();
+      }, "Hủy Đơn");
+  }
+
+  function handleTransferStatus(selectElem, itemName, rowId) {
+      if(selectElem.value === 'CANCEL') {
+          showConfirmModal("⚠️ Hủy Đơn & Hoàn Tiền", `Bạn báo HỦY đơn ${itemName}. Bạn có muốn hủy đơn và nhận hoàn tiền không?`, function() {
+              showToast(`✅ Ghi nhận Hủy Đơn! Hệ thống đã tự động tạo giao dịch HOÀN TIỀN vào Ví/Thẻ của bạn.`);
+              const el = document.getElementById(rowId);
+              if (el) el.remove();
+          }, "Xác Nhận Hủy");
+      } else {
+          showToast(`✅ Đã chuyển ${itemName} sang trạng thái ${selectElem.value}`);
+      }
+  }
+
+  function switchBizTab(subId) {
+      const mua = document.getElementById('biz-mua');
+      const ban = document.getElementById('biz-ban');
+      const kho = document.getElementById('biz-kho');
+      if (mua) mua.classList.add('hidden');
+      if (ban) ban.classList.add('hidden');
+      if (kho) kho.classList.add('hidden');
+      
+      const bMua = document.getElementById('btn-biz-mua');
+      const bBan = document.getElementById('btn-biz-ban');
+      const bKho = document.getElementById('btn-biz-kho');
+      if (bMua) bMua.className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition";
+      if (bBan) bBan.className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition";
+      if (bKho) bKho.className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition";
+
+      const target = document.getElementById('biz-' + subId);
+      const targetBtn = document.getElementById('btn-biz-' + subId);
+      if (target) target.classList.remove('hidden');
+      if (targetBtn) targetBtn.className = "flex-1 py-2 text-xs font-bold bg-white text-teal-600 rounded-lg shadow-sm cursor-pointer transition";
+  }
+</script>

@@ -100,8 +100,23 @@ function doPost(e) {
       "confirmPreOrderPayment": function(d, a) { return confirmPreOrderPayment(a[0] || d.rowId || d.itemId, a[1] || d.customDate); },
       "cancelPreOrderOrder": function(d, a) { return cancelPreOrderOrder(a[0] || d.rowId || d.itemId); },
       "confirmRefundOrderPayment": function(d, a) { return confirmRefundOrderPayment(a[0] || d.itemId || d.rowId, a[1] || d.targetWallet); },
-      "updateBatchWarehouseStatus": function(d, a) { return updateBatchWarehouseStatus(a[0] || d); },
-      "transferWarehouseBatch": function(d, a) { return transferWarehouseBatch(a[0] || d); },
+      "updateWarehouseStatus": function(d, a) {
+        var tId = (a && a.length > 0 && a[0] !== undefined) ? a[0] : (d ? (d.targetId || d.orderId || d.id || d.itemId || d) : null);
+        var nWh = (a && a.length > 1 && a[1] !== undefined) ? a[1] : (d ? (d.newStatus || d.targetWh || d.toWarehouse || d.status) : null);
+        var rsn = (a && a.length > 2) ? a[2] : (d ? d.reason : "");
+        return updateWarehouseStatus(tId, nWh, rsn);
+      },
+      "updateBatchWarehouseStatus": function(d, a) {
+        var itemsP = (a && a.length > 0 && a[0] !== undefined) ? a[0] : (d ? (d.itemIds || d.items || d) : null);
+        var targetWhP = (a && a.length > 1 && a[1] !== undefined) ? a[1] : (d ? (d.newStatus || d.targetWh || d.toWarehouse || d.status) : null);
+        return updateBatchWarehouseStatus(itemsP, targetWhP);
+      },
+      "transferWarehouseBatch": function(d, a) {
+        var spP = (a && a.length > 0 && a[0] !== undefined) ? a[0] : (d ? (d.spName || d.productName || d) : null);
+        var fromP = (a && a.length > 1 && a[1] !== undefined) ? a[1] : (d ? (d.fromWarehouse || d.fromWh) : "ALL");
+        var toP = (a && a.length > 2 && a[2] !== undefined) ? a[2] : (d ? (d.toWarehouse || d.toWh || d.targetWh) : null);
+        return transferWarehouseBatch(spP, fromP, toP);
+      },
       "confirmBatchDebtSalesPayment": function(d, a) { return confirmBatchDebtSalesPayment(a[0] || d); },
 
       // Tab 4 (Debts)
@@ -314,6 +329,32 @@ function getAppData(month, year, ssTarget, forceRefresh) {
       Logger.log("Error loading tab4: " + e.toString());
     }
 
+    // 8. Tab 7 Split Families & Groups Data
+    let splitFamilies = [];
+    let splitGroups = [];
+    let rawFamilyMembers = [];
+    try {
+      if (typeof getSplitFamilies === 'function') {
+        const famRes = getSplitFamilies(ss);
+        if (famRes && famRes.families) {
+          splitFamilies = famRes.families;
+          if (famRes.rawMembers) rawFamilyMembers = famRes.rawMembers;
+        } else if (Array.isArray(famRes)) {
+          splitFamilies = famRes;
+        }
+      }
+      if (typeof getSplitGroups === 'function') {
+        const grpRes = getSplitGroups(ss);
+        if (grpRes && grpRes.groups) {
+          splitGroups = grpRes.groups;
+        } else if (Array.isArray(grpRes)) {
+          splitGroups = grpRes;
+        }
+      }
+    } catch (e) {
+      Logger.log("Error loading Tab 7 in getAppData: " + e.toString());
+    }
+
     const result = {
       success: true,
       wallets: wallets,
@@ -325,6 +366,9 @@ function getAppData(month, year, ssTarget, forceRefresh) {
       tab3: tab3,
       tab4: tab4,
       tab5: tab5,
+      splitFamilies: splitFamilies,
+      rawFamilyMembers: rawFamilyMembers,
+      splitGroups: splitGroups,
       quickFixed: quickFixed
     };
 
@@ -588,10 +632,15 @@ function standardizeAllSheetStatuses(ssTarget) {
       }
     }
 
+    // 6. Standardize Sheet SplitFamilies
+    if (typeof standardizeSplitFamiliesSheet === 'function') {
+      standardizeSplitFamiliesSheet(ss);
+    }
+
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
     return {
       success: true,
-      message: `✅ Đã chuẩn hóa toàn bộ database và Mã ID (Business BO-: ${updatedCountB}, Purchase PO-: ${updatedCountP}, Sales SO-: ${updatedCountS}, Family: ${updatedCountF}, Debt: ${updatedCountD})!`
+      message: `✅ Đã chuẩn hóa toàn bộ database và Mã ID (Business BO-: ${updatedCountB}, Purchase PO-: ${updatedCountP}, Sales SO-: ${updatedCountS}, Family: ${updatedCountF}, Debt: ${updatedCountD}, SplitFamilies: OK)!`
     };
   } catch (err) {
     return { success: false, message: "❌ Lỗi khi chuẩn hóa database: " + err.toString() };

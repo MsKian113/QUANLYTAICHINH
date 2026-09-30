@@ -1,0 +1,18 @@
+{
+  "name": "ung_dung_tai_chinh",
+  "version": "2.0.0",
+  "description": "Hệ thống Quản lý Tài chính & Kinh Doanh Google Apps Script",
+  "main": "src/Code.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "push": "cd src && npx @google/clasp push -f",
+    "build:gh-pages": "node scripts/bundle_github_pages.js"
+  },
+  "keywords": [
+    "apps-script",
+    "financial-app",
+    "wallets"
+  ],
+  "author": "",
+  "license": "ISC"
+}

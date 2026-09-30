@@ -1,0 +1,928 @@
+    <!-- TOAST NOTIFICATION CONTAINER (REPLACES BROWSER ALERTS) -->
+    <div id="t1-toast" class="hidden fixed top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 transform -translate-y-2 opacity-0 flex items-center gap-2"></div>
+
+    <!-- HEADER: BỘ LỌC TỰ ĐỘNG SINH (DYNAMIC JS) -->
+    <div class="pt-10 pb-4 px-5 text-white bg-blue-600 shadow-md flex justify-between items-center">
+      <h1 class="text-lg font-bold">💳 Ví & Thẻ</h1>
+      <div class="flex gap-2">
+          <select id="t1-filter-month" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+          <select id="t1-filter-year" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pb-6 p-4 space-y-4">
+      
+      <!-- BÁO CÁO TỔNG QUAN TÀI SẢN -->
+      <div class="bg-gradient-to-br from-blue-700 to-indigo-800 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
+        <p class="text-[10px] uppercase tracking-wider text-blue-200 font-bold">📊 Tài Sản Ròng (Net Worth)</p>
+        <h2 id="ui-net-worth" class="text-3xl font-bold mt-1">0 ¥</h2>
+        
+        <div class="flex gap-2 mt-4 pt-4 border-t border-blue-500/50">
+             <div class="flex-1">
+                 <p class="text-[9px] text-blue-200 uppercase font-bold mb-0.5">Tiền Mặt & ATM</p>
+                 <p id="ui-cash-balance" class="text-sm font-bold text-emerald-300">0 ¥</p>
+             </div>
+             <div class="flex-1 border-l border-blue-500/50 pl-2">
+                 <p class="text-[9px] text-blue-200 uppercase font-bold mb-0.5">Tổng Nợ Thẻ</p>
+                 <p id="ui-credit-debt" class="text-sm font-bold text-rose-300">0 ¥</p>
+             </div>
+        </div>
+        
+        <!-- BẤM ĐỂ THÊM VÍ MỚI -->
+        <button onclick="openAddModal()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur flex items-center gap-1 transition cursor-pointer">
+            ➕ Thêm
+        </button>
+      </div>
+
+      <!-- TÁCH 2 TAB CON -->
+      <div class="flex p-1 bg-slate-200 rounded-xl">
+        <button onclick="switchSubTab('credit')" id="btn-credit" class="flex-1 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer">💳 Thẻ Tín Dụng</button>
+        <button onclick="switchSubTab('debit')" id="btn-debit" class="flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer">💵 Ví Tiền Mặt & ATM</button>
+      </div>
+
+      <!-- NỘI DUNG TAB: THẺ TÍN DỤNG -->
+      <div id="subtab-credit" class="space-y-2">
+        <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải danh sách thẻ...</div>
+      </div>
+
+      <!-- NỘI DUNG TAB: VÍ TIỀN MẶT & ATM -->
+      <div id="subtab-debit" class="space-y-2 hidden">
+        <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải danh sách ví...</div>
+      </div>
+      
+    </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- MODAL XÁC NHẬN (CONFIRM DIALOG - THAY THẾ BROWSER CONFIRM) -->
+  <div id="modal-confirm-dialog" class="modal-overlay" style="z-index: 280;" onclick="if(event.target === this) closeModal('modal-confirm-dialog')">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-rose-500">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 id="confirm-title" class="text-base font-bold text-slate-900">⚠️ Xác Nhận</h3>
+        <button onclick="closeModal('modal-confirm-dialog')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <p id="confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+        <div class="flex gap-2 pt-2">
+            <button onclick="closeModal('modal-confirm-dialog')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+            <button onclick="executeConfirmAction()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer">Xác Nhận Xoá</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM CHUYỂN TIỀN NỘI BỘ (VÍ ĐẾN VÍ) -->
+  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;" onclick="if(event.target === this) closeModal('modal-transfer-wallet')">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-indigo-500">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">🔄 Chuyển Tiền Nội Bộ</h3>
+        <button onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Từ Ví (Bị Trừ)</label>
+              <select id="tf-from-wallet" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"></select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Đến Ví (Được Cộng)</label>
+              <select id="tf-to-wallet" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-400"></select>
+            </div>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số tiền (¥)</label>
+          <input type="number" id="tf-amount" placeholder="Ví dụ: 10000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-400" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ghi chú</label>
+          <input type="text" id="tf-note" placeholder="Rút tiền mặt ATM bỏ bóp..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400 outline-none" />
+        </div>
+        <button id="btn-submit-transfer" onclick="submitWalletTransfer()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition">Xác Nhận Chuyển</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM THÊM MỚI / SỬA VÍ THẺ -->
+  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;" onclick="if(event.target === this) closeModal('modal-add-wallet')">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-slate-800">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 id="wa-title" class="text-lg font-bold text-slate-900">✏️ Thông Tin Ví / Thẻ</h3>
+        <button onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <input type="hidden" id="wa-id" value="" />
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tên Ví / Thẻ</label>
+            <input type="text" id="wa-name" placeholder="VD: Thẻ JCB, Ví Vợ Cầm..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Phân loại</label>
+                <select id="select-wallet-type" onchange="toggleLimitFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-bold text-slate-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-400">
+                    <option value="CREDIT">Thẻ Tín Dụng</option>
+                    <option value="DEBIT">Ví / Thẻ ATM</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số dư hiện tại (¥)</label>
+                <input type="number" id="wa-balance" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+        </div>
+
+        <div id="credit-limit-fields" class="space-y-3 pt-2">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Hạn mức thẻ tín dụng (¥)</label>
+                <input type="number" id="wa-limit" placeholder="Ví dụ: 500000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ngày chốt sao kê</label>
+                    <input type="number" id="wa-cut" placeholder="VD: 15" min="1" max="31" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ngày thanh toán</label>
+                    <input type="number" id="wa-pay" placeholder="VD: 27" min="1" max="31" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+            </div>
+        </div>
+        
+        <button id="btn-submit-wallet" onclick="handleSaveWallet()" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-bold shadow-md transition cursor-pointer">
+            Lưu Thay Đổi
+        </button>
+
+        <button id="btn-delete-wallet" onclick="handleDeleteWalletFromModal()" class="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer hidden">
+            🗑️ Xoá Ví / Thẻ Này
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SỔ PHỤ VÍ DEBIT -->
+  <div id="modal-statement-debit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-debit')">
+    <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
+      <div class="p-4 border-b bg-blue-50 flex justify-between items-center rounded-t-2xl">
+        <div>
+            <p class="text-[10px] uppercase text-blue-500 font-bold tracking-wider">Chi Tiết Giao Dịch</p>
+            <h3 id="debit-statement-title" class="text-lg font-bold text-blue-900">Tên Thẻ</h3>
+        </div>
+        <button onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-xl cursor-pointer leading-none">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-white">
+        <div class="p-2.5 px-3 bg-slate-50 rounded-xl flex justify-between items-center mb-3 border border-slate-200/80">
+            <div class="flex items-center gap-1.5 truncate">
+                <span class="text-xs font-medium text-slate-500">Số dư trên App:</span>
+                <span id="debit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
+            </div>
+            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2.5 py-1 rounded-lg text-slate-700 font-bold shadow-2xs cursor-pointer transition flex items-center gap-1">✏️ Chỉnh lệch</button>
+        </div>
+        <div id="debit-statement-list" class="space-y-2">
+            <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SỔ PHỤ THẺ TÍN DỤNG (CREDIT) -->
+  <div id="modal-statement-credit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-credit')">
+    <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
+      <div class="p-4 border-b bg-rose-50 flex justify-between items-center rounded-t-2xl">
+        <div>
+            <p class="text-[10px] uppercase text-rose-500 font-bold tracking-wider">Lịch Sử Giao Dịch Thẻ</p>
+            <h3 id="credit-statement-title" class="text-lg font-bold text-rose-900">Tên Thẻ</h3>
+        </div>
+        <button onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-xl cursor-pointer leading-none">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-white">
+        <div class="p-2.5 px-3 bg-slate-50 rounded-xl flex justify-between items-center mb-3 border border-slate-200/80">
+            <div class="flex items-center gap-1.5 truncate">
+                <span class="text-xs font-medium text-slate-500">Dư nợ trên App:</span>
+                <span id="credit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
+            </div>
+            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2.5 py-1 rounded-lg text-slate-700 font-bold shadow-2xs cursor-pointer transition flex items-center gap-1">✏️ Chỉnh lệch</button>
+        </div>
+        <div id="credit-statement-list" class="space-y-2">
+            <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SỬA GIAO DỊCH CHI TIẾT SỔ PHỤ -->
+  <div id="modal-edit-statement-tx" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-edit-statement-tx')">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-blue-500">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1">✏️ Sửa Giao Dịch Chi Tiết</h3>
+        <button onclick="closeModal('modal-edit-statement-tx')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <input type="hidden" id="edit-st-id" value="" />
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Mã Giao Dịch (ID)</label>
+          <input type="text" id="edit-st-id-display" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 font-bold rounded-xl px-3 py-2 text-xs outline-none cursor-not-allowed" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Thời Gian</label>
+          <input type="text" id="edit-st-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số Tiền (¥)</label>
+          <input type="number" id="edit-st-amount" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nội Dung / Ghi Chú</label>
+          <input type="text" id="edit-st-note" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-blue-400" />
+        </div>
+        <button id="btn-submit-edit-st" onclick="submitEditStatementTx()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition">
+          Lưu Thay Đổi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM ĐIỀU CHỈNH CÂN BẰNG SỔ (COMPACT UI) -->
+  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-adjust-balance')">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-amber-500">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1">⚖️ Chỉnh Lệch Số Dư Ví / Thẻ</h3>
+        <button onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div class="bg-amber-50/80 p-2.5 rounded-xl border border-amber-200 flex justify-between items-center">
+            <div>
+                <span class="text-[10px] font-bold text-amber-700 uppercase block">Ví / Thẻ:</span>
+                <span id="adj-wallet-name-text" class="text-xs font-bold text-slate-800">--</span>
+            </div>
+            <div class="text-right">
+                <span class="text-[10px] font-bold text-amber-700 uppercase block">Sổ App hiện tại:</span>
+                <span id="adj-app-balance-text" class="text-xs font-bold text-slate-800">0 ¥</span>
+            </div>
+        </div>
+        <input type="hidden" id="adj-wallet-name" value="" />
+        <input type="hidden" id="adj-app-balance" value="0" />
+
+        <div>
+            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Số dư THỰC TẾ thực cầm (¥)</label>
+            <input type="number" id="adj-actual-balance" placeholder="Nhập số tiền thực tế..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-base font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+        <button id="btn-submit-adjust" onclick="submitAdjustBalance()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition">
+            Lưu Chỉnh Lệch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TẤT TOÁN THẺ TÍN DỤNG -->
+  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-settle-card')">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-blue-500">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">💳 Thanh Toán Thẻ</h3>
+        <button onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Thẻ cần trả</label>
+          <input type="text" id="settle-card-name" readonly class="w-full bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Nguồn tiền lấy ra để trả</label>
+          <select id="settle-source-wallet" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer"></select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Số tiền thanh toán (¥)</label>
+          <input type="number" id="settle-amount" placeholder="Nhập số tiền..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-400 outline-none" />
+        </div>
+        <button id="btn-submit-settle" onclick="submitCreditSettlement()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md transition cursor-pointer">Xác Nhận Thanh Toán</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let t1_walletsData = [];
+    let t1_activeWalletForStatement = null;
+    let t1_onConfirmCallback = null;
+
+    // HÀM HIỂN THỊ TOAST NOTIFICATION TRÊN UI (THAY THẾ BROWSER ALERT)
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('t1-toast');
+        if (!toast) return;
+        toast.innerText = msg;
+        toast.className = `fixed top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 flex items-center gap-2 ${isError ? 'bg-rose-600 border border-rose-400' : 'bg-emerald-600 border border-emerald-400'}`;
+        toast.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            toast.classList.remove('-translate-y-2', 'opacity-0');
+        });
+        setTimeout(() => {
+            toast.classList.add('-translate-y-2', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3200);
+    }
+
+    // HÀM HIỂN THỊ CONFIRM MODAL TRÊN UI (THAY THẾ BROWSER CONFIRM)
+    function showConfirmModal(title, msg, onConfirm) {
+        document.getElementById('confirm-title').innerText = title || "⚠️ Xác Nhận Hành Động";
+        document.getElementById('confirm-msg').innerText = msg || "Bạn có chắc chắn muốn thực hiện?";
+        t1_onConfirmCallback = onConfirm;
+        openModal('modal-confirm-dialog');
+    }
+
+    function executeConfirmAction() {
+        closeModal('modal-confirm-dialog');
+        if (typeof t1_onConfirmCallback === 'function') {
+            t1_onConfirmCallback();
+            t1_onConfirmCallback = null;
+        }
+    }
+
+    function t1_initDateFilters() {
+        const monthSelect = document.getElementById('t1-filter-month');
+        const yearSelect = document.getElementById('t1-filter-year');
+        if(!monthSelect || !yearSelect) return;
+        
+        const d = new Date();
+        const currMonth = d.getMonth() + 1;
+        const currYear = d.getFullYear();
+
+        let monthHTML = '<option value="ALL">Cả năm</option>';
+        for (let i = 1; i <= 12; i++) {
+            let selected = (i === currMonth) ? 'selected' : '';
+            monthHTML += `<option value="${i}" ${selected}>Tháng ${i}</option>`;
+        }
+        monthSelect.innerHTML = monthHTML;
+
+        let yearHTML = '';
+        for (let y = 2024; y <= currYear + 1; y++) {
+            let selected = (y === currYear) ? 'selected' : '';
+            yearHTML += `<option value="${y}" ${selected}>Năm ${y}</option>`;
+        }
+        yearSelect.innerHTML = yearHTML;
+    }
+
+    function reloadTab1Data() {
+        const monthSelect = document.getElementById('t1-filter-month');
+        const yearSelect = document.getElementById('t1-filter-year');
+        const month = monthSelect ? monthSelect.value : 'ALL';
+        const year = yearSelect ? yearSelect.value : new Date().getFullYear();
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getWalletsFromSheet === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    t1_walletsData = res.wallets || [];
+                } else if (Array.isArray(res)) {
+                    t1_walletsData = res;
+                } else {
+                    t1_walletsData = [];
+                }
+                renderTab1Wallets();
+            }).withFailureHandler(function(err) {
+                console.error("Lỗi lấy ví:", err);
+                renderTab1Wallets();
+            }).getWalletsFromSheet(month, year);
+        } else {
+            // Mock data fallback cho local dev/preview
+            t1_walletsData = [
+                { id: "W001", name: "Thẻ Rakuten (VISA)", type: "CREDIT", credit_limit: 500000, closing_date: 15, due_date: 27, current_balance: -50000 },
+                { id: "W002", name: "Thẻ Ufj (ATM)", type: "DEBIT", credit_limit: 0, closing_date: "", due_date: "", current_balance: 800000 },
+                { id: "W003", name: "Ví Tiền Mặt", type: "DEBIT", credit_limit: 0, closing_date: "", due_date: "", current_balance: 500000 }
+            ];
+            renderTab1Wallets();
+        }
+    }
+
+    function renderTab1Wallets() {
+        const creditContainer = document.getElementById('subtab-credit');
+        const debitContainer = document.getElementById('subtab-debit');
+        if (!creditContainer || !debitContainer) return;
+
+        let totalCreditDebt = 0;
+        let totalCashDebit = 0;
+        let totalCreditLimit = 0;
+
+        const creditList = t1_walletsData.filter(w => w.type === 'CREDIT');
+        const debitList = t1_walletsData.filter(w => w.type !== 'CREDIT');
+
+        t1_walletsData.forEach(w => {
+            const bal = Number(w.current_balance) || 0;
+            if (w.type === 'CREDIT') {
+                totalCreditDebt += bal;
+                totalCreditLimit += Number(w.credit_limit) || 0;
+            } else {
+                totalCashDebit += bal;
+            }
+        });
+
+        const netWorth = totalCashDebit + totalCreditDebt;
+
+        document.getElementById('ui-net-worth').innerText = netWorth.toLocaleString() + ' ¥';
+        document.getElementById('ui-cash-balance').innerText = totalCashDebit.toLocaleString() + ' ¥';
+        document.getElementById('ui-credit-debt').innerText = totalCreditDebt.toLocaleString() + ' ¥';
+
+        // 1. Render Danh sách Thẻ Tín Dụng
+        if (creditList.length === 0) {
+            creditContainer.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">Chưa có thẻ tín dụng nào.</div>';
+        } else {
+            let creditHTML = '';
+            creditList.forEach(w => {
+                const bal = Number(w.current_balance) || 0;
+                const limit = Number(w.credit_limit) || 0;
+                const used = Math.abs(bal);
+                const percent = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                const available = Math.max(0, limit - used);
+
+                creditHTML += `
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-3 shadow-sm hover:border-blue-400 transition cursor-pointer relative" onclick="openStatement('${w.name}', 'CREDIT')">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <div class="flex items-center gap-1.5 truncate max-w-[65%]">
+                            <h4 class="text-xs font-bold text-slate-800 truncate" title="${w.name}">${w.name}</h4>
+                            <span class="text-[9px] text-slate-400 font-medium whitespace-nowrap">Chốt:${w.closing_date || '--'} | Trả:${w.due_date || '--'}</span>
+                        </div>
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            <button onclick="event.stopPropagation(); openSettleModal('${w.name}', ${bal})" title="Thanh toán tất toán" class="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-600 px-2 py-0.5 rounded-lg border border-blue-200 font-bold transition cursor-pointer flex items-center gap-0.5">
+                                💳 Tất toán
+                            </button>
+                            <button onclick="event.stopPropagation(); openEditModal('${w.id}', '${w.name}', '${w.type}', ${bal}, ${limit}, '${w.closing_date}', '${w.due_date}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-lg border border-slate-200 font-bold transition cursor-pointer">✏️</button>
+                            <button onclick="event.stopPropagation(); confirmDeleteWallet('${w.id}', '${w.name}')" class="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-lg border border-rose-200 font-bold transition cursor-pointer">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center py-1 border-t border-slate-100 text-xs">
+                        <div class="flex items-center gap-1">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">Nợ:</span>
+                            <span class="font-bold text-rose-600 text-xs">${bal.toLocaleString()} ¥</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase">Khả dụng:</span>
+                            <span class="font-bold text-emerald-600 text-xs">${available.toLocaleString()} ¥</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-1">
+                        <div class="flex justify-between items-center text-[9px] font-medium text-slate-400 mb-0.5">
+                            <span>Dùng ${percent}%</span>
+                            <span>Hạn mức: ${limit.toLocaleString()} ¥</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-rose-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            creditContainer.innerHTML = creditHTML;
+        }
+
+        // 2. Render Danh sách Ví Tiền Mặt & ATM
+        let debitHTML = `
+        <button onclick="openTransferModal()" class="w-full py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-bold border border-indigo-200 flex justify-center items-center gap-1 shadow-sm mb-2 transition cursor-pointer">
+            🔄 Chuyển tiền giữa các Ví (Rút ATM, cất quỹ...)
+        </button>`;
+
+        if (debitList.length === 0) {
+            debitHTML += '<div class="text-center py-6 text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">Chưa có ví tiền mặt/ATM nào.</div>';
+        } else {
+            debitList.forEach(w => {
+                const bal = Number(w.current_balance) || 0;
+                debitHTML += `
+                <div class="bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-sm cursor-pointer hover:border-blue-400 transition relative flex justify-between items-center" onclick="openStatement('${w.name}', 'DEBIT')">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-bold">
+                            💵
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800">${w.name}</h4>
+                            <p class="text-[9px] text-slate-400 mt-0.5">Sổ phụ &rsaquo;</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-emerald-600">${bal.toLocaleString()} ¥</p>
+                            <p class="text-[9px] text-slate-400">Khả dụng</p>
+                        </div>
+                        <div class="flex items-center gap-1 border-l border-slate-100 pl-2">
+                            <button onclick="event.stopPropagation(); openEditModal('${w.id}', '${w.name}', '${w.type}', ${bal}, 0, '', '')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded-lg border border-slate-200 font-bold transition cursor-pointer">✏️</button>
+                            <button onclick="event.stopPropagation(); confirmDeleteWallet('${w.id}', '${w.name}')" class="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-lg border border-rose-200 font-bold transition cursor-pointer">🗑️</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+        debitContainer.innerHTML = debitHTML;
+
+        updateModalDropdowns();
+    }
+
+    function updateModalDropdowns() {
+        const fromSel = document.getElementById('tf-from-wallet');
+        const toSel = document.getElementById('tf-to-wallet');
+        const settleSel = document.getElementById('settle-source-wallet');
+
+        let allOpts = '<option value="">-- Chọn ví --</option>';
+        t1_walletsData.forEach(w => {
+            allOpts += `<option value="${w.name}">${w.name} (${Number(w.current_balance).toLocaleString()} ¥)</option>`;
+        });
+
+        if (fromSel) fromSel.innerHTML = allOpts;
+        if (toSel) toSel.innerHTML = allOpts;
+
+        let debitOpts = '<option value="">-- Chọn ví nguồn --</option>';
+        t1_walletsData.filter(w => w.type !== 'CREDIT').forEach(w => {
+            debitOpts += `<option value="${w.name}">${w.name} (${Number(w.current_balance).toLocaleString()} ¥)</option>`;
+        });
+        if (settleSel) settleSel.innerHTML = debitOpts;
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        t1_initDateFilters();
+        reloadTab1Data();
+    });
+
+    function switchSubTab(tab) {
+        document.getElementById('subtab-credit').classList.add('hidden');
+        document.getElementById('subtab-debit').classList.add('hidden');
+        document.getElementById('btn-credit').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+        document.getElementById('btn-debit').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+        
+        document.getElementById('subtab-' + tab).classList.remove('hidden');
+        document.getElementById('btn-' + tab).className = "flex-1 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer";
+    }
+
+    function toggleLimitFields() {
+        const type = document.getElementById('select-wallet-type').value;
+        const fields = document.getElementById('credit-limit-fields');
+        if (type === 'CREDIT') {
+            fields.classList.remove('hidden');
+        } else {
+            fields.classList.add('hidden');
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('wa-title').innerText = "➕ Thêm Ví / Thẻ Mới";
+        document.getElementById('wa-id').value = "";
+        document.getElementById('wa-name').value = "";
+        document.getElementById('select-wallet-type').value = "DEBIT";
+        document.getElementById('wa-balance').value = "";
+        document.getElementById('wa-limit').value = "";
+        document.getElementById('wa-cut').value = "";
+        document.getElementById('wa-pay').value = "";
+        document.getElementById('btn-delete-wallet').classList.add('hidden');
+        toggleLimitFields();
+        openModal('modal-add-wallet');
+    }
+
+    function openEditModal(id, name, type, balance, limit, cut, pay) {
+        document.getElementById('wa-title').innerText = "✏️ Sửa Thông Tin Ví / Thẻ";
+        document.getElementById('wa-id').value = id;
+        document.getElementById('wa-name').value = name;
+        document.getElementById('select-wallet-type').value = type;
+        document.getElementById('wa-balance').value = balance;
+        document.getElementById('btn-delete-wallet').classList.remove('hidden');
+        
+        if (type === 'CREDIT') {
+            document.getElementById('credit-limit-fields').classList.remove('hidden');
+            document.getElementById('wa-limit').value = limit || "";
+            document.getElementById('wa-cut').value = cut || "";
+            document.getElementById('wa-pay').value = pay || "";
+        } else {
+            document.getElementById('credit-limit-fields').classList.add('hidden');
+        }
+        openModal('modal-add-wallet');
+    }
+
+    function handleSaveWallet() {
+        const name = document.getElementById('wa-name').value.trim();
+        if (!name) { showToast("⚠️ Vui lòng nhập tên Ví / Thẻ!", true); return; }
+
+        const btn = document.getElementById('btn-submit-wallet');
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        const payload = {
+            id: document.getElementById('wa-id').value || ("W" + Date.now().toString().slice(-5)),
+            name: name,
+            type: document.getElementById('select-wallet-type').value,
+            current_balance: Number(document.getElementById('wa-balance').value) || 0,
+            credit_limit: Number(document.getElementById('wa-limit').value) || 0,
+            closing_date: document.getElementById('wa-cut').value,
+            due_date: document.getElementById('wa-pay').value
+        };
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveWalletToSheet === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                closeModal('modal-add-wallet');
+                showToast(res.message || "✅ Đã lưu ví/thẻ thành công!");
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).saveWalletToSheet(payload);
+        } else {
+            btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+            closeModal('modal-add-wallet');
+            showToast("✅ Đã lưu ví/thẻ thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    function confirmDeleteWallet(id, name) {
+        showConfirmModal(
+            "🗑️ Xoá Ví / Thẻ",
+            `Bạn có chắc chắn muốn xoá ví/thẻ "${name}" khỏi hệ thống không?`,
+            function() { deleteWalletById(id); }
+        );
+    }
+
+    function handleDeleteWalletFromModal() {
+        const id = document.getElementById('wa-id').value;
+        const name = document.getElementById('wa-name').value;
+        if (!id) return;
+        confirmDeleteWallet(id, name);
+    }
+
+    function deleteWalletById(id) {
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.deleteWalletFromSheet === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                showToast(res.message || "✅ Đã xoá ví/thẻ!");
+                closeModal('modal-add-wallet');
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                showToast("❌ Lỗi: " + err.message, true);
+            }).deleteWalletFromSheet(id);
+        } else {
+            showToast("✅ Đã xoá ví thành công (Demo)!");
+            closeModal('modal-add-wallet');
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Sổ Phụ Chi Tiết
+    function openStatement(walletName, walletType) {
+        t1_activeWalletForStatement = t1_walletsData.find(w => w.name === walletName) || { name: walletName, current_balance: 0 };
+        
+        if (walletType === 'CREDIT') {
+            document.getElementById('credit-statement-title').innerText = walletName;
+            document.getElementById('credit-statement-balance').innerText = (Number(t1_activeWalletForStatement.current_balance) || 0).toLocaleString() + ' ¥';
+            const listEl = document.getElementById('credit-statement-list');
+            listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>';
+            openModal('modal-statement-credit');
+            fetchStatementHistory(walletName, listEl);
+        } else {
+            document.getElementById('debit-statement-title').innerText = walletName;
+            document.getElementById('debit-statement-balance').innerText = (Number(t1_activeWalletForStatement.current_balance) || 0).toLocaleString() + ' ¥';
+            const listEl = document.getElementById('debit-statement-list');
+            listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>';
+            openModal('modal-statement-debit');
+            fetchStatementHistory(walletName, listEl);
+        }
+    }
+
+    function fetchStatementHistory(walletName, containerEl) {
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getWalletTransactionHistory === 'function') {
+            google.script.run.withSuccessHandler(function(history) {
+                renderStatementList(history, containerEl);
+            }).withFailureHandler(function(err) {
+                containerEl.innerHTML = '<div class="text-center py-8 text-xs text-rose-400">Không thể tải lịch sử giao dịch.</div>';
+            }).getWalletTransactionHistory(walletName);
+        } else {
+            // Local mockup fallback
+            const mockHistory = [
+                { date: "04/09/2026", module: "Thu Chi", type: "-", amount: 5000, note: "Pre-order: Mỹ phẩm" },
+                { date: "27/09/2026", module: "Chuyển Ví", type: "+", amount: 5000, note: "Tất toán từ Thẻ Ufj" }
+            ];
+            renderStatementList(mockHistory, containerEl);
+        }
+    }
+
+    let t1_statementHistoryCache = [];
+
+    function renderStatementList(history, containerEl) {
+        t1_statementHistoryCache = history || [];
+        if (!t1_statementHistoryCache || t1_statementHistoryCache.length === 0) {
+            containerEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400">Chưa có giao dịch nào trong khoảng thời gian này.</div>';
+            return;
+        }
+
+        let html = '';
+        t1_statementHistoryCache.forEach((item, index) => {
+            const isPos = item.type === '+';
+            html += `
+            <div onclick="handleClickStatementTx(${index})"
+                 class="flex justify-between items-center py-2.5 px-3 mb-1.5 border border-slate-200/80 rounded-xl hover:border-blue-400 transition cursor-pointer ${isPos ? 'bg-emerald-50/40' : 'bg-white'}" title="Bấm để sửa giao dịch này">
+                <div class="pr-2 max-w-[70%]">
+                    <p class="text-[9px] text-slate-400 font-bold mb-0.5">${item.date || ''} • ${item.module || ''}</p>
+                    <p class="text-xs text-slate-800 font-medium leading-snug truncate">${item.note || ''}</p>
+                </div>
+                <div class="text-right shrink-0 flex items-center gap-1.5">
+                    <p class="text-xs font-bold ${isPos ? 'text-emerald-600' : 'text-rose-500'}">${isPos ? '+' : '-'}${Number(item.amount || 0).toLocaleString()} ¥</p>
+                    <span class="text-[10px] text-slate-400 hover:text-blue-600">✏️</span>
+                </div>
+            </div>`;
+        });
+        containerEl.innerHTML = html;
+    }
+
+    function handleClickStatementTx(index) {
+        const item = t1_statementHistoryCache[index];
+        if (!item) return;
+        openEditStatementTxModal(item.id || '', item.date || '', item.rawNote || item.note || '', item.amount || 0);
+    }
+
+    function openEditStatementTxModal(id, date, note, amount) {
+        document.getElementById('edit-st-id').value = id || '';
+        document.getElementById('edit-st-id-display').value = id || 'Chưa có ID';
+        document.getElementById('edit-st-date').value = date || '';
+        document.getElementById('edit-st-note').value = note || '';
+        document.getElementById('edit-st-amount').value = amount || 0;
+        openModal('modal-edit-statement-tx');
+    }
+
+    function submitEditStatementTx() {
+        const id = document.getElementById('edit-st-id').value;
+        const date = document.getElementById('edit-st-date').value;
+        const note = document.getElementById('edit-st-note').value;
+        const amount = Number(document.getElementById('edit-st-amount').value);
+
+        if (!id) {
+            showToast("⚠️ Không thể xác định ID giao dịch!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-edit-st');
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateFamilyTransactionById === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                closeModal('modal-edit-statement-tx');
+                showToast(res.message || "✅ Đã cập nhật giao dịch!");
+                if (t1_activeWalletForStatement) {
+                    openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
+                }
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).updateFamilyTransactionById({ id: id, date: date, note: note, amount: amount });
+        } else {
+            btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
+            closeModal('modal-edit-statement-tx');
+            showToast("✅ Đã cập nhật giao dịch (Demo)!");
+            if (t1_activeWalletForStatement) {
+                openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
+            }
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Chuyển Ví Nội Bộ
+    function openTransferModal() {
+        document.getElementById('tf-amount').value = "";
+        document.getElementById('tf-note').value = "";
+        openModal('modal-transfer-wallet');
+    }
+
+    function submitWalletTransfer() {
+        const from = document.getElementById('tf-from-wallet').value;
+        const to = document.getElementById('tf-to-wallet').value;
+        const amt = Number(document.getElementById('tf-amount').value);
+        const note = document.getElementById('tf-note').value;
+
+        if (!from || !to || from === to || !amt || amt <= 0) {
+            showToast("⚠️ Vui lòng chọn ví khác nhau và nhập số tiền hợp lệ!", true);
+            return;
+        }
+
+        // Kiểm tra số dư ví nguồn
+        const sourceObj = t1_walletsData.find(w => w.name === from);
+        if (sourceObj && sourceObj.type !== 'CREDIT') {
+            const availBal = Number(sourceObj.current_balance || 0);
+            if (amt > availBal) {
+                showToast(`❌ Lỗi: Số tiền cần chuyển (${amt.toLocaleString()} ¥) vượt quá số dư ví (${availBal.toLocaleString()} ¥)!`, true);
+                return;
+            }
+        }
+
+        const btn = document.getElementById('btn-submit-transfer');
+        btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.processWalletTransfer === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
+                if (res.success) {
+                    closeModal('modal-transfer-wallet');
+                    showToast(res.message || "✅ Đã chuyển tiền thành công!");
+                    reloadTab1Data();
+                } else {
+                    showToast(res.message || "❌ Lỗi chuyển tiền!", true);
+                }
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).processWalletTransfer({ fromWallet: from, toWallet: to, amount: amt, note: note });
+        } else {
+            btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
+            closeModal('modal-transfer-wallet');
+            showToast("✅ Đã chuyển tiền thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Tất Toán Thẻ
+    function openSettleModal(cardName, currentBalance) {
+        document.getElementById('settle-card-name').value = cardName;
+        document.getElementById('settle-amount').value = Math.abs(currentBalance) > 0 ? Math.abs(currentBalance) : "";
+        updateModalDropdowns();
+
+        // Lấy nguồn mặc định từ Cột K trong database nếu có
+        const cardObj = t1_walletsData.find(w => w.name === cardName);
+        if (cardObj && cardObj.settle_source) {
+            const sourceSel = document.getElementById('settle-source-wallet');
+            if (sourceSel) sourceSel.value = cardObj.settle_source;
+        }
+
+        openModal('modal-settle-card');
+    }
+
+    function submitCreditSettlement() {
+        const card = document.getElementById('settle-card-name').value;
+        const source = document.getElementById('settle-source-wallet').value;
+        const amt = Number(document.getElementById('settle-amount').value);
+
+        if (!source || !amt || amt <= 0) {
+            showToast("⚠️ Vui lòng chọn ví nguồn và nhập số tiền thanh toán!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-settle');
+        btn.innerText = "Đang xử lý..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.processCreditCardSettlement === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
+                closeModal('modal-settle-card');
+                showToast(res.message || "✅ Đã tất toán thẻ thành công!");
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).processCreditCardSettlement({ creditCard: card, sourceWallet: source, amount: amt });
+        } else {
+            btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
+            closeModal('modal-settle-card');
+            showToast("✅ Đã tất toán thẻ thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    // Modal Chỉnh Lệch Số Dư
+    function openAdjustModalFromStatement() {
+        if (!t1_activeWalletForStatement) return;
+        const name = t1_activeWalletForStatement.name;
+        const bal = Number(t1_activeWalletForStatement.current_balance) || 0;
+        document.getElementById('adj-wallet-name').value = name;
+        document.getElementById('adj-app-balance').value = bal;
+        document.getElementById('adj-wallet-name-text').innerText = name;
+        document.getElementById('adj-app-balance-text').innerText = bal.toLocaleString() + " ¥";
+        document.getElementById('adj-actual-balance').value = "";
+        openModal('modal-adjust-balance');
+    }
+
+    function submitAdjustBalance() {
+        const name = document.getElementById('adj-wallet-name').value;
+        const actual = Number(document.getElementById('adj-actual-balance').value);
+        const appBal = Number(t1_activeWalletForStatement ? t1_activeWalletForStatement.current_balance : 0);
+
+        if (isNaN(actual)) {
+            showToast("⚠️ Vui lòng nhập số tiền thực tế!", true);
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-adjust');
+        btn.innerText = "Đang lưu..."; btn.disabled = true;
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.adjustWalletBalance === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                btn.innerText = "Lưu Chỉnh Lệch"; btn.disabled = false;
+                closeModal('modal-adjust-balance');
+                closeModal('modal-statement-credit');
+                closeModal('modal-statement-debit');
+                showToast(res.message || "✅ Đã chỉnh lệch số dư thành công!");
+                reloadTab1Data();
+            }).withFailureHandler(function(err) {
+                btn.innerText = "Lưu Chỉnh Lệch"; btn.disabled = false;
+                showToast("❌ Lỗi: " + err.message, true);
+            }).adjustWalletBalance({ walletName: name, actualBalance: actual, appBalance: appBal });
+        } else {
+            btn.innerText = "Lưu Chỉnh Lệch"; btn.disabled = false;
+            closeModal('modal-adjust-balance');
+            showToast("✅ Đã chỉnh lệch thành công (Demo)!");
+            reloadTab1Data();
+        }
+    }
+
+    if(typeof openModal === 'undefined') {
+        window.openModal = function(id) { document.getElementById(id).classList.add('active'); }
+        window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); }
+    }
+  </script>

@@ -1,0 +1,1120 @@
+<script>
+
+// ============================================================
+// BIẾN TOÀN CỤC
+// ============================================================
+let danhSachTheToanCuc = [];
+let khoSanPham = [];
+let danhSachTimSP = [];
+
+// ============================================================
+// LOAD
+// ============================================================
+window.onload = function() {
+  loadTheThanhToan();
+};
+
+// ============================================================
+// TAB
+// ============================================================
+function switchTab(tabName) {
+  document.getElementById("tab-mua").classList.add("hidden");
+  document.getElementById("tab-ban").classList.add("hidden");
+  document.getElementById("tab-khoNo").classList.add("hidden");
+
+  document.getElementById("btnTabMua").className = "py-2 text-xs font-bold rounded-xl transition text-slate-600";
+  document.getElementById("btnTabBan").className = "py-2 text-xs font-bold rounded-xl transition text-slate-600";
+  document.getElementById("btnTabKhoNo").className = "py-2 text-xs font-bold rounded-xl transition text-slate-600";
+
+  // MUA
+  if (tabName === "mua") {
+    document.getElementById("tab-mua").classList.remove("hidden");
+    document.getElementById("btnTabMua").className = "py-2 text-xs font-bold rounded-xl transition bg-white text-blue-600 shadow-sm";
+  }
+
+  // BÁN
+  else if (tabName === "ban") {
+    document.getElementById("tab-ban").classList.remove("hidden");
+    document.getElementById("btnTabBan").className = "py-2 text-xs font-bold rounded-xl transition bg-white text-emerald-600 shadow-sm";
+
+    taiDanhSachKho();
+
+    const container = document.getElementById("danhSachBanContainer");
+    if (container.children.length === 0) {
+      themDongBan();
+    }
+  }
+
+  // KHO & NỢ
+  else if (tabName === "khoNo") {
+    document.getElementById("tab-khoNo").classList.remove("hidden");
+    document.getElementById("btnTabKhoNo").className = "py-2 text-xs font-bold rounded-xl transition bg-white text-amber-600 shadow-sm";
+    khoiTaoTab3();
+  }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function hienThongBao(noiDung, isError = false) {
+  const toast = document.getElementById("toastMessage");
+  toast.innerText = noiDung;
+  toast.className = "fixed top-16 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-white text-xs font-semibold shadow-lg " + (isError ? "bg-red-600" : "bg-emerald-600");
+  toast.classList.remove("hidden");
+
+  setTimeout(function() {
+    toast.classList.add("hidden");
+  }, 3500);
+}
+
+// ============================================================
+// THANH TOÁN / NGUỒN NHẬN TIỀN (dùng chung danh sách DanhMuc)
+// ============================================================
+function loadTheThanhToan() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      danhSachTheToanCuc = data || [];
+    })
+    .withFailureHandler(function(err) {
+      console.error(err);
+    })
+    .getDanhSachThanhToan();
+}
+
+// ============================================================
+// GỢI Ý THẺ (TAB 1 - MUA HÀNG)
+// ============================================================
+function locDanhSachThe() {
+  const keyword = document.getElementById("inputTheQuet").value.toLowerCase().trim();
+  const dropdown = document.getElementById("dropdownGoiY");
+
+  if (!keyword) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+
+  const ketQua = danhSachTheToanCuc.filter(function(item) {
+    return item.toLowerCase().includes(keyword);
+  });
+
+  dropdown.innerHTML = "";
+  if (ketQua.length === 0) {
+    dropdown.innerHTML = '<div class="px-3 py-2 text-xs text-slate-400">Không tìm thấy</div>';
+  }
+
+  ketQua.forEach(function(item) {
+    const div = document.createElement("div");
+    div.className = "px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer";
+    div.innerText = item;
+    div.onclick = function() {
+      document.getElementById("inputTheQuet").value = item;
+      dropdown.classList.add("hidden");
+    };
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.remove("hidden");
+}
+
+// ============================================================
+// GỢI Ý NGUỒN NHẬN TIỀN (TAB 2 - BÁN HÀNG)
+// ============================================================
+function locDanhSachNhanTienBan() {
+  const keyword = document.getElementById("inputHinhThucNhan").value.toLowerCase().trim();
+  const dropdown = document.getElementById("dropdownHinhThucNhanBan");
+
+  if (!keyword) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+
+  const ketQua = danhSachTheToanCuc.filter(function(item) {
+    return item.toLowerCase().includes(keyword);
+  });
+
+  dropdown.innerHTML = "";
+  if (ketQua.length === 0) {
+    dropdown.innerHTML = '<div class="px-3 py-2 text-xs text-slate-400">Không tìm thấy</div>';
+  }
+
+  ketQua.forEach(function(item) {
+    const div = document.createElement("div");
+    div.className = "px-3 py-2 text-sm hover:bg-emerald-50 cursor-pointer";
+    div.innerText = item;
+    div.onclick = function() {
+      document.getElementById("inputHinhThucNhan").value = item;
+      dropdown.classList.add("hidden");
+    };
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.remove("hidden");
+}
+
+// ============================================================
+// GỢI Ý NGUỒN NHẬN TIỀN (TAB 3 - CẬP NHẬT)
+// ============================================================
+function locDanhSachNhanTienCapNhat() {
+  const keyword = document.getElementById("inputHinhThucNhanCapNhat").value.toLowerCase().trim();
+  const dropdown = document.getElementById("dropdownHinhThucNhanCapNhat");
+
+  if (!keyword) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+
+  const ketQua = danhSachTheToanCuc.filter(function(item) {
+    return item.toLowerCase().includes(keyword);
+  });
+
+  dropdown.innerHTML = "";
+  ketQua.forEach(function(item) {
+    const div = document.createElement("div");
+    div.className = "px-3 py-2 text-sm hover:bg-amber-50 cursor-pointer";
+    div.innerText = item;
+    div.onclick = function() {
+      document.getElementById("inputHinhThucNhanCapNhat").value = item;
+      dropdown.classList.add("hidden");
+    };
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.remove("hidden");
+}
+
+// ============================================================
+// TAB 1 - THÊM SẢN PHẨM MUA
+// ============================================================
+function themDongSanPham() {
+  const container = document.getElementById("danhSachSPContainer");
+  const div = document.createElement("div");
+  div.className = "p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 sp-row relative";
+  div.innerHTML = `
+    <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-red-500 text-xs font-bold">Xóa</button>
+    <input type="text" placeholder="Tên sản phẩm" class="sp-ten w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+    <div class="grid grid-cols-2 gap-2">
+      <input type="number" placeholder="Số lượng" value="1" min="1" class="sp-sl w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+      <input type="number" placeholder="Giá (Yên)" min="0" class="sp-gia w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+    </div>
+    <select class="sp-trangThaiKho w-full border rounded-lg px-3 py-2 text-sm bg-white">
+      <option value="📦 Chờ Ship">📦 Chờ Ship</option>
+      <option value="🟢 Kho 1F">🟢 Kho 1F</option>
+      <option value="✴️ Kho 2F">✴️ Kho 2F</option>
+    </select>
+  `;
+  container.appendChild(div);
+}
+
+// ============================================================
+// LƯU MUA HÀNG
+// ============================================================
+function guiDonMuaHang() {
+  const sanMua = document.getElementById("sanMua").value.trim();
+  const theQuet = document.getElementById("inputTheQuet").value.trim();
+  const ghiChu = document.getElementById("ghiChuDon").value.trim();
+
+  const rows = document.querySelectorAll(".sp-row");
+  const danhSachSP = [];
+
+  rows.forEach(function(r) {
+    const ten = r.querySelector(".sp-ten").value.trim();
+    const sl = r.querySelector(".sp-sl").value;
+    const gia = r.querySelector(".sp-gia").value;
+    const trangThaiKho = r.querySelector(".sp-trangThaiKho").value;
+
+    if (ten) {
+      danhSachSP.push({ ten: ten, sl: sl, gia: gia, trangThaiKho: trangThaiKho });
+    }
+  });
+
+  if (!sanMua || !theQuet || danhSachSP.length === 0) {
+    hienThongBao("❌ Vui lòng nhập đầy đủ thông tin!", true);
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hienThongBao(res);
+      document.getElementById("sanMua").value = "";
+      document.getElementById("inputTheQuet").value = "";
+      document.getElementById("ghiChuDon").value = "";
+      document.getElementById("danhSachSPContainer").innerHTML = "";
+      themDongSanPham();
+    })
+    .withFailureHandler(function(err) {
+      hienThongBao("❌ " + err.message, true);
+    })
+    .luuDonMuaHang({ sanMua: sanMua, theQuet: theQuet, ghiChu: ghiChu, danhSachSP: danhSachSP });
+}
+
+// ============================================================
+// TAB 2 - TẢI KHO (dùng cho gợi ý tìm sản phẩm bán)
+// ============================================================
+function taiDanhSachKho() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      khoSanPham = data || [];
+    })
+    .withFailureHandler(function(err) {
+      console.error(err);
+    })
+    .getDanhSachSanPhamInKho();
+}
+
+// ============================================================
+// THÊM DÒNG BÁN (Ô sản phẩm: gõ tên -> gợi ý)
+// ============================================================
+function themDongBan() {
+  const container = document.getElementById("danhSachBanContainer");
+  const div = document.createElement("div");
+  div.className = "grid grid-cols-12 gap-2 items-start";
+  div.innerHTML = `
+    <div class="col-span-6 relative">
+      <input type="text" class="ten-sp-ban w-full px-3 py-2 border rounded-lg text-sm" placeholder="Gõ tìm sản phẩm..." autocomplete="off" oninput="locSanPhamBan(this)" required />
+      <input type="hidden" class="row-index-ban" />
+      <div class="dropdown-sp-ban hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
+    </div>
+    <div class="col-span-2">
+      <input type="number" class="sl-ban w-full px-2 py-2 border rounded-lg text-sm" placeholder="SL" min="1" value="1" required />
+    </div>
+    <div class="col-span-3">
+      <input type="number" class="gia-ban w-full px-2 py-2 border rounded-lg text-sm" placeholder="Giá" min="0" required />
+    </div>
+    <div class="col-span-1">
+      <button type="button" onclick="xoaDongBan(this)" class="w-full p-2 bg-red-100 text-red-600 rounded-lg">✕</button>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+// ============================================================
+// GỢI Ý TÌM SẢN PHẨM BÁN (TAB 2)
+// ============================================================
+function locSanPhamBan(input) {
+  const keyword = input.value.toLowerCase().trim();
+  const row = input.closest(".grid");
+  const dropdown = row.querySelector(".dropdown-sp-ban");
+  const hiddenRowIndex = row.querySelector(".row-index-ban");
+
+  // Mỗi lần gõ lại thì huỷ lựa chọn cũ (bắt buộc chọn lại từ gợi ý)
+  hiddenRowIndex.value = "";
+
+  if (!keyword) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+
+  const ketQua = khoSanPham.filter(function(sp) {
+    return sp.tenSP.toLowerCase().includes(keyword);
+  });
+
+  dropdown.innerHTML = "";
+  if (ketQua.length === 0) {
+    dropdown.innerHTML = '<div class="px-3 py-2 text-xs text-slate-400">Không tìm thấy</div>';
+  }
+
+  ketQua.forEach(function(sp) {
+    const div = document.createElement("div");
+    div.className = "px-3 py-2 text-sm hover:bg-emerald-50 cursor-pointer border-b";
+    div.innerHTML = "[" + sp.viTriKho + "] " + sp.tenSP + '<br><span class="text-xs text-slate-400">Tồn: ' + sp.tonKho + "</span>";
+    div.onclick = function() {
+      input.value = sp.tenSP;
+      hiddenRowIndex.value = sp.rowIndex;
+      const slInput = row.querySelector(".sl-ban");
+      slInput.max = sp.tonKho;
+      dropdown.classList.add("hidden");
+    };
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.remove("hidden");
+}
+
+// ============================================================
+// XÓA DÒNG BÁN
+// ============================================================
+function xoaDongBan(btn) {
+  const container = document.getElementById("danhSachBanContainer");
+  if (container.children.length <= 1) {
+    hienThongBao("❌ Phải có ít nhất 1 sản phẩm!", true);
+    return;
+  }
+  btn.closest(".grid").remove();
+}
+
+// ============================================================
+// LƯU BÁN HÀNG
+// ============================================================
+function submitBan(e) {
+  e.preventDefault();
+
+  const rows = document.querySelectorAll("#danhSachBanContainer > .grid");
+  const danhSachSP = [];
+
+  for (const r of rows) {
+    const rowIndex = r.querySelector(".row-index-ban").value;
+    const soLuong = r.querySelector(".sl-ban").value;
+    const giaBan = r.querySelector(".gia-ban").value;
+
+    if (!rowIndex) {
+      hienThongBao("❌ Vui lòng chọn sản phẩm từ danh sách gợi ý!", true);
+      return;
+    }
+
+    danhSachSP.push({ rowIndex: rowIndex, soLuong: soLuong, giaBan: giaBan });
+  }
+
+  const hinhThucNhan = document.getElementById("inputHinhThucNhan").value.trim();
+  const trangThaiTT = document.getElementById("trangThaiTT").value;
+
+  // Chỉ bắt buộc nhập nguồn nhận tiền khi đã thanh toán
+  if (trangThaiTT.includes("Đã thanh toán") && !hinhThucNhan) {
+    hienThongBao("❌ Vui lòng nhập nguồn nhận tiền!", true);
+    return;
+  }
+
+  const data = { danhSachSP: danhSachSP, trangThaiTT: trangThaiTT, hinhThucNhan: hinhThucNhan };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hienThongBao(res);
+      document.getElementById("formBan").reset();
+      document.getElementById("inputHinhThucNhan").value = "";
+      document.getElementById("danhSachBanContainer").innerHTML = "";
+      taiDanhSachKho();
+      themDongBan();
+    })
+    .withFailureHandler(function(err) {
+      hienThongBao("❌ " + err.message, true);
+    })
+    .luuDonBanHang(data);
+}
+
+// ============================================================
+// TAB 3
+// ============================================================
+function khoiTaoTab3() {
+  document.querySelector('input[name="radioLoai"][value="suaChiTiet"]').checked = true;
+  document.getElementById("inputTimSP").value = "";
+  document.getElementById("selectedRowIndex").value = "";
+  document.getElementById("selectedSheet").value = "";
+  danhSachTimSP = [];
+
+  onLoaiChange();
+  loadDanhSachTimSP();
+}
+
+// ============================================================
+// LOAD DANH SÁCH SP TAB 3
+// ============================================================
+function loadDanhSachTimSP() {
+  google.script.run
+    .withSuccessHandler(function(data) {
+      danhSachTimSP = data || [];
+    })
+    .getDanhSachTatCaSP();
+}
+
+// ============================================================
+// ĐỔI LOẠI
+// ============================================================
+function onLoaiChange() {
+  const loai = document.querySelector('input[name="radioLoai"]:checked').value;
+
+  document.getElementById("formSuaChiTiet").classList.toggle("hidden", loai !== "suaChiTiet");
+  document.getElementById("formCapNhatKho").classList.toggle("hidden", loai !== "capNhatKho");
+  document.getElementById("formCapNhatTT").classList.toggle("hidden", loai !== "capNhatTT");
+
+  // suaChiTiet: chọn 1 sản phẩm
+  // capNhatKho / capNhatTT: chọn nhiều sản phẩm
+  const laMulti = (loai === "capNhatKho" || loai === "capNhatTT");
+
+  document.getElementById("timSPSingleWrapper").classList.toggle("hidden", laMulti);
+  document.getElementById("timSPMultiWrapper").classList.toggle("hidden", !laMulti);
+
+  document.getElementById("inputTimSP").value = "";
+  document.getElementById("selectedRowIndex").value = "";
+  document.getElementById("selectedSheet").value = "";
+
+  resetDanhSachTimSPMulti();
+}
+
+// ============================================================
+// TÌM SP (TAB 3)
+// ============================================================
+function locTimSP() {
+  const keyword = document.getElementById("inputTimSP").value.toLowerCase().trim();
+  const dropdown = document.getElementById("dropdownTimSP");
+  const loai = document.querySelector('input[name="radioLoai"]:checked').value;
+
+  if (!keyword) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+
+  const filtered = danhSachTimSP.filter(function(item) {
+    const ten = String(item.tenSP || "").toLowerCase();
+    if (!ten.includes(keyword)) return false;
+
+    if (loai === "capNhatTT") return item.sheet === "BanHang";
+    if (loai === "capNhatKho") return item.sheet === "MuaHang";
+    return true;
+  });
+
+  dropdown.innerHTML = "";
+  if (filtered.length === 0) {
+    dropdown.innerHTML = '<div class="px-3 py-2 text-xs text-slate-400">Không tìm thấy</div>';
+  }
+
+  filtered.forEach(function(item) {
+    const div = document.createElement("div");
+    div.className = "px-3 py-2 text-sm hover:bg-amber-50 cursor-pointer border-b";
+    div.innerHTML = "<b>[" + item.sheet + "]</b> " + item.tenSP + '<br><span class="text-xs text-slate-400">' + (item.info || "") + "</span>";
+    div.onclick = function() {
+      document.getElementById("inputTimSP").value = item.tenSP;
+      document.getElementById("selectedRowIndex").value = item.rowIndex;
+      document.getElementById("selectedSheet").value = item.sheet;
+      document.getElementById("suaTenSP").value = item.tenSP || "";
+      document.getElementById("suaSoLuong").value = item.soLuong || "";
+      document.getElementById("suaGia").value = item.gia || "";
+      document.getElementById("suaSanThe").value = item.sanThe || "";
+      dropdown.classList.add("hidden");
+    };
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.remove("hidden");
+}
+
+// ============================================================
+// TÌM NHIỀU SP (TAB 3 - Cập nhật Kho / Cập nhật Thanh Toán)
+// ============================================================
+function resetDanhSachTimSPMulti() {
+  document.getElementById("danhSachTimSPMultiContainer").innerHTML = "";
+  themDongTimSPMulti();
+}
+
+function themDongTimSPMulti() {
+  const container = document.getElementById("danhSachTimSPMultiContainer");
+  const div = document.createElement("div");
+  div.className = "relative flex items-start gap-2 multi-sp-row";
+  div.innerHTML = `
+    <div class="flex-1 relative">
+      <input type="text" class="multi-ten-sp w-full border rounded-xl px-3 py-2 text-sm" placeholder="Gõ tên sản phẩm..." autocomplete="off" oninput="locTimSPMulti(this)" />
+      <input type="hidden" class="multi-row-index" />
+      <input type="hidden" class="multi-sheet" />
+      <div class="dropdown-multi-timsp hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
+    </div>
+    <button type="button" onclick="xoaDongTimSPMulti(this)" class="p-2 bg-red-100 text-red-600 rounded-lg text-xs font-bold">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function xoaDongTimSPMulti(btn) {
+  const container = document.getElementById("danhSachTimSPMultiContainer");
+  if (container.children.length <= 1) {
+    hienThongBao("❌ Phải có ít nhất 1 sản phẩm!", true);
+    return;
+  }
+  btn.closest(".multi-sp-row").remove();
+}
+
+function locTimSPMulti(input) {
+  const keyword = input.value.toLowerCase().trim();
+  const row = input.closest(".multi-sp-row");
+  const dropdown = row.querySelector(".dropdown-multi-timsp");
+  const hiddenRowIndex = row.querySelector(".multi-row-index");
+  const hiddenSheet = row.querySelector(".multi-sheet");
+
+  // Gõ lại thì huỷ lựa chọn cũ, bắt chọn lại từ gợi ý
+  hiddenRowIndex.value = "";
+  hiddenSheet.value = "";
+
+  if (!keyword) {
+    dropdown.classList.add("hidden");
+    return;
+  }
+
+  const loai = document.querySelector('input[name="radioLoai"]:checked').value;
+
+  const filtered = danhSachTimSP.filter(function(item) {
+    const ten = String(item.tenSP || "").toLowerCase();
+    if (!ten.includes(keyword)) return false;
+
+    if (loai === "capNhatTT") return item.sheet === "BanHang";
+    if (loai === "capNhatKho") return item.sheet === "MuaHang";
+    return true;
+  });
+
+  dropdown.innerHTML = "";
+  if (filtered.length === 0) {
+    dropdown.innerHTML = '<div class="px-3 py-2 text-xs text-slate-400">Không tìm thấy</div>';
+  }
+
+  filtered.forEach(function(item) {
+    const div = document.createElement("div");
+    div.className = "px-3 py-2 text-sm hover:bg-amber-50 cursor-pointer border-b";
+    div.innerHTML = "<b>[" + item.sheet + "]</b> " + item.tenSP + '<br><span class="text-xs text-slate-400">' + (item.info || "") + "</span>";
+    div.onclick = function() {
+      input.value = item.tenSP;
+      hiddenRowIndex.value = item.rowIndex;
+      hiddenSheet.value = item.sheet;
+      dropdown.classList.add("hidden");
+    };
+    dropdown.appendChild(div);
+  });
+
+  dropdown.classList.remove("hidden");
+}
+
+// ============================================================
+// GỬI CẬP NHẬT
+// ============================================================
+function guiCapNhat() {
+  const loai = document.querySelector('input[name="radioLoai"]:checked').value;
+
+  // ==========================================================
+  // SỬA CHI TIẾT - CHỌN 1 SẢN PHẨM (giữ nguyên logic cũ)
+  // ==========================================================
+  if (loai === "suaChiTiet") {
+    const rowIndex = document.getElementById("selectedRowIndex").value;
+    const sheet = document.getElementById("selectedSheet").value;
+
+    if (!rowIndex) {
+      hienThongBao("❌ Vui lòng chọn sản phẩm!", true);
+      return;
+    }
+
+    const payload = {
+      rowIndex: rowIndex,
+      sheet: sheet,
+      loai: loai,
+      tenSP: document.getElementById("suaTenSP").value.trim(),
+      soLuong: document.getElementById("suaSoLuong").value,
+      gia: document.getElementById("suaGia").value,
+      sanThe: document.getElementById("suaSanThe").value.trim()
+    };
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        hienThongBao(res);
+        resetTab3();
+        loadDanhSachTimSP();
+      })
+      .withFailureHandler(function(err) {
+        hienThongBao("❌ " + err.message, true);
+      })
+      .capNhatThongTin(payload);
+
+    return;
+  }
+
+  // ==========================================================
+  // CẬP NHẬT KHO / CẬP NHẬT THANH TOÁN - CHỌN NHIỀU SẢN PHẨM
+  // ==========================================================
+  const rows = document.querySelectorAll(".multi-sp-row");
+  const items = [];
+
+  rows.forEach(function(r) {
+    const rowIndex = r.querySelector(".multi-row-index").value;
+    const sheet = r.querySelector(".multi-sheet").value;
+    const tenSP = r.querySelector(".multi-ten-sp").value.trim();
+
+    if (rowIndex) {
+      items.push({ rowIndex: rowIndex, sheet: sheet, tenSP: tenSP });
+    }
+  });
+
+  if (items.length === 0) {
+    hienThongBao("❌ Vui lòng chọn ít nhất 1 sản phẩm từ danh sách gợi ý!", true);
+    return;
+  }
+
+  const payload = { loai: loai, items: items };
+
+  // KHO
+  if (loai === "capNhatKho") {
+    payload.khoMoi = document.getElementById("selectKhoMoi").value;
+  }
+  // THANH TOÁN
+  else if (loai === "capNhatTT") {
+    payload.ttMoi = document.getElementById("selectTTMoi").value;
+    payload.hinhThucNhan = document.getElementById("inputHinhThucNhanCapNhat").value.trim();
+
+    if (payload.ttMoi.includes("Đã thanh toán") && !payload.hinhThucNhan) {
+      hienThongBao("❌ Vui lòng nhập nguồn nhận tiền!", true);
+      return;
+    }
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      hienThongBao(res);
+      resetTab3();
+      loadDanhSachTimSP();
+    })
+    .withFailureHandler(function(err) {
+      hienThongBao("❌ " + err.message, true);
+    })
+    .capNhatNhieuThongTin(payload);
+}
+
+// ============================================================
+// RESET TAB 3
+// ============================================================
+function resetTab3() {
+  document.getElementById("inputTimSP").value = "";
+  document.getElementById("selectedRowIndex").value = "";
+  document.getElementById("selectedSheet").value = "";
+  document.getElementById("suaTenSP").value = "";
+  document.getElementById("suaSoLuong").value = "";
+  document.getElementById("suaGia").value = "";
+  document.getElementById("suaSanThe").value = "";
+  document.getElementById("inputHinhThucNhanCapNhat").value = "";
+  resetDanhSachTimSPMulti();
+}
+
+// ============================================================
+// CLICK NGOÀI DROPDOWN
+// ============================================================
+document.addEventListener("click", function(e) {
+  const configs = [
+    { input: "inputTheQuet", dropdown: "dropdownGoiY" },
+    { input: "inputHinhThucNhanCapNhat", dropdown: "dropdownHinhThucNhanCapNhat" },
+    { input: "inputTimSP", dropdown: "dropdownTimSP" },
+    { input: "inputHinhThucNhan", dropdown: "dropdownHinhThucNhanBan" }
+  ];
+
+  configs.forEach(function(c) {
+    const input = document.getElementById(c.input);
+    const dropdown = document.getElementById(c.dropdown);
+
+    if (input && dropdown && !input.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
+  });
+
+  // Dropdown gợi ý sản phẩm bán (mỗi dòng có 1 cái, tạo động)
+  document.querySelectorAll(".dropdown-sp-ban").forEach(function(dropdown) {
+    const row = dropdown.closest(".grid");
+    const input = row ? row.querySelector(".ten-sp-ban") : null;
+
+    if (input && !input.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
+  });
+
+  // Dropdown gợi ý sản phẩm Tab 3 - nhiều sản phẩm (mỗi dòng có 1 cái, tạo động)
+  document.querySelectorAll(".dropdown-multi-timsp").forEach(function(dropdown) {
+    const row = dropdown.closest(".multi-sp-row");
+    const input = row ? row.querySelector(".multi-ten-sp") : null;
+
+    if (input && !input.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.add("hidden");
+    }
+  });
+});
+
+// Khi trang vừa tải xong, tự động gọi dữ liệu từ Apps Script
+    document.addEventListener("DOMContentLoaded", () => {
+        loadDataFromSheets();
+    });
+
+    function loadDataFromSheets() {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            // Gọi hàm getBusinessDataFromSheets() ở phía Google Apps Script (.gs)
+            google.script.run
+                .withSuccessHandler(onGetDataSuccess)
+                .withFailureHandler(onGetDataError)
+                .getBusinessDataFromSheets();
+        } else {
+            console.log("Đang chạy ở môi trường Local (dùng dữ liệu mẫu).");
+            renderBusinessModule();
+        }
+    }
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Đơn Hàng & Kho</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-100 text-slate-800 font-sans pb-20">
+
+<!-- HEADER -->
+<div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-40">
+  <h1 class="text-lg font-bold text-center">Hệ Thống Quản Lý Kho & Đơn Hàng</h1>
+</div>
+
+<div class="max-w-md mx-auto p-3 space-y-4">
+
+  <!-- TOAST -->
+  <div id="toastMessage" class="hidden fixed top-16 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-white text-xs font-semibold shadow-lg"></div>
+
+  <!-- ===================================================== -->
+  <!-- KHỐI THỐNG KÊ CƠ BẢN PHÍA TRÊN (ĐỒNG BỘ GIAO DIỆN THU CHI) -->
+  <!-- ===================================================== -->
+  <div class="bg-gradient-to-br from-rose-500 to-pink-600 text-white p-4 rounded-3xl shadow-lg relative overflow-hidden space-y-3">
+      <div class="flex justify-between items-center">
+          <div>
+              <p class="text-[10px] uppercase tracking-wider text-pink-100 font-medium">Hệ Thống Kinh Doanh</p>
+              <h2 class="text-sm font-bold">Tổng Quan Tháng</h2>
+          </div>
+          <select id="filter-business-month" onchange="renderBusinessModule()" class="bg-white/20 hover:bg-white/30 text-white text-xs font-semibold px-2.5 py-1 rounded-xl border border-white/20 backdrop-blur-md focus:outline-none cursor-pointer">
+              <option value="all" class="text-slate-800">Cả năm</option>
+              <option value="1" class="text-slate-800">Tháng 1</option>
+              <option value="2" class="text-slate-800">Tháng 2</option>
+              <option value="3" class="text-slate-800">Tháng 3</option>
+              <option value="4" class="text-slate-800">Tháng 4</option>
+              <option value="5" class="text-slate-800">Tháng 5</option>
+              <option value="6" class="text-slate-800">Tháng 6</option>
+              <option value="7" class="text-slate-800">Tháng 7</option>
+              <option value="8" class="text-slate-800" selected>Tháng 8</option>
+              <option value="9" class="text-slate-800">Tháng 9</option>
+              <option value="10" class="text-slate-800">Tháng 10</option>
+              <option value="11" class="text-slate-800">Tháng 11</option>
+              <option value="12" class="text-slate-800">Tháng 12</option>
+          </select>
+      </div>
+
+      <div>
+          <p class="text-[10px] uppercase tracking-wider text-pink-100">Lợi Nhuận Gộp (Sales - Purchase)</p>
+          <p id="ui-biz-net" class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-0.5">0 ¥</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-white/15">
+          <div>
+              <p class="text-[9px] uppercase tracking-wider text-pink-100">Tổng Doanh Thu (Sales)</p>
+              <p id="ui-biz-revenue" class="text-xs sm:text-sm font-bold text-white mt-0.5">0 ¥</p>
+          </div>
+          <div>
+              <p class="text-[9px] uppercase tracking-wider text-pink-100">Tổng Vốn Mua (Purchase)</p>
+              <p id="ui-biz-purchase" class="text-xs sm:text-sm font-bold text-white mt-0.5">0 ¥</p>
+          </div>
+      </div>
+
+      <!-- PHẦN BỔ SUNG: THỐNG KÊ HÀNG TỒN & VỐN TỒN -->
+      <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-white/15 bg-black/10 -mx-4 -mb-4 p-4 rounded-b-3xl">
+          <div>
+              <p class="text-[9px] uppercase tracking-wider text-pink-100">📦 Tổng Hàng Tồn Kho</p>
+              <p id="ui-biz-stock-qty" class="text-xs sm:text-sm font-bold text-white mt-0.5">0 SP</p>
+          </div>
+          <div>
+              <p class="text-[9px] uppercase tracking-wider text-pink-100">💰 Tổng Vốn Tồn Kho</p>
+              <p id="ui-biz-stock-capital" class="text-xs sm:text-sm font-bold text-white mt-0.5">0 ¥</p>
+          </div>
+      </div>
+  </div>
+
+  <!-- TAB NAVIGATION (Đúng 3 Tab Gốc) -->
+  <div class="grid grid-cols-3 gap-1 bg-slate-200 p-1 rounded-2xl">
+    <button onclick="switchTab('mua')" id="btnTabMua" class="py-2.5 text-xs font-bold rounded-xl transition bg-white text-blue-600 shadow-sm">1. Mua Hàng</button>
+    <button onclick="switchTab('ban')" id="btnTabBan" class="py-2.5 text-xs font-bold rounded-xl transition text-slate-600">2. Bán Hàng</button>
+    <button onclick="switchTab('khoNo')" id="btnTabKhoNo" class="py-2.5 text-xs font-bold rounded-xl transition text-slate-600">3. Kho & Nợ</button>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- TAB 1 - MUA HÀNG (PURCHASE) -->
+  <!-- ===================================================== -->
+  <div id="tab-mua" class="space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+    <h2 class="text-base font-bold text-slate-700 border-b pb-2">Nhập Đơn Mua Hàng (Purchase)</h2>
+
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Sàn Mua:</label>
+        <input type="text" id="sanMua" placeholder="VD: Mercari, Amazon..." class="w-full border rounded-xl px-3 py-2 text-sm bg-white" />
+      </div>
+
+      <div class="relative">
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Thẻ Thanh Toán:</label>
+        <input type="text" id="inputTheQuet" placeholder="Gõ tìm thẻ..." oninput="locDanhSachThe()" autocomplete="off" class="w-full border rounded-xl px-3 py-2 text-sm bg-white" />
+        <div id="dropdownGoiY" class="hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex justify-between items-center mb-1">
+        <label class="text-xs font-semibold text-slate-600">Danh Sách SP:</label>
+        <button onclick="themDongSanPham()" class="text-xs text-blue-600 font-bold">+ Thêm SP</button>
+      </div>
+
+      <div id="danhSachSPContainer" class="space-y-3">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 sp-row">
+          <input type="text" placeholder="Tên sản phẩm" class="sp-ten w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" placeholder="Số lượng" value="1" min="1" class="sp-sl w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+            <input type="number" placeholder="Giá (Yên)" min="0" class="sp-gia w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+          </div>
+          <select class="sp-trangThaiKho w-full border rounded-lg px-3 py-2 text-sm bg-white">
+            <option value="📦 Chờ Ship">📦 Chờ Ship</option>
+            <option value="🟢 Kho 1F">🟢 Kho 1F</option>
+            <option value="✴️ Kho 2F">✴️ Kho 2F</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Ghi Chú:</label>
+      <input type="text" id="ghiChuDon" placeholder="Ghi chú đơn hàng..." class="w-full border rounded-xl px-3 py-2 text-sm bg-white" />
+    </div>
+
+    <button onclick="guiDonMuaHang()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md">💾 Lưu Đơn Mua Hàng</button>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- TAB 2 - BÁN HÀNG (SALES) -->
+  <!-- ===================================================== -->
+  <div id="tab-ban" class="hidden space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+    <h2 class="text-base font-bold text-slate-700 border-b pb-2">Tạo Đơn Bán Hàng (Sales)</h2>
+
+    <form id="formBan" onsubmit="submitBan(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-2">Danh Sách Sản Phẩm Bán:</label>
+        <div id="danhSachBanContainer" class="space-y-3"></div>
+        <button type="button" onclick="themDongBan()" class="mt-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-sm">+ Thêm sản phẩm bán</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Trạng Thái Thanh Toán:</label>
+          <select id="trangThaiTT" required class="w-full border rounded-xl px-3 py-2 text-sm">
+            <option value="🟡 Chờ thu">🟡 Chờ thu</option>
+            <option value="🟢 Đã thanh toán">🟢 Đã thanh toán</option>
+          </select>
+        </div>
+
+        <div class="relative">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nguồn Nhận Tiền:</label>
+          <input type="text" id="inputHinhThucNhan" placeholder="Gõ tìm nguồn..." oninput="locDanhSachNhanTienBan()" autocomplete="off" class="w-full border rounded-xl px-3 py-2 text-sm" />
+          <div id="dropdownHinhThucNhanBan" class="hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto"></div>
+        </div>
+      </div>
+
+      <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow">💰 Lưu Đơn Bán Hàng</button>
+    </form>
+  </div>
+
+  <!-- ===================================================== -->
+  <!-- TAB 3 - KHO & NỢ -->
+  <!-- ===================================================== -->
+  <div id="tab-khoNo" class="hidden space-y-3 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+    <h2 class="text-base font-bold text-slate-700 border-b pb-2">Cập Nhật Thông Tin Kho & Nợ</h2>
+
+    <div>
+      <label class="block text-xs font-semibold text-slate-600 mb-2">Loại Thao Tác:</label>
+      <label class="flex items-center gap-2 text-sm mb-2">
+        <input type="radio" name="radioLoai" value="suaChiTiet" checked onchange="onLoaiChange()"> 📝 Sửa chi tiết
+      </label>
+      <label class="flex items-center gap-2 text-sm mb-2">
+        <input type="radio" name="radioLoai" value="capNhatKho" onchange="onLoaiChange()"> 📦 Cập nhật Kho
+      </label>
+      <label class="flex items-center gap-2 text-sm">
+        <input type="radio" name="radioLoai" value="capNhatTT" onchange="onLoaiChange()"> 💰 Cập nhật Thanh Toán
+      </label>
+    </div>
+
+    <div id="timSPSingleWrapper" class="relative">
+      <label class="block text-xs font-semibold text-slate-600 mb-1">Tìm Tên Sản Phẩm:</label>
+      <input type="text" id="inputTimSP" placeholder="Gõ tên sản phẩm..." oninput="locTimSP()" autocomplete="off" class="w-full border rounded-xl px-3 py-2 text-sm" />
+      <input type="hidden" id="selectedRowIndex">
+      <input type="hidden" id="selectedSheet">
+      <div id="dropdownTimSP" class="hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto"></div>
+    </div>
+
+    <div id="timSPMultiWrapper" class="hidden space-y-2">
+      <div class="flex justify-between items-center mb-1">
+        <label class="text-xs font-semibold text-slate-600">Chọn Sản Phẩm (nhiều):</label>
+        <button type="button" onclick="themDongTimSPMulti()" class="text-xs text-amber-600 font-bold">+ Thêm sản phẩm</button>
+      </div>
+      <div id="danhSachTimSPMultiContainer" class="space-y-2"></div>
+    </div>
+
+    <div id="formSuaChiTiet" class="space-y-2">
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs mb-1">Tên SP</label>
+          <input type="text" id="suaTenSP" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs mb-1">Số lượng</label>
+          <input type="number" id="suaSoLuong" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-xs mb-1">Giá</label>
+          <input type="number" id="suaGia" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs mb-1">Thẻ / Nguồn</label>
+          <input type="text" id="suaSanThe" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        </div>
+      </div>
+    </div>
+
+    <div id="formCapNhatKho" class="hidden">
+      <label class="block text-xs mb-1">Trạng Thái Kho Mới:</label>
+      <select id="selectKhoMoi" class="w-full border rounded-xl px-3 py-2 text-sm">
+        <option value="📦 Chờ Ship">📦 Chờ Ship</option>
+        <option value="🟢 Kho 1F">🟢 Kho 1F</option>
+        <option value="✴️ Kho 2F">✴️ Kho 2F</option>
+        <option value="❌ Huỷ">❌ Huỷ</option>
+      </select>
+    </div>
+
+    <div id="formCapNhatTT" class="hidden space-y-2">
+      <div>
+        <label class="block text-xs mb-1">Trạng Thái Thanh Toán:</label>
+        <select id="selectTTMoi" class="w-full border rounded-xl px-3 py-2 text-sm">
+          <option value="🟡 Chờ thu">🟡 Chờ thu</option>
+          <option value="🟢 Đã thanh toán">🟢 Đã thanh toán</option>
+          <option value="❌ Huỷ">❌ Huỷ</option>
+        </select>
+      </div>
+      <div class="relative">
+        <label class="block text-xs mb-1">Nguồn Nhận Tiền:</label>
+        <input type="text" id="inputHinhThucNhanCapNhat" placeholder="Gõ tìm nguồn..." oninput="locDanhSachNhanTienCapNhat()" autocomplete="off" class="w-full border rounded-xl px-3 py-2 text-sm" />
+        <div id="dropdownHinhThucNhanCapNhat" class="hidden absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-40 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <button onclick="guiCapNhat()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-3 rounded-xl shadow">⚡ Cập Nhật Ngay</button>
+  </div>
+
+</div>
+
+<!-- ===================================================== -->
+<!-- JAVASCRIPT XỬ LÝ -->
+<!-- ===================================================== -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadDataFromSheets();
+    });
+
+    function switchTab(tabName) {
+        const tabs = ['mua', 'ban', 'khoNo'];
+        tabs.forEach(t => {
+            const el = document.getElementById(`tab-${t}`);
+            const btn = document.getElementById(`btnTab${t.charAt(0).toUpperCase() + t.slice(1)}`);
+            if (el) el.classList.add('hidden');
+            if (btn) {
+                btn.className = "py-2.5 text-xs font-bold rounded-xl transition text-slate-600";
+            }
+        });
+
+        const activeEl = document.getElementById(`tab-${tabName}`);
+        const activeBtn = document.getElementById(`btnTab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+        
+        if (activeEl) activeEl.classList.remove('hidden');
+        if (activeBtn) {
+            activeBtn.className = "py-2.5 text-xs font-bold rounded-xl transition bg-white text-blue-600 shadow-sm";
+        }
+    }
+
+    function loadDataFromSheets() {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler(onGetDataSuccess)
+                .withFailureHandler(onGetDataError)
+                .getBusinessDataFromSheets();
+        } else {
+            console.log("Đang chạy môi trường Local (dùng dữ liệu mẫu).");
+            window.purchaseList = [{ name: "Sản phẩm mẫu", month: 8, amount: 45000, quantity: 2, stockStatus: "🟢 Kho 1F" }];
+            window.salesList = [{ name: "Sản phẩm mẫu", month: 8, amount: 75000 }];
+            window.stockList = [{ quantity: 2, amount: 45000 }]; // Dữ liệu mẫu kho tồn
+            renderBusinessModule();
+        }
+    }
+
+    function onGetDataSuccess(data) {
+        try {
+            const res = typeof data === 'string' ? JSON.parse(data) : data;
+            window.purchaseList = res.purchaseList || [];
+            window.salesList = res.salesList || [];
+            window.businessSummary = res.businessSummary || [];
+            window.stockList = res.stockList || []; // Nhận thêm dữ liệu tồn kho từ Google Sheets (nếu backend trả về)
+
+            renderBusinessModule();
+            showToast("Đã đồng bộ dữ liệu từ Sheet!", "success");
+        } catch (e) {
+            console.error("Lỗi phân tích dữ liệu:", e);
+        }
+    }
+
+    function onGetDataError(error) {
+        console.error("Lỗi gọi Apps Script:", error);
+    }
+
+    function renderBusinessModule() {
+        const selectedMonth = document.getElementById('filter-business-month').value;
+        let salesData = window.salesList || [];
+        let purchaseData = window.purchaseList || [];
+
+        let totalRevenue = 0;
+        let totalPurchase = 0;
+
+        salesData.forEach(item => {
+            if (selectedMonth === 'all' || item.month.toString() === selectedMonth) {
+                totalRevenue += Number(item.amount || 0);
+            }
+        });
+
+        purchaseData.forEach(item => {
+            if (selectedMonth === 'all' || item.month.toString() === selectedMonth) {
+                totalPurchase += Number(item.amount || 0);
+            }
+        });
+
+        let netProfit = totalRevenue - totalPurchase;
+        document.getElementById('ui-biz-revenue').innerText = totalRevenue.toLocaleString() + " ¥";
+        document.getElementById('ui-biz-purchase').innerText = totalPurchase.toLocaleString() + " ¥";
+        
+        const uiNet = document.getElementById('ui-biz-net');
+        if (uiNet) {
+            uiNet.innerText = netProfit.toLocaleString() + " ¥";
+            uiNet.className = `text-2xl sm:text-3xl font-extrabold tracking-tight mt-0.5 ${netProfit >= 0 ? 'text-white' : 'text-amber-200'}`;
+        }
+
+        // TÍNH TOÁN & HIỂN THỊ THÔNG KÊ HÀNG TỒN & VỐN TỒN
+        let totalStockQty = 0;
+        let totalStockCapital = 0;
+
+        // Nếu có mảng stockList riêng từ backend
+        if (window.stockList && window.stockList.length > 0) {
+            window.stockList.forEach(item => {
+                totalStockQty += Number(item.quantity || 0);
+                totalStockCapital += Number(item.amount || 0);
+            });
+        } else {
+            // Hoặc tự tính dựa trên purchaseList lọc các sản phẩm chưa bán / còn ở kho (ví dụ dựa vào trạng thái kho hoặc danh sách mua chưa bị trừ)
+            purchaseData.forEach(item => {
+                // Kiểm tra nếu sản phẩm còn nằm trong kho (ví dụ không tính các trạng thái Huỷ)
+                if (item.stockStatus !== "❌ Huỷ") {
+                    totalStockQty += Number(item.quantity || 1);
+                    totalStockCapital += Number(item.amount || 0);
+                }
+            });
+        }
+
+        document.getElementById('ui-biz-stock-qty').innerText = totalStockQty.toLocaleString() + " SP";
+        document.getElementById('ui-biz-stock-capital').innerText = totalStockCapital.toLocaleString() + " ¥";
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toastMessage');
+        if (!toast) return;
+        toast.innerText = message;
+        toast.className = `fixed top-16 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-xl text-white text-xs font-semibold shadow-lg ${type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'}`;
+        toast.classList.remove('hidden');
+        setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+    }
+</script>
+
+</body>
+</html>
+
+</script>

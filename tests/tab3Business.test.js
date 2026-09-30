@@ -40,6 +40,7 @@ function createMockTab3DB() {
 
   global.SpreadsheetApp = {
     getActiveSpreadsheet: () => ({
+      getSheets: () => Object.keys(tables).map(n => ({ getName: () => n })),
       insertSheet: (name) => {
         tables[name] = [];
         return global.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
@@ -435,6 +436,26 @@ test('standardizeAllSheetStatuses normalizes legacy statuses across Purchase, Fa
   assert.equal(db.Purchase[1][9], 'HOAN_TAT');
   assert.equal(db.Family[1][9], 'PRE-ORDER');
   assert.equal(db.Debt[1][10], 'DANG_NO');
+});
+
+test('updateWarehouseStatus and updateBatchWarehouseStatus log transfer rows to STOCK_TRANSFER sheet', () => {
+  const db = createMockTab3DB();
+  
+  // Single warehouse transfer
+  const resSingle = updateWarehouseStatus('PO001', '2F');
+  assert.equal(resSingle.success, true);
+  assert.equal(db.Purchase[1][3], '2F');
+  assert.ok(db.STOCK_TRANSFER, 'STOCK_TRANSFER sheet must be created');
+  assert.equal(db.STOCK_TRANSFER.length >= 2, true);
+  assert.equal(db.STOCK_TRANSFER[1][2], 'PO001');
+  assert.equal(db.STOCK_TRANSFER[1][5], '2F');
+
+  // Batch warehouse transfer
+  const resBatch = updateBatchWarehouseStatus(['PO001'], 'Kho 2F VN');
+  assert.equal(resBatch.success, true);
+  assert.equal(db.Purchase[1][3], 'Kho 2F VN');
+  assert.equal(db.STOCK_TRANSFER.length >= 3, true);
+  assert.equal(db.STOCK_TRANSFER[2][5], 'Kho 2F VN');
 });
 
 

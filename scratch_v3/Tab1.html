@@ -1,0 +1,383 @@
+    <!-- HEADER: BỘ LỌC TỰ ĐỘNG SINH (DYNAMIC JS) -->
+    <div class="pt-10 pb-4 px-5 text-white bg-blue-600 shadow-md flex justify-between items-center">
+      <h1 class="text-lg font-bold">💳 Ví & Thẻ</h1>
+      <div class="flex gap-2">
+          <!-- Các select này sẽ bị trống ở HTML, và được JS đổ dữ liệu tự động vào -->
+          <select id="t1-filter-month" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+          <select id="t1-filter-year" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pb-6 p-4 space-y-4">
+      
+      <!-- BÁO CÁO TỔNG QUAN TÀI SẢN -->
+      <div class="bg-gradient-to-br from-blue-700 to-indigo-800 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
+        <p class="text-[10px] uppercase tracking-wider text-blue-200">📊 Tài Sản Ròng (Net Worth)</p>
+        <h2 class="text-3xl font-bold mt-1">1,250,000 ¥</h2>
+        
+        <div class="flex gap-2 mt-4 pt-4 border-t border-blue-500/50">
+             <div class="flex-1">
+                 <p class="text-[9px] text-blue-200 uppercase font-bold mb-0.5">Tiền Mặt & ATM</p>
+                 <p class="text-sm font-bold text-emerald-300">1,300,000 ¥</p>
+             </div>
+             <div class="flex-1 border-l border-blue-500/50 pl-2">
+                 <p class="text-[9px] text-blue-200 uppercase font-bold mb-0.5">Tổng Nợ Thẻ</p>
+                 <p class="text-sm font-bold text-rose-300">-50,000 ¥</p>
+             </div>
+        </div>
+        
+        <!-- BẤM ĐỂ THÊM VÍ MỚI -->
+        <button onclick="openAddModal()" class="absolute top-4 right-4 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-bold backdrop-blur flex items-center gap-1 transition cursor-pointer">
+            ➕ Thêm
+        </button>
+      </div>
+
+      <!-- TÁCH 2 TAB CON -->
+      <div class="flex p-1 bg-slate-200 rounded-xl">
+        <button onclick="switchSubTab('credit')" id="btn-credit" class="flex-1 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer">💳 Thẻ Tín Dụng</button>
+        <button onclick="switchSubTab('debit')" id="btn-debit" class="flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer">💵 Ví Tiền Mặt & ATM</button>
+      </div>
+
+      <!-- NỘI DUNG TAB: THẺ TÍN DỤNG -->
+      <div id="subtab-credit" class="space-y-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:border-blue-400 transition cursor-pointer relative" onclick="openModal('modal-statement-credit')">
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800">Thẻ Rakuten (VISA)</h4>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Chốt: 15 | Thanh toán: 27</p>
+                </div>
+                <div class="flex flex-col items-end gap-1.5">
+                    <!-- NÚT SỬA VÍ RAKUTEN -->
+                    <button onclick="event.stopPropagation(); openEditModal('Thẻ Rakuten (VISA)', 'CREDIT', 0, 500000, 15, 27)" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg border border-slate-200 font-bold transition">✏️ Sửa Ví</button>
+                    <span class="bg-rose-100 text-rose-700 text-[9px] font-bold px-2 py-0.5 rounded uppercase">Cần thanh toán</span>
+                </div>
+            </div>
+            
+            <div class="mt-4 mb-3">
+                <div class="flex justify-between items-center mb-1.5">
+                    <span class="text-[10px] font-bold text-slate-600">Đã xài 10% hạn mức</span>
+                    <span class="text-[10px] font-bold text-slate-400">Hạn mức: 500,000</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div class="bg-rose-500 h-2 rounded-full" style="width: 10%"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-center mt-3 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <div class="border-r border-slate-200">
+                    <p class="text-[9px] text-slate-400 uppercase font-bold">Đã xài (Nợ)</p>
+                    <p class="text-xs font-bold text-rose-600 mt-0.5">-50,000</p>
+                </div>
+                <div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold">Khả dụng</p>
+                    <p class="text-xs font-bold text-emerald-600 mt-0.5">450,000</p>
+                </div>
+            </div>
+
+            <div class="flex gap-2 mt-3">
+                <button onclick="event.stopPropagation(); openModal('modal-settle-card')" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer">
+                    Thanh toán thẻ (Tất toán)
+                </button>
+            </div>
+        </div>
+      </div>
+
+      <!-- NỘI DUNG TAB: VÍ TIỀN MẶT -->
+      <div id="subtab-debit" class="space-y-3 hidden">
+          
+        <!-- NÚT CHUYỂN TIỀN NỘI BỘ VÍ - VÍ -->
+        <button onclick="openModal('modal-transfer-wallet')" class="w-full py-3 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-bold border border-indigo-200 flex justify-center items-center gap-1 shadow-sm mb-2 transition cursor-pointer">
+            🔄 Chuyển tiền giữa các Ví (Rút ATM, cất quỹ...)
+        </button>
+
+        <!-- Thẻ UFJ -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm cursor-pointer hover:border-blue-400 relative" onclick="openModal('modal-statement-debit')">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-sm font-bold text-slate-800">Thẻ Ufj (ATM)</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Ngân hàng nhận lương</p>
+              </div>
+              <div class="flex flex-col items-end gap-1.5">
+                  <button onclick="event.stopPropagation(); openEditModal('Thẻ Ufj (ATM)', 'DEBIT', 800000, '', '', '')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg border border-slate-200 font-bold transition">✏️ Sửa Ví</button>
+                  <p class="text-base font-bold text-emerald-600 mt-1">800,000 ¥</p>
+              </div>
+            </div>
+        </div>
+        
+        <!-- Ví Tiền Mặt -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm cursor-pointer hover:border-blue-400 relative">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="text-sm font-bold text-slate-800">Ví Tiền Mặt</h4>
+                <p class="text-[10px] text-slate-500 mt-1">Tiền mặt cất ở nhà</p>
+              </div>
+              <div class="flex flex-col items-end gap-1.5">
+                  <button onclick="event.stopPropagation(); openEditModal('Ví Tiền Mặt', 'DEBIT', 500000, '', '', '')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded-lg border border-slate-200 font-bold transition">✏️ Sửa Ví</button>
+                  <p class="text-base font-bold text-emerald-600 mt-1">500,000 ¥</p>
+              </div>
+            </div>
+        </div>
+      </div>
+      
+    </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- FORM CHUYỂN TIỀN NỘI BỘ (VÍ ĐẾN VÍ) -->
+  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-indigo-500">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">🔄 Chuyển Tiền Nội Bộ</h3>
+        <button onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-xl cursor-pointer">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+            <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Từ Ví (Bị Trừ)</label>
+            <select class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"><option>Thẻ Ufj (ATM)</option><option>Ví Tiền Mặt</option></select></div>
+            <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Đến Ví (Được Cộng)</label>
+            <select class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"><option>Ví Tiền Mặt</option><option>Thẻ Ufj (ATM)</option></select></div>
+        </div>
+        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số tiền (¥)</label>
+        <input type="number" placeholder="Ví dụ: 10000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold focus:ring-2 focus:ring-indigo-400 outline-none"></div>
+        <div><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ghi chú</label>
+        <input type="text" placeholder="Rút tiền mặt ATM bỏ bóp..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-400 outline-none"></div>
+        <button onclick="closeModal('modal-transfer-wallet')" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition">Xác Nhận Chuyển</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM THÊM MỚI / SỬA VÍ THẺ -->
+  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-slate-800">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 id="wa-title" class="text-lg font-bold text-slate-900">✏️ Thông Tin Ví / Thẻ</h3>
+        <button onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-xl cursor-pointer">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tên Ví / Thẻ</label>
+            <input type="text" id="wa-name" placeholder="VD: Thẻ JCB, Ví Vợ Cầm..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Phân loại</label>
+                <select id="select-wallet-type" onchange="toggleLimitFields()" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-sm outline-none cursor-pointer focus:ring-2 focus:ring-blue-400">
+                    <option value="CREDIT">Thẻ Tín Dụng</option>
+                    <option value="DEBIT">Ví / Thẻ ATM</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số dư hiện tại (¥)</label>
+                <input type="number" id="wa-balance" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+        </div>
+
+        <div id="credit-limit-fields" class="space-y-3 pt-2">
+            <div>
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Hạn mức thẻ tín dụng (¥)</label>
+                <input type="number" id="wa-limit" placeholder="Ví dụ: 500000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ngày chốt sao kê</label>
+                    <input type="number" id="wa-cut" placeholder="VD: 15" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Ngày thanh toán</label>
+                    <input type="number" id="wa-pay" placeholder="VD: 27" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="closeModal('modal-add-wallet')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-bold shadow-md transition cursor-pointer">
+            Lưu Thay Đổi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SỔ PHỤ VÍ DEBIT -->
+  <div id="modal-statement-debit" class="modal-overlay">
+    <div class="modal-content !p-0 !h-[80vh] flex flex-col mb-0 rounded-b-none">
+      <div class="p-4 border-b bg-blue-50 flex justify-between items-center rounded-t-2xl">
+        <div>
+            <p class="text-[10px] uppercase text-blue-500 font-bold">Chi Tiết Giao Dịch</p>
+            <h3 class="text-lg font-bold text-blue-900">Thẻ Ufj (ATM)</h3>
+        </div>
+        <button onclick="closeModal('modal-statement-debit')" class="text-blue-400 font-bold text-xl cursor-pointer">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-white">
+        <div class="p-3 bg-slate-100 rounded-xl flex justify-between items-center mb-3 border border-slate-200">
+            <div><span class="text-xs font-bold text-slate-600">Số dư đầu kỳ (01/09)</span></div>
+            <div class="text-right">
+                <span class="text-sm font-bold text-slate-800 block mb-1">100,000 ¥</span>
+                <button onclick="openModal('modal-adjust-balance')" class="text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2.5 py-1 rounded-lg text-slate-600 font-bold shadow-sm cursor-pointer transition">✏️ Chỉnh lệch</button>
+            </div>
+        </div>
+        <div class="flex justify-between items-center py-3 border-b border-slate-100">
+            <div class="pr-2"><p class="text-[10px] text-slate-400 font-bold mb-0.5">05/09 • Thu Nhập</p><p class="text-xs text-slate-800 font-medium">Nhận lương</p></div>
+            <div class="text-right shrink-0"><p class="text-sm font-bold text-emerald-600">+250,000 ¥</p><p class="text-[10px] text-slate-500 font-semibold mt-0.5">Dư: 350,000 ¥</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SỔ PHỤ THẺ TÍN DỤNG (CREDIT) -->
+  <div id="modal-statement-credit" class="modal-overlay">
+    <div class="modal-content !p-0 !h-[80vh] flex flex-col mb-0 rounded-b-none">
+      <div class="p-4 border-b bg-rose-50 flex justify-between items-center rounded-t-2xl">
+        <div>
+            <p class="text-[10px] uppercase text-rose-500 font-bold">Lịch Sử Giao Dịch Thẻ</p>
+            <h3 class="text-lg font-bold text-rose-900">Thẻ Rakuten (VISA)</h3>
+        </div>
+        <button onclick="closeModal('modal-statement-credit')" class="text-rose-400 font-bold text-xl cursor-pointer">&times;</button>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 bg-white">
+        <div class="p-3 bg-slate-100 rounded-xl flex justify-between items-center mb-3 border border-slate-200">
+            <div><span class="text-xs font-bold text-slate-600">Dư nợ đầu kỳ (01/09)</span></div>
+            <div class="text-right">
+                <span class="text-sm font-bold text-slate-800 block mb-1">0 ¥</span>
+                <button onclick="openModal('modal-adjust-balance')" class="text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2.5 py-1 rounded-lg text-slate-600 font-bold shadow-sm cursor-pointer transition">✏️ Chỉnh lệch</button>
+            </div>
+        </div>
+        <div class="space-y-0">
+            <div class="flex justify-between items-center py-3 border-b border-slate-100">
+                <div class="pr-2"><p class="text-[10px] text-slate-400 font-bold mb-0.5">04/09 • Mua hàng</p><p class="text-xs text-slate-800 font-medium leading-tight">Pre-order: Mỹ phẩm</p></div>
+                <div class="text-right shrink-0"><p class="text-sm font-bold text-rose-500">-5,000 ¥</p><p class="text-[10px] text-slate-500 font-semibold mt-0.5">Dư nợ: -5,000 ¥</p></div>
+            </div>
+            <div class="flex justify-between items-center py-3 border-b border-slate-100 bg-blue-50/30 px-2 rounded-lg">
+                <div class="pr-2"><p class="text-[10px] text-slate-400 font-bold mb-0.5">27/09 • Thanh Toán Thẻ</p><p class="text-xs text-slate-800 font-medium leading-tight">Tất toán từ Thẻ Ufj</p></div>
+                <div class="text-right shrink-0"><p class="text-sm font-bold text-emerald-600">+5,000 ¥</p><p class="text-[10px] text-blue-700 font-bold mt-0.5">Dư nợ: 0 ¥</p></div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM ĐIỀU CHỈNH CÂN BẰNG SỔ -->
+  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-amber-500">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">⚖️ Điều Chỉnh Cân Bằng Sổ</h3>
+        <button onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-xl cursor-pointer">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số dư đang báo trên App (¥)</label>
+            <input type="text" value="350,000" readonly class="w-full bg-slate-100 border border-slate-200 text-slate-500 rounded-xl px-4 py-3 text-sm font-bold outline-none cursor-not-allowed">
+        </div>
+        <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số dư THỰC TẾ đang cầm (¥)</label>
+            <input type="number" placeholder="Ví dụ: 300000" class="w-full bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-lg font-bold text-amber-700 outline-none focus:ring-2 focus:ring-amber-400">
+        </div>
+        <button onclick="closeModal('modal-adjust-balance')" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition">
+            Lưu Giao Dịch Chỉnh Lệch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TẤT TOÁN THẺ TÍN DỤNG -->
+  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-blue-500">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">💳 Thanh Toán Thẻ</h3>
+        <button onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-xl cursor-pointer">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div><label class="block text-xs font-semibold text-slate-500 mb-1">Thẻ cần trả</label>
+        <input type="text" value="Thẻ Rakuten (VISA)" readonly class="w-full bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-xl px-4 py-3 text-sm outline-none cursor-not-allowed"></div>
+        <div><label class="block text-xs font-semibold text-slate-500 mb-1">Nguồn tiền lấy ra để trả</label>
+        <select class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-blue-400 outline-none cursor-pointer"><option>Thẻ Ufj (ATM) - Dư: 800,000 ¥</option></select></div>
+        <div><label class="block text-xs font-semibold text-slate-500 mb-1">Số tiền thanh toán (¥)</label>
+        <input type="number" value="50000" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-400 outline-none"></div>
+        <button onclick="closeModal('modal-settle-card')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-md transition cursor-pointer">Xác Nhận Thanh Toán</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function initDateFilters() {
+        const monthSelect = document.getElementById('t1-filter-month');
+        const yearSelect = document.getElementById('t1-filter-year');
+        if(!monthSelect || !yearSelect) return;
+        
+        const d = new Date();
+        const currMonth = d.getMonth() + 1;
+        const currYear = d.getFullYear();
+
+        let monthHTML = '<option value="ALL">Cả năm</option>';
+        for (let i = 1; i <= 12; i++) {
+            let selected = (i === currMonth) ? 'selected' : '';
+            monthHTML += `<option value="${i}" ${selected}>Tháng ${i}</option>`;
+        }
+        monthSelect.innerHTML = monthHTML;
+
+        let yearHTML = '';
+        for (let y = 2024; y <= currYear + 1; y++) {
+            let selected = (y === currYear) ? 'selected' : '';
+            yearHTML += `<option value="${y}" ${selected}>Năm ${y}</option>`;
+        }
+        yearSelect.innerHTML = yearHTML;
+    }
+
+    // Đổi window.onload thành addEventListener để bảo toàn code cho Tab 2, 3, 4
+    document.addEventListener("DOMContentLoaded", function() {
+        initDateFilters();
+    });
+
+    function switchSubTab(tab) {
+        document.getElementById('subtab-credit').classList.add('hidden');
+        document.getElementById('subtab-debit').classList.add('hidden');
+        document.getElementById('btn-credit').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+        document.getElementById('btn-debit').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+        
+        document.getElementById('subtab-' + tab).classList.remove('hidden');
+        document.getElementById('btn-' + tab).className = "flex-1 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer";
+    }
+
+    function toggleLimitFields() {
+        const type = document.getElementById('select-wallet-type').value;
+        const fields = document.getElementById('credit-limit-fields');
+        if (type === 'CREDIT') {
+            fields.classList.remove('hidden');
+        } else {
+            fields.classList.add('hidden');
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('wa-title').innerText = "➕ Thêm Ví / Thẻ Mới";
+        document.getElementById('wa-name').value = "";
+        document.getElementById('select-wallet-type').value = "DEBIT";
+        document.getElementById('wa-balance').value = "";
+        toggleLimitFields();
+        openModal('modal-add-wallet');
+    }
+
+    function openEditModal(name, type, balance, limit, cut, pay) {
+        document.getElementById('wa-title').innerText = "✏️ Sửa Thông Tin Ví / Thẻ";
+        document.getElementById('wa-name').value = name;
+        document.getElementById('select-wallet-type').value = type;
+        document.getElementById('wa-balance').value = balance;
+        
+        if (type === 'CREDIT') {
+            document.getElementById('credit-limit-fields').classList.remove('hidden');
+            document.getElementById('wa-limit').value = limit;
+            document.getElementById('wa-cut').value = cut;
+            document.getElementById('wa-pay').value = pay;
+        } else {
+            document.getElementById('credit-limit-fields').classList.add('hidden');
+        }
+        openModal('modal-add-wallet');
+    }
+
+    // Đảm bảo không ghi đè nếu hàm openModal đã tồn tại từ Tab 2
+    if(typeof openModal === 'undefined') {
+        window.openModal = function(id) { document.getElementById(id).classList.add('active'); }
+        window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); }
+    }
+  </script>

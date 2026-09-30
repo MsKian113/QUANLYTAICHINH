@@ -1,0 +1,1014 @@
+<!-- HEADER TAB 2 (Tông Hồng) -->
+<div class="pt-10 pb-4 px-5 text-white bg-pink-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
+  <h1 class="text-lg font-bold">🏠 Thu Chi</h1>
+  <div class="flex gap-2">
+      <select id="filter-month" class="bg-pink-700/80 border border-pink-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      <select id="filter-year" class="bg-pink-700/80 border border-pink-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+  </div>
+</div>
+
+<!-- Nút chuyển Giao dịch / Hũ -->
+<div class="px-4 pt-4 z-10 relative shrink-0">
+    <div class="flex p-1 bg-slate-200 rounded-xl">
+        <button onclick="switchTab2('giaodich')" id="btn-t2-giaodich" class="flex-1 py-2 text-xs font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer">💸 Giao Dịch</button>
+        <button onclick="switchTab2('hu')" id="btn-t2-hu" class="flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer">🍯 Quản Lý Hũ</button>
+    </div>
+</div>
+
+<!-- Khu vực cuộn chính của Tab 2 -->
+<div class="flex-1 overflow-y-auto pb-6 p-4">
+  
+  <div id="t2-giaodich" class="space-y-4">
+      <!-- Bảng Dư Ròng (Đã Clear Data Ảo) -->
+      <div class="bg-gradient-to-br from-pink-500 to-rose-600 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
+        <p class="text-[10px] uppercase tracking-wider text-pink-200">Dư Ròng Tháng Này</p>
+        <h2 id="dashboard-net" class="text-3xl font-bold mt-1">0 ¥</h2>
+        <div class="flex gap-2 mt-4 pt-4 border-t border-pink-400/50">
+             <div class="flex-1">
+                 <p class="text-[9px] text-pink-200 uppercase font-bold mb-0.5">Tổng Thu</p>
+                 <p id="dashboard-income" class="text-sm font-bold text-emerald-300">0 ¥</p>
+             </div>
+             <div class="flex-1 border-l border-pink-400/50 pl-2">
+                 <p class="text-[9px] text-pink-200 uppercase font-bold mb-0.5">Tổng Chi</p>
+                 <p id="dashboard-expense" class="text-sm font-bold text-rose-200">0 ¥</p>
+             </div>
+        </div>
+      </div>
+
+      <div>
+          <button onclick="openModal('modal-quick-fixed'); loadQuickFixedList();" class="w-full py-3 bg-white hover:bg-slate-50 transition text-slate-700 border border-slate-200 rounded-2xl shadow-sm cursor-pointer relative font-bold text-sm">
+              ⚡ Khoản Cố Định 
+              <span class="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+          </button>
+      </div>
+
+      <div class="mt-4 space-y-3">
+        <!-- Header Giao dịch + Nút Thêm Mới -->
+        <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+            <h3 class="text-xs font-bold text-slate-700">📜 NHẬT KÝ GIAO DỊCH</h3>
+            <button onclick="openAddTx('CHI')" class="bg-pink-600 hover:bg-pink-700 text-white px-3 py-1.5 rounded-xl shadow-sm font-bold text-xs transition cursor-pointer flex items-center gap-1">
+                ➕ Thêm Giao Dịch
+            </button>
+        </div>
+        
+        <!-- Danh sách giao dịch gộp 1 cột -->
+        <div id="list-transactions" class="space-y-2">
+            <p class="text-[10px] text-slate-400 italic text-center py-4">⏳ Đang tải lịch sử giao dịch...</p>
+        </div>
+    </div>
+  </div>
+
+  <div id="t2-hu" class="space-y-4 hidden">
+      <div class="flex gap-2 mb-2">
+          <button onclick="openConfigJar(); updateConfigPreview();" class="flex-1 py-3 bg-pink-50 text-pink-700 hover:bg-pink-100 transition rounded-xl text-xs font-bold border border-pink-200 shadow-sm cursor-pointer">⚙️ Cấu Hình Tỷ Lệ %</button>
+          <button onclick="openModal('modal-transfer-jar')" class="flex-1 py-3 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition rounded-xl text-xs font-bold border border-indigo-200 shadow-sm cursor-pointer">🔄 Chuyển Tiền Hũ</button>
+      </div>
+
+      <div id="list-jars" class="space-y-3">
+          <p class="text-[10px] text-slate-400 italic text-center py-4">Chưa có dữ liệu hũ (0 ¥)</p>
+      </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: THÊM GIAO DỊCH MỚI -->
+<!-- ========================================================================= -->
+<div id="modal-add-tx" class="modal-overlay">
+  <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-slate-800 !p-5 !overflow-visible">
+    <div class="flex justify-between items-center mb-3 border-b pb-2">
+      <h3 class="text-lg font-bold text-slate-900">➕ Giao Dịch Mới</h3>
+      <button onclick="closeModal('modal-add-tx')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+    </div>
+    <div class="space-y-4">
+      <input type="hidden" id="add-tx-type" value="CHI" />
+      <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
+          <button id="add-btn-chi" onclick="toggleAddType('CHI')" class="flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition">Khoản Chi</button>
+          <button id="add-btn-thu" onclick="toggleAddType('THU')" class="flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition">Khoản Thu</button>
+      </div>
+      <!-- 1. NGÀY GIAO DỊCH -->
+      <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1. Ngày giao dịch</label>
+        <input type="date" id="add-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-pink-300" />
+      </div>
+      <!-- 2. NỘI DUNG (DROPDOWN HÍT NGAY DƯỚI INPUT) -->
+      <div class="z-50">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">2. Nội dung (Gõ để chọn Mẫu)</label>
+          <div class="relative">
+              <input type="text" id="add-desc" autocomplete="off" placeholder="Ví dụ: Đổ xăng..." oninput="renderSuggest('add-desc', 'desc')" onfocus="renderSuggest('add-desc', 'desc')" onblur="hideSuggest('add-desc')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 shadow-inner" />
+              <!-- top-full mt-1 giúp hộp gợi ý hít chặt ngay đít input -->
+              <div id="box-add-desc" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-2xl hidden max-h-40 overflow-y-auto z-50"></div>
+          </div>
+          <p class="text-[9px] font-bold text-emerald-600 mt-1 italic hidden transition-all" id="add-autofill-msg">✨ Đã tự động điền thẻ & hũ phù hợp!</p>
+      </div>
+      <!-- 3. SỐ TIỀN -->
+      <div>
+        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">3. Số tiền (¥)</label>
+        <input type="number" id="add-money" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-pink-300" />
+      </div>
+      <!-- 4 & 5. NGUỒN TIỀN VÀ THUỘC HŨ -->
+      <div class="grid grid-cols-2 gap-3 z-40">
+          <!-- NGUỒN TIỀN -->
+          <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">4. Nguồn tiền</label>
+              <div class="relative">
+                  <input type="text" id="add-source" autocomplete="off" placeholder="Chọn nguồn..." oninput="renderSuggest('add-source', 'source')" onfocus="renderSuggest('add-source', 'source')" onblur="hideSuggest('add-source')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-pink-400" />
+                  <div id="box-add-source" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-2xl hidden max-h-32 overflow-y-auto z-50"></div>
+              </div>
+          </div>
+          <!-- THUỘC HŨ -->
+          <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">5. Thuộc Hũ</label>
+              <div class="relative">
+                  <input type="text" id="add-jar" autocomplete="off" placeholder="Chọn hũ..." oninput="renderSuggest('add-jar', 'jar')" onfocus="renderSuggest('add-jar', 'jar')" onblur="hideSuggest('add-jar')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-pink-400" />
+                  <div id="box-add-jar" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-2xl hidden max-h-32 overflow-y-auto z-50"></div>
+              </div>
+          </div>
+      </div>
+      <div class="space-y-1.5 pt-2 mt-2 border-t border-slate-100">
+          <div class="flex items-center gap-2">
+              <input type="checkbox" id="add-chk-fixed" class="accent-rose-500 w-4 h-4 cursor-pointer" />
+              <label for="add-chk-fixed" class="text-xs font-bold text-slate-600 cursor-pointer">Là khoản cố định hàng tháng</label>
+          </div>
+      </div>
+      <button id="btn-save-new-tx" onclick="saveNewTransaction()" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-bold cursor-pointer transition shadow-md mt-1">Lưu Giao Dịch</button>
+      <div id="status-add-tx" class="text-center font-bold text-sm mt-2 hidden"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: SỬA GIAO DỊCH -->
+<!-- ========================================================================= -->
+<div id="modal-edit-tx" class="modal-overlay" style="z-index: 200;">
+  <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-amber-500 !p-5">
+    <div class="flex justify-between items-center mb-3 border-b pb-2">
+      <h3 class="text-lg font-bold text-slate-900">✏️ Sửa Giao Dịch</h3>
+      <button onclick="closeModal('modal-edit-tx')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+    </div>
+    <div class="space-y-4">
+      <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
+          <button id="edit-btn-chi" onclick="toggleEditType('CHI')" class="flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition">Khoản Chi</button>
+          <button id="edit-btn-thu" onclick="toggleEditType('THU')" class="flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition">Khoản Thu</button>
+      </div>
+      <div class="relative z-10"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1. Ngày giao dịch</label>
+      <input type="date" id="edit-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-300" /></div>
+      <div class="relative z-50">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">2. Nội dung</label>
+          <input type="text" id="edit-desc" autocomplete="off" oninput="renderSuggest('edit-desc', 'desc')" onfocus="renderSuggest('edit-desc', 'desc')" onblur="hideSuggest('edit-desc')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-amber-400" />
+          <div id="box-edit-desc" class="suggest-box absolute left-0 right-0 top-[65px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-40 overflow-y-auto z-50"></div>
+          <p class="text-[9px] font-bold text-emerald-600 mt-1 italic hidden transition-all absolute top-full left-0" id="edit-autofill-msg">✨ Đã tự động điền thẻ & hũ phù hợp!</p>
+      </div>
+      <div class="relative z-10 mt-5"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">3. Số tiền (¥)</label>
+      <input type="number" id="edit-money" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold outline-none focus:ring-2 focus:ring-amber-300" /></div>
+      <div class="grid grid-cols-2 gap-3 relative z-40">
+          <div class="relative">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">4. Nguồn tiền</label>
+              <input type="text" id="edit-source" autocomplete="off" oninput="renderSuggest('edit-source', 'source')" onfocus="renderSuggest('edit-source', 'source')" onblur="hideSuggest('edit-source')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-amber-400" />
+              <div id="box-edit-source" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+          </div>
+          <div class="relative">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">5. Thuộc Hũ</label>
+              <input type="text" id="edit-jar" autocomplete="off" oninput="renderSuggest('edit-jar', 'jar')" onfocus="renderSuggest('edit-jar', 'jar')" onblur="hideSuggest('edit-jar')" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-amber-400" />
+              <div id="box-edit-jar" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+          </div>
+      </div>
+      <div class="space-y-1.5 pt-2 mt-2 border-t border-slate-100 relative z-10">
+          <div class="flex items-center gap-2">
+              <input type="checkbox" id="edit-chk-template" class="accent-indigo-500 w-4 h-4 cursor-pointer" />
+              <label for="edit-chk-template" class="text-xs font-bold text-slate-600 cursor-pointer">Lưu làm mẫu nhập nhanh</label>
+          </div>
+          <div class="flex items-center gap-2">
+              <input type="checkbox" id="edit-chk-fixed" class="accent-amber-500 w-4 h-4 cursor-pointer" />
+              <label for="edit-chk-fixed" class="text-xs font-bold text-slate-600 cursor-pointer">Là khoản cố định (Bỏ tích để hủy)</label>
+          </div>
+      </div>
+      <div class="flex gap-2 pt-2 mt-1 border-t border-slate-100 relative z-10">
+          <button onclick="deleteTransaction()" class="w-1/3 py-3.5 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-xl text-xs font-bold cursor-pointer transition">🗑️ Xóa</button>
+          <button onclick="closeModal('modal-edit-tx')" class="w-2/3 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer transition shadow-md">Lưu Cập Nhật</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: KHOẢN CỐ ĐỊNH NHANH (Trống) -->
+<!-- ========================================================================= -->
+<div id="modal-quick-fixed" class="modal-overlay">
+  <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-amber-500 !p-4">
+    <div class="flex justify-between items-center mb-2 border-b pb-2">
+      <h3 class="text-lg font-bold text-slate-900">⚡ Đóng Khoản Cố Định</h3>
+      <button onclick="closeModal('modal-quick-fixed')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+    </div>
+    <p class="text-xs text-slate-500 mb-4">Mỗi khoản đều có ngày và nguồn lấy từ Database, nhưng bạn vẫn có thể sửa tay nếu thực tế có biến động.</p>
+    <div id="quick-fixed-list" class="space-y-3">
+        <!-- JS load data vào đây -->
+        <p class="text-[10px] text-slate-400 italic text-center py-4">Chưa có khoản cố định nào cần đóng</p>
+    </div>
+    <button onclick="submitQuickFixed()" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition mt-4">Lưu Đóng Tiền</button>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: CHUYỂN HŨ -->
+<!-- ========================================================================= -->
+<div id="modal-transfer-jar" class="modal-overlay">
+  <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-indigo-500 !p-5">
+    
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-4 border-b pb-2">
+      <h3 class="text-lg font-bold text-slate-900">🔄 Chuyển Tiền Hũ</h3>
+      <button onclick="closeModal('modal-transfer-jar')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+    </div>
+    
+    <!-- BODY -->
+    <div class="space-y-4">
+      
+      <!-- Hàng chọn Hũ (Từ Hũ -> Đến Hũ) -->
+      <div class="grid grid-cols-2 gap-3 relative z-40">
+          <!-- Từ Hũ -->
+          <div class="relative">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Từ Hũ (Cắt bớt)</label>
+              <input type="text" id="tf-jar-1" autocomplete="off" oninput="renderSuggest('tf-jar-1', 'jar')" onfocus="renderSuggest('tf-jar-1', 'jar')" onblur="hideSuggest('tf-jar-1')" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-400" />
+              <div id="box-tf-jar-1" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+          </div>
+          <!-- Đến Hũ -->
+          <div class="relative">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Đến Hũ (Bơm thêm)</label>
+              <input type="text" id="tf-jar-2" autocomplete="off" oninput="renderSuggest('tf-jar-2', 'jar')" onfocus="renderSuggest('tf-jar-2', 'jar')" onblur="hideSuggest('tf-jar-2')" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-400" />
+              <div id="box-tf-jar-2" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+          </div>
+      </div>
+      
+      <!-- Nhập số tiền -->
+      <div class="relative z-10">
+          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số tiền điều chỉnh (¥)</label>
+          <input type="number" id="tf-amount" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold text-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+      </div>
+      
+      <!-- Thông báo lỗi hiển thị gọn gàng (mặc định ẩn) -->
+      <div id="tf-error-msg" class="text-rose-600 text-[11px] italic font-medium text-center empty:hidden relative z-10"></div>
+      
+      <!-- Nút xác nhận -->
+      <button id="btn-submit-tf" onclick="submitTransferJar()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold cursor-pointer transition shadow-md relative z-10">Xác Nhận Chuyển</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- MODAL: CẤU HÌNH TỶ LỆ HŨ -->
+<!-- ========================================================================= -->
+<div id="modal-config-jar" class="modal-overlay">
+  <div class="modal-content !p-0 !h-[85vh] flex flex-col mb-0 rounded-b-none border-t-4 border-pink-500">
+    
+    <!-- HEADER MODAL -->
+    <div class="p-4 border-b flex justify-between items-center bg-white rounded-t-2xl">
+      <div>
+          <h3 class="text-lg font-bold text-slate-800">Cấu hình tỷ lệ % các Hũ</h3>
+          <p class="text-[10px] text-slate-500 mt-1">Căn cứ thu tháng trước: <span id="cfg-prev-income">2,500,000 ¥</span></p>
+      </div>
+      <button onclick="closeModal('modal-config-jar')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-700">&times;</button>
+    </div>
+    
+    <!-- BODY: KHU VỰC CÁC HŨ ĐƯỢC CHỐT CỐ ĐỊNH NHƯ MOCKUP -->
+    <div class="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3">
+        <div class="flex justify-between text-[9px] font-bold text-slate-400 uppercase px-1">
+            <span>Hũ chi tiêu</span>
+            <span>Tỷ lệ (%) & Tiền quy đổi</span>
+        </div>
+        <!-- 1. Đầu tư (Cố định tiền) -->
+        <div class="bg-pink-50 border border-pink-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+            <div>
+                <h4 class="text-sm font-bold text-pink-700">Đầu tư</h4>
+                <p class="text-[9px] text-pink-500 mt-0.5">Cố định (Trừ trước khi chia %)</p>
+            </div>
+            <div class="flex items-center gap-1">
+                <input type="number" id="cfg-invest" value="0" oninput="updateConfigPreview()" class="w-24 text-right bg-white border border-pink-300 rounded p-1.5 text-sm font-bold text-pink-700 outline-none focus:ring-1 focus:ring-pink-500" />
+                <span class="text-xs font-bold text-pink-700">¥</span>
+            </div>
+        </div>
+        <!-- 2. Thiết yếu -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+            <h4 class="text-sm font-bold text-slate-800">Thiết yếu</h4>
+            <div class="flex items-center gap-2">
+                <span id="prev-thietyeu" class="text-[10px] text-slate-500 font-bold">0 ¥</span>
+                <input type="number" id="pct-thietyeu" value="0" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none focus:ring-1 focus:ring-pink-300" />
+                <span class="text-xs text-slate-500">%</span>
+            </div>
+        </div>
+        <!-- 3. Tiết kiệm -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+            <h4 class="text-sm font-bold text-slate-800">Tiết kiệm</h4>
+            <div class="flex items-center gap-2">
+                <span id="prev-tietkiem" class="text-[10px] text-slate-500 font-bold">0 ¥</span>
+                <input type="number" id="pct-tietkiem" value="0" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none focus:ring-1 focus:ring-pink-300" />
+                <span class="text-xs text-slate-500">%</span>
+            </div>
+        </div>
+        <!-- 4. Giáo dục -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+            <h4 class="text-sm font-bold text-slate-800">Giáo dục</h4>
+            <div class="flex items-center gap-2">
+                <span id="prev-giaoduc" class="text-[10px] text-slate-500 font-bold">0 ¥</span>
+                <input type="number" id="pct-giaoduc" value="0" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none focus:ring-1 focus:ring-pink-300" />
+                <span class="text-xs text-slate-500">%</span>
+            </div>
+        </div>
+        <!-- 5. Giải trí -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+            <h4 class="text-sm font-bold text-slate-800">Giải trí</h4>
+            <div class="flex items-center gap-2">
+                <span id="prev-giaitri" class="text-[10px] text-slate-500 font-bold">0 ¥</span>
+                <input type="number" id="pct-giaitri" value="0" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none focus:ring-1 focus:ring-pink-300" />
+                <span class="text-xs text-slate-500">%</span>
+            </div>
+        </div>
+        <!-- 6. Cho đi -->
+        <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+            <h4 class="text-sm font-bold text-slate-800">Cho đi</h4>
+            <div class="flex items-center gap-2">
+                <span id="prev-chodi" class="text-[10px] text-slate-500 font-bold">0 ¥</span>
+                <input type="number" id="pct-chodi" value="0" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none focus:ring-1 focus:ring-pink-300" />
+                <span class="text-xs text-slate-500">%</span>
+            </div>
+        </div>
+    </div>
+    <!-- FOOTER MODAL -->
+    <div class="p-4 bg-white border-t flex justify-between items-center relative z-10">
+        <div class="text-sm font-bold">Tổng %: <span id="total-pct-lbl" class="text-emerald-600">0%</span></div>
+        <div id="cfg-error-msg" class="text-rose-600 text-sm italic font-medium mt-2"></div>
+        <div class="flex gap-2">
+            <button onclick="closeModal('modal-config-jar')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 transition text-slate-700 rounded-lg text-xs font-bold cursor-pointer">Hủy</button>
+            <button id="btn-save-cfg" onclick="submitConfigJar()" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 transition text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer">Lưu cấu hình</button>
+        </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPT CHỨA LOGIC CỦA TAB 2 -->
+<!-- SCRIPT CHỨA LOGIC CỦA TAB 2 (ĐÃ DỌN DẸP SẠCH SẼ HÀM TRÙNG LẶP) -->
+<script>
+// ==========================================
+// 1. TOÀN CỤC & TẢI DỮ LIỆU ĐỘNG TỪ EXCEL
+// ==========================================
+window.JAR_LIST = ["Đầu tư", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi"];
+window.NGUON_LIST = []; 
+window.DESC_LIST = []; 
+window.CATEGORIES_RAW = []; 
+
+function fetchCategories() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.success) {
+                // 1. Lưu bản đồ Auto-fill từ Categories (D, E, F)
+                window.CATEGORIES_RAW = res.categories || [];
+                window.DESC_LIST = (res.categories || []).map(item => item.name).filter(Boolean);
+                
+                // 2. Gợi ý Nguồn tiền LẤY CHÍNH XÁC TỪ CỘT B CỦA SHEET WALLETS!
+                window.NGUON_LIST = res.wallets || [];
+                
+                console.log("✅ Đã nạp Nội dung (Categories D):", window.DESC_LIST.length, "mục");
+                console.log("✅ Đã nạp Nguồn tiền (Wallets B):", window.NGUON_LIST.length, "mục");
+            }
+        }).getInitialData(); // Gọi hàm Backend gộp mới
+    }
+}
+
+// ==========================================
+// 2. HỆ THỐNG GỢI Ý THÔNG MINH (BỎ DẤU & AUTO-FILL)
+// ==========================================
+function removeAccents(str) {
+    if (!str) return "";
+    return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+}
+
+function filterItems(query, list) {
+    if (!list || !Array.isArray(list)) return [];
+    const rawQ = (query || "").toString().trim();
+    if (!rawQ) return list; // Focus vào ô là hiện toàn bộ danh sách
+    const qClean = removeAccents(rawQ.toLowerCase());
+    return list.filter(item => item && removeAccents(String(item).toLowerCase()).includes(qClean));
+}
+
+function renderSuggest(inputId, type) {
+    const input = document.getElementById(inputId);
+    const box = document.getElementById('box-' + inputId);
+    if (!input || !box) return;
+
+    let dataList = [];
+    if (type === 'jar') dataList = window.JAR_LIST;
+    if (type === 'source') dataList = window.NGUON_LIST;
+    if (type === 'desc') dataList = window.DESC_LIST;
+
+    const matches = filterItems(input.value, dataList);
+    box.innerHTML = '';
+
+    if (!matches || matches.length === 0) {
+        box.classList.add('hidden');
+        return;
+    }
+
+    // Render trực tiếp bằng map string
+    box.innerHTML = matches.map(item => {
+        const safeItem = String(item).replace(/'/g, "\\'");
+        return `
+            <div class="px-3 py-2.5 hover:bg-pink-50 cursor-pointer text-sm font-medium text-slate-700 border-b border-slate-100 last:border-0"
+                 onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                ${item}
+            </div>
+        `;
+    }).join('');
+
+    box.classList.remove('hidden');
+}
+
+function selectSuggest(inputId, value, type) {
+    const input = document.getElementById(inputId);
+    if (input) {
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    
+    // Auto-fill khi chọn Nội dung
+    if (type === 'desc') {
+        const matched = (window.CATEGORIES_RAW || []).find(c => c && c.name === value);
+        if (matched) {
+            if (matched.source) {
+                const sEl = document.getElementById('add-source');
+                if(sEl) sEl.value = matched.source;
+            }
+            if (matched.jar) {
+                const jEl = document.getElementById('add-jar');
+                if(jEl) jEl.value = matched.jar;
+            }
+            
+            const msg = document.getElementById('add-autofill-msg');
+            if (msg) {
+                msg.classList.remove('hidden');
+                setTimeout(() => { msg.classList.add('hidden'); }, 3000);
+            }
+        }
+    }
+    
+    const box = document.getElementById('box-' + inputId);
+    if (box) box.classList.add('hidden');
+}
+
+function hideSuggest(inputId) {
+    setTimeout(() => {
+        const box = document.getElementById('box-' + inputId);
+        if (box) box.classList.add('hidden');
+    }, 200);
+}
+
+// ==========================================
+// 3. ĐÓNG/MỞ MODAL & GIAO DIỆN TAB 2
+// ==========================================
+function switchTab2(tab) {
+    document.getElementById('t2-giaodich').classList.add('hidden');
+    document.getElementById('t2-hu').classList.add('hidden');
+    
+    document.getElementById('btn-t2-giaodich').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+    document.getElementById('btn-t2-hu').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+    
+    document.getElementById('t2-' + tab).classList.remove('hidden');
+    document.getElementById('btn-t2-' + tab).className = "flex-1 py-2 text-xs font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer";
+    
+    if (tab === 'hu') {
+        fetchJarListData();
+    }
+}
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function openAddTx(type) {
+    toggleAddType(type);
+    document.getElementById('add-date').valueAsDate = new Date();
+    openModal('modal-add-tx');
+}
+
+function toggleAddType(type) {
+    document.getElementById('add-tx-type').value = type;
+    const btnChi = document.getElementById('add-btn-chi');
+    const btnThu = document.getElementById('add-btn-thu');
+    const iptMoney = document.getElementById('add-money');
+    if(type === 'CHI') {
+        btnChi.className = "flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
+        btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+        iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-pink-300";
+    } else {
+        btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
+        btnChi.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+        iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-pink-300";
+    }
+}
+
+function toggleEditType(type) {
+    const btnChi = document.getElementById('edit-btn-chi');
+    const btnThu = document.getElementById('edit-btn-thu');
+    const iptMoney = document.getElementById('edit-money');
+    if(type === 'CHI') {
+        btnChi.className = "flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
+        btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+        iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-amber-300";
+    } else {
+        btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
+        btnChi.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+        iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-amber-300";
+    }
+}
+// ==========================================
+// 4. LOAD DANH SÁCH THU CHI
+// ==========================================
+// 1. HÀM KÉO BÁO CÁO VÀ DANH SÁCH GIAO DỊCH TỪ SERVER
+// HÀM KÉO BÁO CÁO VÀ RENDER NHẬT KÝ GIAO DỊCH 1 CỘT
+function fetchTab2Transactions() {
+    const monthEl = document.getElementById('filter-month');
+    const yearEl = document.getElementById('filter-year');
+    const month = monthEl ? monthEl.value : (new Date().getMonth() + 1);
+    const year = yearEl ? yearEl.value : new Date().getFullYear();
+    
+    const localKey = "CLIENT_TAB2_CACHE_" + year + "_" + month;
+    const cachedClient = sessionStorage.getItem(localKey);
+    
+    // ⚡ 1. NẾU ĐÃ CÓ TRONG BỘ NHỚ TRÌNH DUYỆT -> RENDER NGAY TRONG 0.01 GIÂY!
+    if (cachedClient) {
+        try {
+            const res = JSON.parse(cachedClient);
+            document.getElementById('dashboard-net').innerText = formatMoney(res.summary.net);
+            document.getElementById('dashboard-income').innerText = formatMoney(res.summary.income);
+            document.getElementById('dashboard-expense').innerText = formatMoney(res.summary.expense);
+            renderTransactionList(res.transactions);
+        } catch(e) {}
+    } else {
+        const container = document.getElementById('list-transactions');
+        if (container) container.innerHTML = '<p class="text-[10px] text-slate-400 italic text-center py-4">⚡ Đang tải siêu tốc...</p>';
+    }
+    // ⚡ 2. GỬI LỆNH CHẠY NGẦM ĐỂ CẬP NHẬT DỮ LIỆU MỚI NHẤT
+    if (typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.success) {
+                // Lưu vào RAM Trình duyệt
+                sessionStorage.setItem(localKey, JSON.stringify(res));
+                
+                // Cập nhật lại giao diện
+                document.getElementById('dashboard-net').innerText = formatMoney(res.summary.net);
+                document.getElementById('dashboard-income').innerText = formatMoney(res.summary.income);
+                document.getElementById('dashboard-expense').innerText = formatMoney(res.summary.expense);
+                renderTransactionList(res.transactions);
+            }
+        }).getTab2Data(month, year);
+    }
+}
+// HÀM VẼ THẺ GIAO DỊCH 1 CỘT (FULL WIDTH - KHÔNG VỠ DÒNG)
+function renderTransactionList(list) {
+    const container = document.getElementById('list-transactions');
+    if (!container) return;
+    
+    if (!list || list.length === 0) {
+        container.innerHTML = '<p class="text-[10px] text-slate-400 italic text-center py-4">Chưa có giao dịch nào trong tháng này</p>';
+        return;
+    }
+    
+    container.innerHTML = list.map(tx => {
+        const isChi = tx.type === 'CHI';
+        const moneyColor = isChi ? 'text-rose-600' : 'text-emerald-600';
+        const moneySign = isChi ? '-' : '+';
+        
+        return `
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm hover:shadow transition flex justify-between items-center">
+            <!-- BÊN TRÁI: NỘI DUNG & THẺ THÔNG TIN (CHIẾM 70% CHIỀU RỘNG) -->
+            <div class="space-y-1 max-w-[70%]">
+                <h4 class="text-xs font-bold text-slate-800 truncate" title="${tx.noidung}">${tx.noidung}</h4>
+                <div class="flex items-center gap-1.5 text-[9px] font-bold">
+                    <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md border border-slate-200/60">${tx.nguontien || 'Ví'}</span>
+                    <span class="bg-pink-50 text-pink-600 px-1.5 py-0.5 rounded-md border border-pink-100">${tx.hu || 'Hũ'}</span>
+                    <span class="text-slate-400 font-normal ml-0.5">${tx.date}</span>
+                </div>
+            </div>
+            
+            <!-- BÊN PHẢI: SỐ TIỀN (+ CỘNG / - TRỪ) -->
+            <div class="text-right">
+                <span class="text-sm font-bold ${moneyColor}">${moneySign}${formatMoney(tx.sotien)}</span>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+// ==========================================
+// 4. LƯU GIAO DỊCH MỚI
+// ==========================================
+function saveNewTransaction() {
+    const data = {
+      ngay: document.getElementById('add-date').value,
+      loai: document.getElementById('add-tx-type').value === 'CHI' ? 'Chi' : 'Thu',
+      noidung: document.getElementById('add-desc').value,
+      sotien: Number(document.getElementById('add-money').value) || 0,
+      nguontien: document.getElementById('add-source').value,
+      hu: document.getElementById('add-jar').value,
+      codinh: document.getElementById('add-chk-fixed').checked,
+      ghichu: ""
+    };
+    // Kiểm tra nhanh dữ liệu
+    if (!data.ngay || !data.noidung || data.sotien <= 0 || !data.hu || !data.nguontien) {
+        alert("❌ Vui lòng điền đầy đủ Ngày, Nội dung, Số tiền (>0), Nguồn và Hũ!");
+        return;
+    }
+    // 🚀 1. ĐÓNG POPUP VÀ RESET FORM NGAY LẬP TỨC (0.05 GIÂY!)
+    closeModal('modal-add-tx');
+    document.getElementById('add-money').value = '';
+    document.getElementById('add-desc').value = '';
+    // 🚀 2. CHÈN NGAY THẺ GIAO DỊCH VÀO MÀN HÌNH MÀ KHÔNG CẦN ĐỢI SERVER
+    const isChi = data.loai === 'Chi' || data.loai === 'CHI';
+    const parts = data.ngay.split('-');
+    const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : '';
+    
+    const listContainer = document.getElementById('list-transactions');
+    if (listContainer) {
+        const moneyColor = isChi ? 'text-rose-600' : 'text-emerald-600';
+        const moneySign = isChi ? '-' : '+';
+        const newCardHtml = `
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-3 shadow-sm flex justify-between items-center animate-pulse">
+            <div class="space-y-1 max-w-[70%]">
+                <h4 class="text-xs font-bold text-slate-800 truncate">${data.noidung}</h4>
+                <div class="flex items-center gap-1.5 text-[9px] font-bold">
+                    <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md">${data.nguontien}</span>
+                    <span class="bg-pink-50 text-pink-600 px-1.5 py-0.5 rounded-md">${data.hu}</span>
+                    <span class="text-slate-400 font-normal ml-0.5">${formattedDate}</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="text-sm font-bold ${moneyColor}">${moneySign}${formatMoney(data.sotien)}</span>
+            </div>
+        </div>
+        `;
+        listContainer.insertAdjacentHTML('afterbegin', newCardHtml);
+    }
+    // 🚀 3. GỬI DỮ LIỆU ÂM THẦM CHẠY NGẦM LÊN SERVER
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+        .withSuccessHandler(function(res) {
+            if (res.success) {
+                // Tải lại dữ liệu thật để đồng bộ chuẩn xác với Server
+                fetchTab2Transactions();
+            } else {
+                alert("❌ Lỗi Server: " + res.message);
+            }
+        })
+        .withFailureHandler(function(err) {
+            alert("❌ Lỗi kết nối: " + err.message);
+        })
+        .saveFamilyTransaction(data);
+    }
+}
+
+// ==========================================
+// 5. KHỞI TẠO (ONLOAD) & CẤU HÌNH HŨ
+// ==========================================
+const TOTAL_INCOME = 0; 
+function formatMoney(n) { return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " ¥"; }
+
+function updateConfigPreview() {
+    let fixedInvest = parseInt(document.getElementById('cfg-invest').value) || 0;
+    let remainingToSplit = TOTAL_INCOME - fixedInvest;
+    if (remainingToSplit < 0) remainingToSplit = 0;
+    
+    let pTy = parseInt(document.getElementById('pct-thietyeu').value) || 0;
+    let pTk = parseInt(document.getElementById('pct-tietkiem').value) || 0;
+    let pGd = parseInt(document.getElementById('pct-giaoduc').value) || 0;
+    const elTy = document.getElementById('prev-thietyeu');
+    const elTk = document.getElementById('prev-tietkiem');
+    const elGd = document.getElementById('prev-giaoduc');
+    if (elTy) elTy.innerText = formatMoney(remainingToSplit * pTy / 100);
+    if (elTk) elTk.innerText = formatMoney(remainingToSplit * pTk / 100);
+    if (elGd) elGd.innerText = formatMoney(remainingToSplit * pGd / 100);
+    let totalPct = pTy + pTk + pGd;
+    let lbl = document.getElementById('total-pct-lbl');
+    if (lbl) {
+        lbl.innerText = totalPct + "%";
+        if (totalPct > 100) lbl.className = "text-rose-600";
+        else if (totalPct < 100) lbl.className = "text-amber-500";
+        else lbl.className = "text-emerald-600";
+    }
+}
+
+window.onload = function() {
+    fetchCategories(); 
+    fetchTab2Transactions();
+    
+    const monthSelect = document.getElementById('filter-month');
+    const yearSelect = document.getElementById('filter-year');
+    if(monthSelect) {
+        const d = new Date();
+        let monthHTML = '<option value="ALL">Cả năm</option>';
+        for (let i = 1; i <= 12; i++) { monthHTML += `<option value="${i}" ${i === d.getMonth() + 1 ? 'selected' : ''}>Tháng ${i}</option>`; }
+        monthSelect.innerHTML = monthHTML;
+        
+        let yearHTML = '';
+        for (let y = 2024; y <= d.getFullYear() + 1; y++) { yearHTML += `<option value="${y}" ${y === d.getFullYear() ? 'selected' : ''}>Năm ${y}</option>`; }
+        yearSelect.innerHTML = yearHTML;
+    }
+    updateConfigPreview();
+
+};
+
+// ==========================================
+// 6. QUẢN LÝ HŨ & CHUYỂN TIỀN
+// ==========================================
+function fetchJarListData() {
+    const selectedMonth = document.getElementById('filter-month').value;
+    const container = document.getElementById('list-jars');
+    
+    container.innerHTML = '<p class="text-xs text-slate-400 italic text-center py-5">⏳ Đang lấy dữ liệu siêu tốc...</p>';
+    
+    if (typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.success) {
+                renderJarCards(res.data); 
+            } else {
+                container.innerHTML = `<p class="text-xs text-rose-500 text-center py-5">Lỗi: ${res.message}</p>`;
+            }
+        }).getOnlyJars(selectedMonth); 
+    }
+}
+
+function calculateJarStats(spent, budget) {
+    if (budget <= 0) {
+        return { used: spent > 0 ? 100 : 0, remain: spent > 0 ? 0 : 100 };
+    }
+    let usedPct = Math.round((spent / budget) * 100);
+    if (usedPct > 100) usedPct = 100;
+    let remainPct = 100 - usedPct;
+    if (remainPct < 0) remainPct = 0;
+    return { used: usedPct, remain: remainPct };
+}
+
+function generateJarCardHtml(jar) {
+    const stats = calculateJarStats(jar.spent, jar.budget);
+    const remainColorClass = jar.remain < 0 ? "text-rose-600" : "text-emerald-600";
+    const spentColorClass = jar.spent > 0 ? "text-rose-600" : "text-slate-800";
+    const rateTagHtml = jar.rate ? `<span class="bg-slate-200 text-slate-700 px-1 py-0.5 rounded-sm">Hũ: ${jar.rate}%</span>` : '';
+    return `
+    <div class="bg-white border border-slate-200 rounded-lg p-2 shadow-sm mb-1.5">
+        <div class="flex justify-between items-center mb-1">
+            <h4 class="text-xs font-bold text-slate-800 leading-none">${jar.name}</h4>
+            <div class="flex gap-1 text-[8.5px] font-bold uppercase tracking-tight">
+                ${rateTagHtml}
+                <span class="bg-rose-50 text-rose-600 px-1 py-0.5 rounded-sm">Tiêu: ${stats.used}%</span>
+                <span class="bg-emerald-50 text-emerald-600 px-1 py-0.5 rounded-sm">Còn: ${stats.remain}%</span>
+            </div>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-1 mb-1.5 overflow-hidden">
+            <div class="bg-emerald-500 h-1 rounded-full" style="width: ${stats.used}%"></div>
+        </div>
+        <div class="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9.5px] bg-slate-50/50 rounded p-1 border border-slate-100">
+            <div class="truncate text-slate-500">🎯 Ngân sách: <b class="text-slate-800 font-bold">${formatMoney(jar.budget)}</b></div>
+            <div class="truncate text-slate-500">💸 Đã chi: <b class="${spentColorClass} font-bold">${formatMoney(jar.spent)}</b></div>
+            <div class="truncate text-slate-500">✅ Số dư: <b class="${remainColorClass} font-bold">${formatMoney(jar.remain)}</b></div>
+            <div class="truncate text-slate-500">📊 Lũy kế: <b class="text-blue-600 font-bold">${formatMoney(jar.carry)}</b></div>
+        </div>
+    </div>
+    `;
+}
+
+let GLOBAL_JARS_DATA = [];
+function renderJarCards(jars) {
+    GLOBAL_JARS_DATA = jars; 
+    const container = document.getElementById('list-jars');
+    if (!jars || jars.length === 0) {
+        container.innerHTML = '<p class="text-[10px] text-slate-400 italic text-center py-4">Chưa có dữ liệu hũ (0 ¥)</p>';
+        return;
+    }
+    container.innerHTML = jars.map(jar => generateJarCardHtml(jar)).join('');
+}
+
+let GLOBAL_PREV_INCOME = 0; 
+function calculateJarSplits(income, invest, percentages) {
+    let remaining = income - invest;
+    if (remaining < 0) remaining = 0;
+    const totalPct = percentages.reduce((sum, p) => sum + p, 0);
+    let statusClass = "text-emerald-600";
+    if (totalPct > 100) statusClass = "text-rose-600";
+    else if (totalPct < 100) statusClass = "text-amber-500";
+    return { remaining: remaining, splits: percentages.map(p => (remaining * p) / 100), totalPct: totalPct, statusClass: statusClass };
+}
+
+function openConfigJar() {
+    if(typeof openModal === 'function') openModal('modal-config-jar');
+    const monthEl = document.getElementById('filter-month');
+    const yearEl = document.getElementById('filter-year');
+    const selectedMonth = monthEl ? monthEl.value : (new Date().getMonth() + 1);
+    const selectedYear = yearEl ? yearEl.value : new Date().getFullYear();
+    
+    const incomeEl = document.getElementById('cfg-prev-income');
+    if (incomeEl) incomeEl.innerText = "Đang tải dữ liệu...";
+    
+    if (typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.success) {
+                GLOBAL_PREV_INCOME = res.data.prevMonthIncome;
+                if (incomeEl) incomeEl.innerText = formatMoney(GLOBAL_PREV_INCOME);
+                document.getElementById('cfg-invest').value = res.data.investAmount || 0;
+                document.getElementById('pct-thietyeu').value = res.data.percentages.thietyeu || 0;
+                document.getElementById('pct-tietkiem').value = res.data.percentages.tietkiem || 0;
+                document.getElementById('pct-giaoduc').value = res.data.percentages.giaoduc || 0;
+                document.getElementById('pct-giaitri').value = res.data.percentages.giaitri || 0;
+                document.getElementById('pct-chodi').value = res.data.percentages.chodi || 0;
+                updateConfigPreview();
+            } else {
+                if (incomeEl) incomeEl.innerText = "Lỗi tải dữ liệu!";
+            }
+        }).getSavedJarConfig(selectedMonth, selectedYear); 
+    }
+}
+
+function submitConfigJar() {
+    const monthEl = document.getElementById('filter-month');
+    const yearEl = document.getElementById('filter-year');
+    const configData = {
+        month: monthEl ? monthEl.value : (new Date().getMonth() + 1),
+        year: yearEl ? yearEl.value : new Date().getFullYear(),
+        invest: parseInt(document.getElementById('cfg-invest').value) || 0,
+        thietyeu: parseInt(document.getElementById('pct-thietyeu').value) || 0,
+        tietkiem: parseInt(document.getElementById('pct-tietkiem').value) || 0,
+        giaoduc: parseInt(document.getElementById('pct-giaoduc').value) || 0,
+        giaitri: parseInt(document.getElementById('pct-giaitri').value) || 0,
+        chodi: parseInt(document.getElementById('pct-chodi').value) || 0
+    };
+    
+    const errorMsgEl = document.getElementById('cfg-error-msg');
+    const totalPct = configData.thietyeu + configData.tietkiem + configData.giaoduc + configData.giaitri + configData.chodi;
+    
+    if (totalPct !== 100) {
+        if (errorMsgEl) {
+            errorMsgEl.innerText = "❌ Tổng tỉ lệ các quỹ phải bằng đúng 100%. Hiện tại là " + totalPct + "%.";
+            errorMsgEl.classList.remove("hidden");
+        }
+        return; 
+    } else {
+        if (errorMsgEl) errorMsgEl.innerText = ""; 
+    }
+    
+    if (typeof google !== 'undefined') {
+        const btnSave = document.getElementById('btn-save-cfg');
+        if (btnSave) { btnSave.innerText = "Đang lưu..."; btnSave.disabled = true; }
+        
+        google.script.run.withSuccessHandler(function(res) {
+            if (btnSave) { btnSave.innerText = "Lưu cấu hình"; btnSave.disabled = false; }
+            if (res.success) {
+                if(typeof closeModal === 'function') closeModal('modal-config-jar');
+                if(typeof fetchJarListData === 'function') fetchJarListData(); 
+            } else {
+                if (errorMsgEl) errorMsgEl.innerText = "❌ Lỗi Server: " + res.message;
+            }
+        }).withFailureHandler(function(err) {
+            if (btnSave) { btnSave.innerText = "Lưu cấu hình"; btnSave.disabled = false; }
+            if (errorMsgEl) errorMsgEl.innerText = "❌ Lỗi kết nối: " + err.message;
+        }).saveJarConfig(configData);
+    }
+}
+
+function submitTransferJar() {
+    const jarFrom = document.getElementById('tf-jar-1').value.trim();
+    const jarTo = document.getElementById('tf-jar-2').value.trim();
+    const amount = Number(document.getElementById('tf-amount').value) || 0;
+    const errorEl = document.getElementById('tf-error-msg');
+    const btnSubmit = document.getElementById('btn-submit-tf');
+    
+    const showError = (msg) => { 
+        if(errorEl) { errorEl.innerText = "❌ " + msg; errorEl.classList.remove("hidden"); }
+    };
+    if(errorEl) errorEl.innerText = "";
+
+    if (!jarFrom || !jarTo || amount <= 0) {
+        return showError("Vui lòng điền đủ Hũ gửi, Hũ nhận và số tiền phải > 0");
+    }
+    if (jarFrom === jarTo) {
+        return showError("Hũ nhận tiền không được trùng với Hũ gửi tiền!");
+    }
+    
+    const sourceJar = GLOBAL_JARS_DATA.find(j => j.name === jarFrom);
+    if (!sourceJar) {
+        return showError(`Không tìm thấy dữ liệu của Hũ: ${jarFrom}`);
+    }
+    if (amount > sourceJar.carry) {
+        return showError(`Số tiền vượt quá quỹ Lũy kế (${formatMoney(sourceJar.carry)})`);
+    }
+
+    const payload = {
+        from: jarFrom,
+        to: jarTo,
+        amount: amount,
+        month: document.getElementById('filter-month') ? document.getElementById('filter-month').value : ""
+    };
+    
+    if (typeof google !== 'undefined') {
+        if (btnSubmit) { btnSubmit.innerText = "Đang xử lý..."; btnSubmit.disabled = true; }
+        google.script.run
+            .withSuccessHandler(res => {
+                if (btnSubmit) { btnSubmit.innerText = "Xác Nhận Chuyển"; btnSubmit.disabled = false; }
+                if (res.success) {
+                    alert("✅ Chuyển tiền thành công!");
+                    if(typeof closeModal === 'function') closeModal('modal-transfer-jar');
+                    document.getElementById('tf-jar-1').value = "";
+                    document.getElementById('tf-jar-2').value = "";
+                    document.getElementById('tf-amount').value = "";
+                    if(typeof fetchJarListData === 'function') fetchJarListData();
+                } else {
+                    showError("Lỗi Server: " + res.message);
+                }
+            })
+            .withFailureHandler(err => {
+                if (btnSubmit) { btnSubmit.innerText = "Xác Nhận Chuyển"; btnSubmit.disabled = false; }
+                showError("Lỗi mạng/kết nối: " + err.message);
+            })
+            .transferJarMoney(payload);
+    }
+}
+// ==========================================
+// TÍNH NĂNG: ĐÓNG KHOẢN CỐ ĐỊNH NHANH
+// ==========================================
+// 1. Tải danh sách khoản cố định từ Server
+function loadQuickFixedList() {
+    const monthEl = document.getElementById('filter-month');
+    const yearEl = document.getElementById('filter-year');
+    const month = monthEl ? monthEl.value : (new Date().getMonth() + 1);
+    const year = yearEl ? yearEl.value : new Date().getFullYear();
+    
+    const container = document.getElementById('quick-fixed-list');
+    if (container) container.innerHTML = '<p class="text-[10px] text-slate-400 italic text-center py-4">⏳ Đang tải danh sách khoản cố định...</p>';
+    
+    if (typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res && res.success) {
+                renderQuickFixedItems(res.list);
+            } else {
+                if (container) container.innerHTML = '<p class="text-[10px] text-rose-500 italic text-center py-4">Lỗi tải dữ liệu!</p>';
+            }
+        }).getQuickFixedData(month, year);
+    }
+}
+// 2. Render danh sách thẻ khoản cố định lên Modal
+function renderQuickFixedItems(list) {
+    const container = document.getElementById('quick-fixed-list');
+    if (!container) return;
+    
+    if (!list || list.length === 0) {
+        container.innerHTML = '<p class="text-[10px] text-slate-400 italic text-center py-4">Chưa có khoản cố định nào được đánh dấu</p>';
+        return;
+    }
+    
+    container.innerHTML = list.map((item, idx) => `
+        <div class="bg-white border ${item.paid ? 'border-slate-200 opacity-60' : 'border-amber-200 bg-amber-50/40'} rounded-2xl p-3 shadow-sm flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 max-w-[65%]">
+                <input type="checkbox" id="qf-chk-${idx}" data-idx="${idx}" ${item.paid ? 'disabled checked' : ''} class="qf-item-chk accent-amber-500 w-4 h-4 cursor-pointer shrink-0" />
+                <div>
+                    <h4 class="text-xs font-bold text-slate-800 truncate">${item.noidung}</h4>
+                    <p class="text-[9px] text-slate-400 font-medium">${item.nguontien || 'Ví'} • ${item.hu || 'Hũ'} ${item.paid ? '• <span class="text-emerald-600 font-bold">Đã đóng</span>' : ''}</p>
+                </div>
+            </div>
+            <div class="w-24 text-right">
+                <input type="number" id="qf-amt-${idx}" value="${item.sotien}" ${item.paid ? 'disabled' : ''} class="w-full text-right bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-rose-600 outline-none" />
+            </div>
+        </div>
+    `).join('');
+    
+    window.QUICK_FIXED_ITEMS = list;
+}
+// 3. Gửi danh sách đã tích chọn lên Server để đóng tiền hàng loạt
+function submitQuickFixed() {
+    const selectedItems = [];
+    const checkboxes = document.querySelectorAll('.qf-item-chk:checked:not(:disabled)');
+    
+    checkboxes.forEach(chk => {
+        const idx = chk.getAttribute('data-idx');
+        const item = window.QUICK_FIXED_ITEMS[idx];
+        const amtInput = document.getElementById('qf-amt-' + idx);
+        const actualAmt = amtInput ? Number(amtInput.value) : item.sotien;
+        
+        selectedItems.push({
+            noidung: item.noidung,
+            sotien: actualAmt,
+            hu: item.hu,
+            nguontien: item.nguontien
+        });
+    });
+    
+    if (selectedItems.length === 0) {
+        alert("⚠️ Vui lòng tích chọn ít nhất 1 khoản cố định chưa đóng!");
+        return;
+    }
+    
+    if (typeof google !== 'undefined') {
+        google.script.run.withSuccessHandler(function(res) {
+            if (res.success) {
+                alert(res.message);
+                closeModal('modal-quick-fixed');
+                if (typeof fetchTab2Transactions === 'function') fetchTab2Transactions();
+            } else {
+                alert("❌ Lỗi: " + res.message);
+            }
+        }).submitQuickFixedData(selectedItems);
+    }
+}
+</script>

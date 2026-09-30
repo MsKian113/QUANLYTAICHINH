@@ -197,28 +197,28 @@
   <!-- ========================================================================= -->
 
   <!-- MODAL XÁC NHẬN (CONFIRM DIALOG - THAY THẾ BROWSER CONFIRM) -->
-  <div id="modal-confirm-dialog" class="modal-overlay" style="z-index: 280;" onclick="if(event.target === this) closeModal('modal-confirm-dialog')">
+  <div id="modal-confirm-dialog" class="modal-overlay" style="z-index: 280;">
     <div class="modal-content rounded-2xl border-t-4 border-rose-500 !p-3.5 max-w-[320px] w-full">
       <div class="flex justify-between items-center mb-2 border-b pb-1.5">
         <h3 id="confirm-title" class="text-xs font-bold text-slate-900">⚠️ Xác Nhận</h3>
-        <button onclick="closeModal('modal-confirm-dialog')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-confirm-dialog')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-3">
         <p id="confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
         <div class="flex gap-2 pt-1">
-            <button onclick="closeModal('modal-confirm-dialog')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
-            <button onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận Xoá</button>
+            <button type="button" onclick="closeModal('modal-confirm-dialog')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+            <button type="button" onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận Xoá</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- FORM CHUYỂN TIỀN NỘI BỘ (VÍ ĐẾN VÍ) -->
-  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;" onclick="if(event.target === this) closeModal('modal-transfer-wallet')">
+  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;">
     <div class="modal-content rounded-2xl border-t-4 border-indigo-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900">🔄 Chuyển Tiền Nội Bộ</h3>
-        <button onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5">
         <div class="grid grid-cols-2 gap-2.5 relative z-40">
@@ -247,11 +247,11 @@
   </div>
 
   <!-- FORM THÊM MỚI / SỬA VÍ THẺ -->
-  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;" onclick="if(event.target === this) closeModal('modal-add-wallet')">
+  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;">
     <div class="modal-content rounded-2xl border-t-4 border-slate-800 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 id="wa-title" class="text-xs font-bold text-slate-900">🛠️ Thông Tin Ví / Thẻ</h3>
-        <button onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5">
         <input type="hidden" id="wa-id" value="" />
@@ -303,14 +303,14 @@
   </div>
 
   <!-- SỔ PHỤ VÍ DEBIT -->
-  <div id="modal-statement-debit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-debit')">
+  <div id="modal-statement-debit" class="modal-overlay">
     <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
       <div class="p-3 border-b bg-blue-50 flex justify-between items-center rounded-t-2xl">
         <div>
             <p class="text-[9px] uppercase text-blue-500 font-bold tracking-wider">Chi Tiết Giao Dịch</p>
             <h3 id="debit-statement-title" class="text-xs font-bold text-blue-900">Tên Thẻ</h3>
         </div>
-        <button onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
+        <button type="button" onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
       </div>
       <div class="flex-1 overflow-y-auto p-3 bg-white">
         <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
@@ -318,7 +318,7 @@
                 <span class="text-xs font-medium text-slate-500">Số dư trên App:</span>
                 <span id="debit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
             </div>
-            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+            <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
         </div>
         <div id="debit-statement-list" class="space-y-2">
             <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
@@ -328,14 +328,14 @@
   </div>
 
   <!-- SỔ PHỤ THẺ TÍN DỤNG (CREDIT) -->
-  <div id="modal-statement-credit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-credit')">
+  <div id="modal-statement-credit" class="modal-overlay">
     <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
       <div class="p-3 border-b bg-rose-50 flex justify-between items-center rounded-t-2xl">
         <div>
             <p class="text-[9px] uppercase text-rose-500 font-bold tracking-wider">Lịch Sử Giao Dịch Thẻ</p>
             <h3 id="credit-statement-title" class="text-xs font-bold text-rose-900">Tên Thẻ</h3>
         </div>
-        <button onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
+        <button type="button" onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
       </div>
       <div class="flex-1 overflow-y-auto p-3 bg-white">
         <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
@@ -343,7 +343,7 @@
                 <span class="text-xs font-medium text-slate-500">Dư nợ trên App:</span>
                 <span id="credit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
             </div>
-            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+            <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
         </div>
         <div id="credit-statement-list" class="space-y-2">
             <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
@@ -353,11 +353,11 @@
   </div>
 
   <!-- MODAL SỬA GIAO DỊCH CHI TIẾT SỔ PHỤ -->
-  <div id="modal-edit-statement-tx" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-edit-statement-tx')">
+  <div id="modal-edit-statement-tx" class="modal-overlay" style="z-index: 250;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">🛠️ Sửa Giao Dịch Chi Tiết</h3>
-        <button onclick="closeModal('modal-edit-statement-tx')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-edit-statement-tx')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5 text-xs">
         <input type="hidden" id="edit-st-id" value="" />
@@ -377,7 +377,7 @@
           <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Nội Dung / Ghi Chú</label>
           <input type="text" id="edit-st-note" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
         </div>
-        <button id="btn-submit-edit-st" onclick="submitEditStatementTx()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
+        <button type="button" id="btn-submit-edit-st" onclick="submitEditStatementTx()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
           Lưu Thay Đổi
         </button>
       </div>
@@ -385,11 +385,11 @@
   </div>
 
   <!-- FORM ĐIỀU CHỈNH CÂN BẰNG SỔ (COMPACT UI) -->
-  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-adjust-balance')">
+  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;">
     <div class="modal-content rounded-2xl border-t-4 border-amber-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">⚠️ Chênh Lệch Số Dư Ví / Thẻ</h3>
-        <button onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5 text-xs">
         <div class="bg-amber-50/80 p-2 rounded-lg border border-amber-200 flex justify-between items-center">
@@ -409,7 +409,7 @@
             <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số dư THỰC TẾ thực cầm (¥)</label>
             <input type="number" id="adj-actual-balance" placeholder="Nhập số tiền thực tế..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-amber-400" />
         </div>
-        <button id="btn-submit-adjust" onclick="submitAdjustBalance()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
+        <button type="button" id="btn-submit-adjust" onclick="submitAdjustBalance()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
             Lưu Chênh Lệch
         </button>
       </div>
@@ -417,11 +417,11 @@
   </div>
 
   <!-- MODAL TẤT TOÁN THẺ TÍN DỤNG -->
-  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-settle-card')">
+  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900">Thanh Toán Thẻ</h3>
-        <button onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5">
         <div>
@@ -437,23 +437,23 @@
           <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Số tiền thanh toán (¥)</label>
           <input type="number" id="settle-amount" placeholder="Nhập số tiền..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-blue-400 outline-none" />
         </div>
-        <button id="btn-submit-settle" onclick="submitCreditSettlement()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">Xác Nhận Thanh Toán</button>
+        <button type="button" id="btn-submit-settle" onclick="submitCreditSettlement()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">Xác Nhận Thanh Toán</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL XÁC THỰC MẬT KHẨU BẢO MẬT THẺ (VẼ HÌNH HOẶC NHẬP MK) -->
-  <div id="modal-card-info-auth" class="modal-overlay" style="z-index: 230;" onclick="if(event.target === this) closeModal('modal-card-info-auth')">
+  <div id="modal-card-info-auth" class="modal-overlay" style="z-index: 230;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-600 !p-4 max-w-[340px] w-full text-center">
       <div class="flex justify-between items-center mb-2.5 border-b pb-2">
         <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">🔐 MỞ KHÓA BẢO MẬT</h3>
-        <button onclick="closeModal('modal-card-info-auth')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-card-info-auth')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
       </div>
 
       <!-- CHỌN CHẾ ĐỘ: VẼ MẬT KHẨU HOẶC NHẬP MẬT KHẨU -->
       <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
-        <button id="btn-auth-mode-pattern" onclick="t1_switchAuthMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs">✍️ Vẽ Mật Khẩu</button>
-        <button id="btn-auth-mode-pin" onclick="t1_switchAuthMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
+        <button type="button" id="btn-auth-mode-pattern" onclick="t1_switchAuthMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs">✍️ Vẽ Mật Khẩu</button>
+        <button type="button" id="btn-auth-mode-pin" onclick="t1_switchAuthMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
       </div>
 
       <!-- CHẾ ĐỘ 1: VẼ MẬT KHẨU (3x3 PATTERN LOCK GRID) -->
@@ -463,7 +463,7 @@
           <canvas id="pattern-canvas" width="220" height="220" class="cursor-pointer rounded-2xl"></canvas>
         </div>
         <div class="flex justify-between items-center px-2 pt-1 text-[11px]">
-          <button onclick="t1_resetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
+          <button type="button" onclick="t1_resetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
           <span class="text-slate-400">Nối từ 3 điểm trở lên</span>
         </div>
       </div>
@@ -474,7 +474,7 @@
         <div>
           <input type="password" id="card-info-pwd-input" onkeyup="if(event.key==='Enter') submitCardInfoAuth()" placeholder="Nhập Mật Khẩu..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
         </div>
-        <button id="btn-submit-card-auth" onclick="submitCardInfoAuth()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
+        <button type="button" id="btn-submit-card-auth" onclick="submitCardInfoAuth()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
           🔓 MỞ KHÓA MẬT KHẨU
         </button>
       </div>
@@ -482,17 +482,17 @@
   </div>
 
   <!-- MODAL THIẾT LẬP MẬT KHẨU HÌNH VẼ MỚI (SET PATTERN PWD MODAL) -->
-  <div id="modal-set-pattern-pwd" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-set-pattern-pwd')">
+  <div id="modal-set-pattern-pwd" class="modal-overlay" style="z-index: 250;">
     <div class="modal-content rounded-2xl border-t-4 border-emerald-600 !p-4 max-w-[340px] w-full text-center">
       <div class="flex justify-between items-center mb-2.5 border-b pb-2">
         <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">🎨 THIẾT LẬP MẬT KHẨU MỚI</h3>
-        <button onclick="closeModal('modal-set-pattern-pwd')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-set-pattern-pwd')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
       </div>
 
       <!-- CHỌN CHẾ ĐỘ THIẾT LẬP -->
       <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
-        <button id="btn-set-mode-pattern" onclick="t1_switchSetMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs">✍️ Vẽ Hình Mẫu Mới</button>
-        <button id="btn-set-mode-pin" onclick="t1_switchSetMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Chữ / Số</button>
+        <button type="button" id="btn-set-mode-pattern" onclick="t1_switchSetMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs">✍️ Vẽ Hình Mẫu Mới</button>
+        <button type="button" id="btn-set-mode-pin" onclick="t1_switchSetMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Chữ / Số</button>
       </div>
 
       <!-- CHẾ ĐỘ 1: VẼ HÌNH MẪU MỚI (RECORD PATTERN) -->
@@ -502,10 +502,10 @@
           <canvas id="pattern-set-canvas" width="220" height="220" class="cursor-pointer rounded-2xl"></canvas>
         </div>
         <div class="flex justify-between items-center px-2 pt-1 text-[11px]">
-          <button onclick="t1_resetSetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer">🔄 Vẽ lại</button>
+          <button type="button" onclick="t1_resetSetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer">🔄 Vẽ lại</button>
           <span id="pattern-set-code-badge" class="font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] hidden">Mã: --</span>
         </div>
-        <button id="btn-save-set-pattern" onclick="t1_saveSetPatternPassword()" disabled class="w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5">
+        <button type="button" id="btn-save-set-pattern" onclick="t1_saveSetPatternPassword()" disabled class="w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5">
           💾 LƯU HÌNH VẼ MỚI
         </button>
       </div>
@@ -516,7 +516,7 @@
         <div>
           <input type="text" id="card-info-new-pwd-input" placeholder="Nhập mật khẩu mới..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 transition" />
         </div>
-        <button onclick="t1_saveSetTextPassword()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
+        <button type="button" onclick="t1_saveSetTextPassword()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
           💾 LƯU MẬT KHẨU MỚI
         </button>
       </div>
@@ -526,11 +526,11 @@
   </div>
 
   <!-- MODAL SỬA THÔNG TIN BẢO MẬT THẺ & THẺ ẢO (CỘT L->R) -->
-  <div id="modal-edit-card-security" class="modal-overlay" style="z-index: 240;" onclick="if(event.target === this) closeModal('modal-edit-card-security')">
+  <div id="modal-edit-card-security" class="modal-overlay" style="z-index: 240;">
     <div class="modal-content rounded-2xl border-t-4 border-indigo-600 !p-4 max-w-[360px] w-full">
       <div class="flex justify-between items-center mb-3 border-b pb-2">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">✏️ Sửa Thông Tin Bảo Mật Thẻ</h3>
-        <button onclick="closeModal('modal-edit-card-security')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-edit-card-security')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-3 text-xs max-h-[75vh] overflow-y-auto pr-1">
         <input type="hidden" id="sec-card-id" value="" />

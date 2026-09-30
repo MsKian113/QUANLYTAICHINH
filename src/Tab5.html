@@ -35,14 +35,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL POPUP 1: CHI TIẾT TÀI KHOẢN (KHI BẤM VÀO NÚT TK) -->
 <!-- ========================================================================= -->
-<div id="modal-t5-acc-detail" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-t5-acc-detail')">
+<div id="modal-t5-acc-detail" class="modal-overlay">
   <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[360px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
     
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
         <span>👤</span> <span id="t5-md-acc-name">TK Joshin KA</span>
       </h3>
-      <button onclick="closeModal('modal-t5-acc-detail')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-t5-acc-detail')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <!-- CHỈ HIỆN NGÀY MUA GẦN NHẤT & TÊN SP -->
@@ -58,10 +58,10 @@
     </div>
 
     <div class="flex gap-2 pt-1">
-      <button onclick="t5_openQuickBuyFromDetailModal()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-2xs transition cursor-pointer">
+      <button type="button" onclick="t5_openQuickBuyFromDetailModal()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-2xs transition cursor-pointer">
         ⚡ Ghi Nhận Mua Mới
       </button>
-      <button id="t5-btn-cancel-cooldown" onclick="t5_handleCancelCooldownFromModal()" class="py-2 px-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition cursor-pointer">
+      <button type="button" id="t5-btn-cancel-cooldown" onclick="t5_handleCancelCooldownFromModal()" class="py-2 px-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition cursor-pointer">
         ❌ Hủy Cooldown
       </button>
     </div>
@@ -75,13 +75,13 @@
 <!-- ========================================================================= -->
 <!-- MODAL POPUP 3: FORM THÊM TÀI KHOẢN MỚI VÀO CATEGORIES CỘT G -->
 <!-- ========================================================================= -->
-<div id="modal-t5-add-acc" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-t5-add-acc')">
+<div id="modal-t5-add-acc" class="modal-overlay">
   <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[360px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
         <span>➕</span> <span>Thêm Tài Khoản</span>
       </h3>
-      <button onclick="closeModal('modal-t5-add-acc')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-t5-add-acc')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <form onsubmit="event.preventDefault(); t5_handleAddAccount();" class="space-y-3">
@@ -117,13 +117,13 @@
 <!-- ========================================================================= -->
 <!-- MODAL POPUP 4: SỬA SỐ NGÀY COOLDOWN CỬA HÀNG (DÂN CỬA HÀNG ĐƯỢC CHỌN) -->
 <!-- ========================================================================= -->
-<div id="modal-t5-store-cooldown" class="modal-overlay" style="z-index: 300;" onclick="if(event.target === this) t5_closeStoreCooldownModal()">
+<div id="modal-t5-store-cooldown" class="modal-overlay" style="z-index: 300;">
   <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[340px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
         <span>⚙️</span> <span>Sửa Cooldown Cửa Hàng</span>
       </h3>
-      <button onclick="t5_closeStoreCooldownModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="t5_closeStoreCooldownModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <form onsubmit="event.preventDefault(); t5_handleSaveSingleStoreCooldown();" class="space-y-3">
@@ -169,12 +169,24 @@
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  function t5_loadData() {
+  function applyTab5Data(res) {
+    if (res && res.success) {
+      window.TAB5_DATA = res;
+      if (typeof t5_renderMatrix === 'function') {
+        t5_renderMatrix();
+      }
+    }
+  }
+
+  function t5_loadData(forceRefresh) {
+    if (!forceRefresh && window.TAB5_DATA && window.TAB5_DATA.matrix && window.TAB5_DATA.matrix.length > 0) {
+      if (typeof t5_renderMatrix === 'function') t5_renderMatrix();
+      return;
+    }
     if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab5Data === 'function') {
       google.script.run.withSuccessHandler(function(res) {
         if (res && res.success) {
-          window.TAB5_DATA = res;
-          t5_renderMatrix();
+          applyTab5Data(res);
         } else {
           showToast("❌ Không thể tải dữ liệu Lịch Mua!", true);
         }

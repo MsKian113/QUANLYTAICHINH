@@ -1,0 +1,1302 @@
+<!-- ===================================================== -->
+<!-- MODULE THU CHI GIA ĐÌNH (FAMILY COMPONENT)             -->
+<!-- ===================================================== -->
+
+<!-- 1. GIAO DIỆN TỔNG QUAN DASHBOARD -->
+<div class="gd-wallet-dashboard">
+    <div class="gd-wallet-header">
+        <div>
+            <div class="gd-wallet-subtitle">HỆ THỐNG GIA ĐÌNH</div>
+            <div id="gd-currentYearDisplay" class="gd-wallet-title"></div>
+        </div>
+        <select id="gd-monthSelector" class="gd-wallet-select">
+            <option value="1">Tháng 1</option>
+            <option value="2">Tháng 2</option>
+            <option value="3">Tháng 3</option>
+            <option value="4">Tháng 4</option>
+            <option value="5">Tháng 5</option>
+            <option value="6">Tháng 6</option>
+            <option value="7">Tháng 7</option>
+            <option value="8">Tháng 8</option>
+            <option value="9">Tháng 9</option>
+            <option value="10">Tháng 10</option>
+            <option value="11">Tháng 11</option>
+            <option value="12">Tháng 12</option>
+            <option value="all">Cả năm</option>
+        </select>
+    </div>
+    <div class="gd-wallet-net-container">
+        <div id="gd-netCashVal" class="gd-wallet-net-value">0 ¥</div>
+    </div>
+    <div class="gd-wallet-divider"></div>
+    <div class="gd-wallet-grid">
+        <div>
+            <div class="gd-wallet-label">TỔNG THU</div>
+            <div id="gd-totalIncomeVal" class="gd-wallet-amount">0 ¥</div>
+        </div>
+        <div>
+            <div class="gd-wallet-label">TỔNG CHI</div>
+            <div id="gd-totalExpenseVal" class="gd-wallet-amount">0 ¥</div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. DANH SÁCH GIAO DỊCH & THANH THAO TÁC (TỐI ƯU MOBILE - CHIA ĐỀU 3 NÚT) -->
+
+<div class="gd-tx-container">
+    <!-- Hàng Tab Khoản Chi / Khoản Thu / Thống kê nằm trên cùng -->
+    <div class="gd-tx-header-row" style="margin-bottom: 12px;">
+        <div class="gd-tx-tabs">
+            <button id="gd-tabExpense" class="gd-tx-tab-btn gd-active">Khoản Chi</button>
+            <button id="gd-tabIncome" class="gd-tx-tab-btn">Khoản Thu</button>
+            <button id="gd-tabStats" class="gd-tx-tab-btn">Hũ Chi Tiêu</button>
+        </div>
+    </div>
+
+    <!-- Vùng hiển thị nội dung linh hoạt (Thay đổi giữa Danh sách giao dịch <-> Thống kê hũ) -->
+    <div id="gd-dynamicContentArea">
+        <!-- Danh sách giao dịch (Dùng chung cho tab Chi / Thu) -->
+        <div id="gd-txListContainer" class="gd-tx-list">
+            <div class="gd-tx-empty">Đang tải dữ liệu từ sheet...</div>
+        </div>
+    </div>
+
+    <!-- Thanh thao tác 3 nút chia đều nằm ở DƯỚI CÙNG -->
+    <div id="gd-bottomActionsContainer" class="gd-bottom-actions">
+        <div id="gd-defaultActions" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; align-items: center; gap: 4px;">
+            <button id="gd-btnQuickAdd" class="gd-bottom-action-item gd-quick-text" style="justify-content: center; padding: 8px 4px;">
+                <span class="gd-action-icon">⚡</span>
+                <span>Hóa đơn</span>
+            </button>
+            
+            <button id="gd-btnNewTx" class="gd-bottom-action-item gd-new-text" style="justify-content: center; padding: 8px 4px;">
+                <span class="gd-action-icon">+</span>
+                <span>Mới</span>
+            </button>
+            
+            <button type="button" onclick="familyOpenJarConfigModal()" class="gd-bottom-action-item" style="color: #d93678; justify-content: center; padding: 8px 4px;">
+                <span class="gd-action-icon">⚙️</span>
+                <span>Thiết lập Hũ</span>
+            </button>
+        </div>
+    </div>
+</div>
+<!-- 3. MODAL THÊM / SỬA GIAO DỊCH LẺ (+ Mới) -->
+<div id="gd-txModal" class="gd-modal-overlay" style="display: none;">
+    <div class="gd-modal-content">
+        <div class="gd-modal-header">
+            <h3 id="gd-modalTitle">Thêm Giao Dịch</h3>
+            <button type="button" class="gd-modal-close" onclick="familyCloseModal()">&times;</button>
+        </div>
+        <div class="gd-modal-body">
+            <form id="gd-txForm">
+                <input type="hidden" id="gd-fType">
+
+                <div class="gd-form-group">
+                    <label>Ngày (DD/MM/YYYY)</label>
+                    <input type="text" id="gd-fDate" class="gd-form-control" placeholder="DD/MM/YYYY">
+                </div>
+
+                <div class="gd-form-group gd-suggest-wrapper">
+                    <label>Nội dung</label>
+                    <input type="text" id="gd-fContent" class="gd-form-control" placeholder="Mô tả giao dịch..." autocomplete="off" oninput="familyLocGoiYNoiDung()" onfocus="familyLocGoiYNoiDung()">
+                    <div id="gd-dropdownNoiDung" class="gd-suggest-dropdown hidden"></div>
+                </div>
+
+                <div class="gd-form-group">
+                    <label>Số tiền (¥)</label>
+                    <input type="number" id="gd-fAmount" class="gd-form-control" placeholder="0">
+                </div>
+
+                <div class="gd-form-group gd-suggest-wrapper">
+                    <label>Nguồn tiền</label>
+                    <input type="text" id="gd-fSource" class="gd-form-control" placeholder="VD: Ví, C- Raku KA..." autocomplete="off" oninput="familyLocGoiYNguon()" onfocus="familyLocGoiYNguon()">
+                    <div id="gd-dropdownNguon" class="gd-suggest-dropdown hidden"></div>
+                </div>
+
+                <div class="gd-form-group gd-suggest-wrapper">
+                    <label>Hũ (Jar)</label>
+                    <input type="text" id="gd-fJar" class="gd-form-control" placeholder="Tùy chọn" autocomplete="off" oninput="familyLocGoiYHu()" onfocus="familyLocGoiYHu()">
+                    <div id="gd-dropdownHu" class="gd-suggest-dropdown hidden"></div>
+                </div>
+
+                <div class="gd-form-group">
+                    <label>Ghi chú thêm</label>
+                    <textarea id="gd-fNote" class="gd-form-control" rows="2" placeholder="Ghi chú thêm..."></textarea>
+                </div>
+            </form>
+        </div>
+            <div class="gd-form-group" style="display: flex; gap: 15px; align-items: center; margin-bottom: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: none;">
+                <input type="checkbox" id="gd-fIsTemplate" style="width: 16px; height: 16px; accent-color: #38bdf8;"> Mẫu gợi ý 
+            </label>
+        </div>
+        <div class="gd-form-group" style="display: flex; gap: 15px; align-items: center; margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 700; color: #475569; text-transform: none;">
+                <input type="checkbox" id="gd-fIsFixed" style="width: 16px; height: 16px; accent-color: #e91e63;"> Cố định hàng tháng
+            </label>
+        </div>
+    
+        <div class="gd-modal-footer">
+            <button type="button" class="gd-btn-cancel" onclick="familyCloseModal()">Hủy</button>
+            <button type="button" class="gd-btn-save" onclick="familySaveTransaction()">Lưu giao dịch</button>
+        </div>
+    </div>
+</div>
+
+<!-- 4. MODAL SỬA NHANH KHOẢN CỐ ĐỊNH THÁNG (⚡ Nhanh - Siêu tốc 0s) -->
+<div id="gd-quickModal" class="gd-modal-overlay" style="display: none;">
+    <div class="gd-modal-content" style="max-width: 540px;">
+        <div class="gd-modal-header">
+            <h3>⚡ Sửa Nhanh Khoản Cố Định (Chưa nhập)</h3>
+            <button type="button" class="gd-modal-close" onclick="familyCloseQuickModal()">&times;</button>
+        </div>
+        
+        <!-- KHUNG THÔNG BÁO TRỰC TIẾP TRÊN WEB -->
+        <div id="qe-notification" style="display: none; margin: 10px 20px 0 20px; padding: 10px 14px; border-radius: 10px; font-size: 0.85rem; font-weight: 600;"></div>
+
+        <div class="gd-modal-body" style="max-height: 65vh; overflow-y: auto;">
+            <p class="text-xs text-slate-500 mb-2">Các khoản cố định chưa điền số tiền trong tháng này:</p>
+            <div id="gd-quickListContainer" class="space-y-1">
+                <div class="text-xs text-slate-400 text-center py-4">Đang tải...</div>
+            </div>
+        </div>
+        <div class="gd-modal-footer">
+            <button type="button" class="gd-btn-cancel" onclick="familyCloseQuickModal()">Đóng</button>
+            <button type="button" class="gd-btn-save" onclick="familySaveQuickEdits()">Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+<!-- 5. MODAL THIẾT LẬP TỶ LỆ % CÁC HŨ -->
+<div id="gd-jarConfigModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 16px;">
+    <div style="background: #ffffff; width: 100%; max-width: 420px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+        
+        <!-- Header modal -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+            <div>
+                <div style="font-size: 0.95rem; font-weight: 800; color: #1e293b;">Cấu hình tỷ lệ % các Hũ</div>
+                <div id="gd-jarConfigSubtitle" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">Dựa trên thu nhập tháng trước</div>
+            </div>
+            <button type="button" onclick="familyCloseJarConfigModal()" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #94a3b8;">&times;</button>
+        </div>
+
+        <!-- Thông báo trạng thái -->
+        <div id="gd-jarConfigNotif" style="display: none; margin: 12px 16px 0 16px; padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;"></div>
+
+        <!-- Danh sách các hũ và ô nhập % -->
+        <div id="gd-jarConfigListContainer" style="padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px;">
+            <div style="text-align: center; font-size: 0.75rem; color: #94a3b8; padding: 20px;">Đang tải danh sách hũ...</div>
+        </div>
+
+        <!-- Footer nút bấm -->
+        <div style="padding: 12px 16px; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #475569;">
+                Tổng %: <span id="gd-jarConfigTotalPercent" style="color: #e91e63; font-size: 0.9rem;">0</span>%
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" onclick="familyCloseJarConfigModal()" style="background: #e2e8f0; border: none; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #475569; cursor: pointer;">Hủy</button>
+                <button type="button" onclick="familySaveJarConfigs()" style="background: #e91e63; border: none; padding: 6px 16px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; color: #ffffff; cursor: pointer;">Lưu cấu hình</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================================================== -->
+<!-- STYLES                                                -->
+<!-- ===================================================== -->
+<style>
+    .gd-wallet-dashboard { background: linear-gradient(135deg, #d93678, #e91e63); color: white; border-radius: 0 0 18px 18px; padding: 16px 12px 20px; box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25); margin-bottom: 20px; font-family: inherit; }
+    .gd-wallet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+    .gd-wallet-subtitle { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85; font-weight: 600; }
+    .gd-wallet-title { font-size: 1.1rem; font-weight: 700; margin-top: 2px; }
+    .gd-wallet-select { background: rgba(255, 255, 255, 0.12); color: white; border: 1px solid rgba(255, 255, 255, 0.35); padding: 6px 10px; border-radius: 16px; font-size: 0.8rem; font-weight: 600; cursor: pointer; outline: none; }
+    .gd-wallet-select option { color: #1e293b; }
+    .gd-wallet-net-container { margin-bottom: 14px; }
+    .gd-wallet-net-value { font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+    .gd-wallet-divider { height: 1px; background: rgba(255, 255, 255, 0.22); margin-bottom: 14px; }
+    .gd-wallet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .gd-wallet-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.75; font-weight: 600; margin-bottom: 4px; }
+    .gd-wallet-amount { font-size: 1rem; font-weight: 800; }
+    
+    .gd-tx-container { background: #ffffff; border-radius: 18px; padding: 16px 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
+    .gd-tx-header-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .gd-tx-tabs { display: flex; background: #f1f5f9; border-radius: 12px; padding: 4px; flex: 1; }
+    .gd-tx-tab-btn { flex: 1; background: transparent; border: none; padding: 8px 4px; font-size: 0.8rem; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 10px; transition: all 0.2s ease; white-space: nowrap; }
+    .gd-tx-tab-btn.gd-active { background: #ffffff; color: #e91e63; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); }
+    
+    /* THANH THAO TÁC 2 NÚT NẰM CÙNG 1 HÀNG Ở DƯỚI */
+    .gd-bottom-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding: 10px 8px; border-top: 1px solid #f1f5f9; background: #fafaf9; border-radius: 12px; box-sizing: border-box; }
+    .gd-bottom-action-item { background: transparent; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.85rem; font-weight: 700; cursor: pointer; padding: 8px 4px; border-radius: 8px; flex: 1; white-space: nowrap; transition: background 0.2s; }
+    .gd-bottom-action-item:active { background: #e2e8f0; }
+    .gd-quick-text { color: #b45309; }
+    .gd-new-text { color: #e91e63; }
+    .gd-action-icon { font-size: 1.1rem; line-height: 1; }
+    .gd-action-divider { width: 1px; height: 20px; background: #e2e8f0; margin: 0 4px; }
+
+    .gd-tx-list { display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto; }
+    .gd-tx-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #cbd5e1; cursor: pointer; transition: background 0.2s; }
+    .gd-tx-item:hover { background: #f1f5f9; }
+    .gd-tx-item.gd-expense { border-left-color: #ef4444; }
+    .gd-tx-item.gd-income { border-left-color: #22c55e; }
+    .gd-tx-info-main { font-weight: 700; font-size: 0.9rem; color: #1e293b; margin-bottom: 2px; }
+    .gd-tx-info-sub { font-size: 0.75rem; color: #64748b; }
+    .gd-tx-amount { font-weight: 800; font-size: 0.95rem; }
+    .gd-tx-amount.gd-expense { color: #ef4444; }
+    .gd-tx-amount.gd-income { color: #22c55e; }
+    .gd-tx-empty { text-align: center; padding: 20px; color: #94a3b8; font-size: 0.85rem; }
+    
+    .gd-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 16px; box-sizing: border-box; }
+    .gd-modal-content { background: #ffffff; width: 100%; max-width: 400px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden; animation: gdFadeIn 0.2s ease-in-out; }
+    @keyframes gdFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .gd-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; }
+    .gd-modal-header h3 { margin: 0; font-size: 1.1rem; color: #1e293b; font-weight: 700; }
+    .gd-modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+    .gd-modal-body { padding: 16px 20px; max-height: 60vh; overflow-y: auto; }
+    .gd-form-group { margin-bottom: 12px; }
+    .gd-form-group label { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
+    .gd-form-control { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 0.9rem; outline: none; box-sizing: border-box; transition: border-color 0.2s; font-family: inherit; }
+    .gd-form-control:focus { border-color: #e91e63; }
+    .gd-modal-footer { display: flex; gap: 10px; padding: 14px 20px; background: #f8fafc; border-top: 1px solid #f1f5f9; }
+    .gd-btn-cancel, .gd-btn-save { flex: 1; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: none; }
+    .gd-btn-cancel { background: #e2e8f0; color: #475569; }
+    .gd-btn-save { background: #e91e63; color: white; }
+    .gd-suggest-wrapper { position: relative; }
+    .gd-suggest-dropdown { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1); max-height: 180px; overflow-y: auto; z-index: 1100; }
+</style>
+
+<!-- ===================================================== -->
+<!-- SCRIPTS                                               -->
+<!-- ===================================================== -->
+<script>
+/* ========================================================================== */
+/* 1. KHỞI TẠO BIẾN TOÀN CỤC & TRẠNG THÁI HỆ THỐNG                            */
+/* ========================================================================== */
+let familyData = [];                  // Lưu trữ danh sách tất cả giao dịch
+let familyWalletList = [];            // Danh sách nguồn tiền (ví, tài khoản)
+let familyHuList = [];                // Danh sách tên các Hũ (lấy từ cột B sheet Categories)
+let familyNoiDungMauList = [];        // Danh sách nội dung mẫu gợi ý
+let familyCachedFixedTemplates = null;// Cache các khoản cố định hàng tháng
+let familyCurrentTab = 'expense';     // Tab hiện tại ('expense': Khoản chi, 'income': Khoản thu, 'stats': Thống kê)
+
+
+/* ========================================================================== */
+/* 2. KHỞI TẠO VÀ ĐIỀU HƯỚNG GIAO DIỆN CHUNG (RENDER & NAVIGATION)            */
+/* ========================================================================== */
+
+// Hàm khởi tạo chính khi load trang, gắn sự kiện cho các thành phần UI
+function renderFamilyFinancials() {
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+
+    const yearDisp = document.getElementById('gd-currentYearDisplay');
+    const monthSel = document.getElementById('gd-monthSelector');
+
+    if (yearDisp) yearDisp.innerText = `Năm ${currentYear}`;
+    if (monthSel && !monthSel.dataset.initialized) {
+        monthSel.value = currentMonth;
+        monthSel.addEventListener('change', function() {
+            familyUpdateDashboard();
+        });
+        monthSel.dataset.initialized = "true";
+    }
+
+    // Gắn sự kiện chuyển tab (Khoản Chi / Khoản Thu / Thống kê)
+    const tabExpense = document.getElementById('gd-tabExpense');
+    const tabIncome = document.getElementById('gd-tabIncome');
+    const tabStats = document.getElementById('gd-tabStats');
+
+    if (tabExpense && !tabExpense.dataset.initialized) {
+        tabExpense.addEventListener('click', () => familySwitchTab('expense'));
+        tabIncome.addEventListener('click', () => familySwitchTab('income'));
+        if (tabStats) tabStats.addEventListener('click', () => familySwitchTab('stats'));
+        tabExpense.dataset.initialized = "true";
+    }
+
+    // Gắn sự kiện cho các nút thao tác nhanh ở dưới đáy
+    const btnQuickAdd = document.getElementById('gd-btnQuickAdd');
+    const btnNewTx = document.getElementById('gd-btnNewTx');
+    if (btnQuickAdd && !btnQuickAdd.dataset.initialized) {
+        btnQuickAdd.addEventListener('click', familyOpenQuickModal);
+        btnNewTx.addEventListener('click', () => familyOpenModal('new'));
+        btnQuickAdd.dataset.initialized = "true";
+    }
+
+    setupOutsideClickClose([
+        { input: 'gd-fSource',  dropdown: 'gd-dropdownNguon'   },
+        { input: 'gd-fJar',     dropdown: 'gd-dropdownHu'      },
+        { input: 'gd-fContent', dropdown: 'gd-dropdownNoiDung' }
+    ]);
+
+    if (familyData.length === 0) {
+        familyLoadDataFromSheet();
+    } else {
+        familyUpdateDashboard();
+    }
+}
+
+// Xử lý chuyển đổi qua lại giữa các tab và điều phối hiển thị nút ở thanh dưới cùng
+function familySwitchTab(tabType) {
+    familyCurrentTab = tabType;
+    const btnExpense = document.getElementById('gd-tabExpense');
+    const btnIncome = document.getElementById('gd-tabIncome');
+    const btnStats = document.getElementById('gd-tabStats');
+    
+    if (btnExpense && btnIncome && btnStats) {
+        btnExpense.classList.toggle('gd-active', tabType === 'expense');
+        btnIncome.classList.toggle('gd-active', tabType === 'income');
+        btnStats.classList.toggle('gd-active', tabType === 'stats');
+    }
+
+    // Điều khiển ẩn/hiện nút ở thanh dưới cùng (Tab Thống kê hiện nút Cấu hình %, các tab khác hiện nút Hóa đơn/Mới)
+    const defaultActions = document.getElementById('gd-defaultActions');
+    const statsActions = document.getElementById('gd-statsActions');
+    if (defaultActions && statsActions) {
+        if (tabType === 'stats') {
+            defaultActions.style.display = 'none';
+            statsActions.style.display = 'flex';
+        } else {
+            defaultActions.style.display = 'flex';
+            statsActions.style.display = 'none';
+        }
+    }
+
+    const container = document.getElementById('gd-txListContainer');
+    if (!container) return;
+
+    if (tabType === 'stats') {
+        container.innerHTML = familyRenderJarStatsHTML();
+        familyCalculateJarStats();
+    } else {
+        familyRenderTransactionList();
+    }
+}
+
+// Trích xuất tháng từ chuỗi ngày định dạng DD/MM/YYYY
+function familyGetMonthFromDate(dateStr) {
+    if (!dateStr) return "";
+    const parts = String(dateStr).trim().split("/");
+    return parts.length >= 2 ? parts[1].trim() : "";
+}
+
+
+/* ========================================================================== */
+/* 3. QUẢN LÝ DASHBOARD & DANH SÁCH GIAO DỊCH (DASHBOARD & TRANSACTION LIST)    */
+/* ========================================================================== */
+
+// Cập nhật tổng quan số liệu Thu, Chi, Số dư ròng theo tháng được chọn
+function familyUpdateDashboard() {
+    const monthSel = document.getElementById('gd-monthSelector');
+    if (!monthSel) return;
+    const selectedMonth = monthSel.value;
+
+    let totalIncome = 0, totalExpense = 0;
+    familyData.forEach(row => {
+        const matchMonth = selectedMonth === 'all' ||
+            parseInt(familyGetMonthFromDate(row[1]), 10) === parseInt(selectedMonth, 10);
+        if (!matchMonth) return;
+        const type = String(row[2] || '').trim().toLowerCase();
+        const amount = Number(row[3]) || 0;
+        if (type === 'thu') totalIncome += amount;
+        if (type === 'chi') totalExpense += amount;
+    });
+
+    const netCash = totalIncome - totalExpense;
+    const incVal = document.getElementById('gd-totalIncomeVal');
+    const expVal = document.getElementById('gd-totalExpenseVal');
+    const netVal = document.getElementById('gd-netCashVal');
+    if (incVal) incVal.innerText = totalIncome.toLocaleString() + ' ¥';
+    if (expVal) expVal.innerText = totalExpense.toLocaleString() + ' ¥';
+    if (netVal) netVal.innerText = (netCash >= 0 ? '+' : '') + netCash.toLocaleString() + ' ¥';
+
+    if (familyCurrentTab === 'stats') {
+        familyCalculateJarStats();
+    } else {
+        familyRenderTransactionList();
+    }
+}
+
+// Render danh sách giao dịch chi tiết (sắp xếp ngày mới nhất lên trên)
+function familyRenderTransactionList() {
+    const monthSel = document.getElementById('gd-monthSelector');
+    const container = document.getElementById('gd-txListContainer');
+    if (!container || !monthSel) return;
+
+    const selectedMonth = monthSel.value;
+    let filteredRows = [];
+
+    familyData.forEach((row, originalIndex) => {
+        const matchMonth = selectedMonth === 'all' ||
+            parseInt(familyGetMonthFromDate(row[1]), 10) === parseInt(selectedMonth, 10);
+        const type = String(row[2] || '').trim().toLowerCase();
+        const matchTab = (familyCurrentTab === 'income' && type === 'thu') ||
+                         (familyCurrentTab === 'expense' && type === 'chi');
+        if (matchMonth && matchTab) filteredRows.push({ row, originalIndex });
+    });
+
+    if (filteredRows.length === 0) {
+        container.innerHTML = `<div class="gd-tx-empty text-xs py-3 text-slate-400 text-center">Không có giao dịch nào trong tháng này</div>`;
+        return;
+    }
+
+    // Sắp xếp ngày mới nhất lên trên (Giảm dần theo định dạng YYYYMMDD)
+    filteredRows.sort((a, b) => {
+        const parseDate = (dateStr) => {
+            if (!dateStr) return 0;
+            const parts = String(dateStr).trim().split("/");
+            if (parts.length < 3) return 0;
+            return parseInt(parts[2] + parts[1].padStart(2, '0') + parts[0].padStart(2, '0'), 10);
+        };
+        return parseDate(b.row[1]) - parseDate(a.row[1]);
+    });
+
+    container.innerHTML = filteredRows.map(({ row, originalIndex }) => {
+        const date = row[1] || '';
+        const type = row[2] || '';
+        const amount = Number(row[3]) || 0;
+        const source = row[4] || '';
+        const jar = row[5] || '';
+        const content = row[6] || 'Không có nội dung';
+        const isIncome = String(type).trim().toLowerCase() === 'thu';
+        const typeClass = isIncome ? 'gd-income' : 'gd-expense';
+        const sign = isIncome ? '+' : '-';
+
+        // Rút gọn ngày: chỉ lấy DD/MM
+        const dateParts = String(date).trim().split('/');
+        const shortDate = dateParts.length >= 2 ? `${dateParts[0]}/${dateParts[1]}` : date;
+
+        const subParts = [shortDate, source];
+        if (jar) subParts.push(jar);
+        const subText = subParts.filter(Boolean).join(' • ');
+
+        // Ép sát tuyệt đối: padding cực mỏng, không margin, dùng border-left dạng phẳng thay vì vạch đỏ bo tròn tách rời
+        const leftBorderColor = isIncome ? '#10b981' : '#ef4444';
+
+        return `
+            <div class="gd-tx-item" onclick="familyOpenDetailModal(${originalIndex})" style="padding: 2px 6px; margin: 0; display: flex; align-items: center; justify-content: space-between; background: #fff; border-bottom: 1px solid #f1f5f9; border-left: 3px solid ${leftBorderColor};">
+                <div class="gd-tx-info-left" style="min-width: 0; padding-right: 6px;">
+                    <div class="gd-tx-info-main" style="font-size: 11.5px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1;">${content}</div>
+                    <div class="gd-tx-info-sub" style="font-size: 10px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1;">${subText}</div>
+                </div>
+                <div class="gd-tx-amount" style="font-size: 12px; font-weight: 700; white-space: nowrap; flex-shrink: 0; color: ${leftBorderColor};">${sign}${amount.toLocaleString()} ¥</div>
+            </div>`;
+    }).join('');
+}
+
+/* ========================================================================== */
+/* 4. TÍNH TOÁN & HIỂN THỊ THỐNG KÊ THEO HŨ (JARS STATISTICS)                 */
+/* ========================================================================== */
+
+function familyRenderJarStatsHTML() {
+    return `
+        <div style="background: #ffffff; border-radius: 10px; padding: 6px 8px; border: 1px solid #e2e8f0;">
+            <div id="gd-jarsProgressList" style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="text-align: center; font-size: 0.72rem; color: #94a3b8; padding: 4px;">Đang tính toán dữ liệu hũ...</div>
+            </div>
+        </div>
+    `;
+}
+
+// Tính toán chi tiêu thực tế từng hũ và vẽ thanh tiến độ tỷ lệ phần trăm
+function familyCalculateJarStats() {
+    const progressContainer = document.getElementById('gd-jarsProgressList');
+    if (!progressContainer) return;
+
+    const monthSel = document.getElementById('gd-monthSelector');
+    const selectedMonth = monthSel ? monthSel.value : 'all';
+
+    let jarSpentMap = {};
+    let totalExpenseInMonth = 0;
+
+    familyData.forEach(row => {
+        const matchMonth = selectedMonth === 'all' ||
+            parseInt(familyGetMonthFromDate(row[1]), 10) === parseInt(selectedMonth, 10);
+        const type = String(row[2] || '').trim().toLowerCase();
+        
+        if (matchMonth && type === 'chi') {
+            const amount = Number(row[3]) || 0;
+            const jarName = String(row[5] || 'Khác').trim();
+            
+            totalExpenseInMonth += amount;
+            jarSpentMap[jarName] = (jarSpentMap[jarName] || 0) + amount;
+        }
+    });
+
+    if (!familyHuList || familyHuList.length === 0) {
+        progressContainer.innerHTML = `<div style="text-align: center; font-size: 0.75rem; color: #94a3b8; padding: 8px;">Chưa có danh sách hũ ở sheet Categories.</div>`;
+        return;
+    }
+
+    // CHỈ HIỂN THỊ CÁC HŨ CHI TIÊU (LỌC BỎ HŨ THU NHẬP)
+    const expenseJars = familyHuList.filter(jar => String(jar).trim().toLowerCase() !== 'thu nhập');
+
+    let html = '';
+    expenseJars.forEach(jarName => {
+        const spent = jarSpentMap[jarName] || 0;
+        const percentOfTotal = totalExpenseInMonth > 0 ? ((spent / totalExpenseInMonth) * 100).toFixed(1) : 0;
+
+        html += `
+            <div style="background: #f8fafc; padding: 6px 8px; border-radius: 6px; border: 0.5px solid #e2e8f0; margin-bottom: 4px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+                    <span style="font-size: 12px; font-weight: 600; color: #1e293b;">${jarName}</span>
+                    <div>
+                        <span style="font-size: 12px; font-weight: 700; color: #e91e63;">${spent.toLocaleString()} ¥</span>
+                        <span style="font-size: 10px; color: #64748b; margin-left: 4px;">(${percentOfTotal}%)</span>
+                    </div>
+                </div>
+                <div style="width: 100%; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden;">
+                    <div style="width: ${Math.min(percentOfTotal, 100)}%; height: 100%; background: #e91e63; border-radius: 2px;"></div>
+                </div>
+            </div>
+        `;
+    });
+
+    progressContainer.innerHTML = html;
+}
+/* ========================================================================== */
+/* 5. GỢI Ý TỰ ĐỘNG & XỬ LÝ MODAL THÊM/SỬA GIAO DỊCH (AUTOCOMPLETE & MODALS)     */
+/* ========================================================================== */
+
+function familyLocGoiYNguon() {
+    hienGoiY('gd-fSource', 'gd-dropdownNguon', familyWalletList);
+}
+
+function familyLocGoiYHu() {
+    hienGoiY('gd-fJar', 'gd-dropdownHu', familyHuList);
+}
+
+function familyLocGoiYNoiDung() {
+    hienGoiY('gd-fContent', 'gd-dropdownNoiDung', familyNoiDungMauList, function(itemChon) {
+        if (itemChon) {
+            const fJar    = document.getElementById('gd-fJar');
+            const fSource = document.getElementById('gd-fSource');
+
+            if (fJar && !fJar.value && itemChon.hu) fJar.value = itemChon.hu;
+            if (fSource && !fSource.value && itemChon.phuongThuc) fSource.value = itemChon.phuongThuc;
+        }
+    }, { searchKey: 'noiDung', displayKey: 'noiDung' });
+}
+
+function familyOpenModal(mode) {
+    const modal = document.getElementById('gd-txModal');
+    const modalTitle = document.getElementById('gd-modalTitle');
+    const fType = document.getElementById('gd-fType');
+    const fDate = document.getElementById('gd-fDate');
+    const fAmount = document.getElementById('gd-fAmount');
+    const fSource = document.getElementById('gd-fSource');
+    const fJar = document.getElementById('gd-fJar');
+    const fContent = document.getElementById('gd-fContent');
+    const fNote = document.getElementById('gd-fNote');
+    const fIsFixed = document.getElementById('gd-fIsFixed');
+    const fIsTemplate = document.getElementById('gd-fIsTemplate');
+
+    fType.value = familyCurrentTab === 'income' ? 'Thu' : 'Chi';
+
+    const today = new Date();
+    fDate.value = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+    modalTitle.innerText = `Thêm mới giao dịch ${fType.value}`;
+    fAmount.value = fSource.value = fJar.value = fContent.value = fNote.value = '';
+    if (fIsFixed) fIsFixed.checked = false;
+    if (fIsTemplate) fIsTemplate.checked = false;
+
+    ['gd-dropdownNguon', 'gd-dropdownHu', 'gd-dropdownNoiDung'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    modal.style.display = 'flex';
+}
+
+function familyCloseModal() {
+    const modal = document.getElementById('gd-txModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function familySaveTransaction() {
+    const type = document.getElementById('gd-fType').value;
+    const date = document.getElementById('gd-fDate').value;
+    const amount = document.getElementById('gd-fAmount').value;
+    const source = document.getElementById('gd-fSource').value;
+    const jar = document.getElementById('gd-fJar').value;
+    const content = document.getElementById('gd-fContent').value;
+    const note = document.getElementById('gd-fNote').value;
+    
+    const isFixed = document.getElementById('gd-fIsFixed') ? document.getElementById('gd-fIsFixed').checked : false;
+    const isTemplate = document.getElementById('gd-fIsTemplate') ? document.getElementById('gd-fIsTemplate').checked : false;
+
+    if (!amount || !date || !content) {
+        alert("Vui lòng nhập đầy đủ Ngày, Số tiền và Nội dung!");
+        return;
+    }
+
+    const newRowId = "TC" + Math.floor(10000 + Math.random() * 90000);
+    const newRow = [newRowId, date, type, Number(amount), source, jar, content, note];
+
+    familyCloseModal();
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+            .withSuccessHandler(function() {
+                familyData.push(newRow);
+                familyUpdateDashboard();
+                
+                // Tự động làm mới dữ liệu mẫu ngầm mà không cần F5
+                google.script.run.withSuccessHandler(function(data) { familyNoiDungMauList = data || []; }).getDanhSachNoiDungMau();
+                google.script.run.withSuccessHandler(function(templates) { familyCachedFixedTemplates = templates || []; }).getFixedTransactions();
+            })
+            .addFamilyTransactionWithOptions(newRow, { isFixed: isFixed, isTemplate: isTemplate });
+    } else {
+        familyData.push(newRow);
+        familyUpdateDashboard();
+    }
+}
+
+function familyOpenDetailModal(index) {
+    const row = familyData[index];
+    if (!row) return;
+    familyOpenModal('new');
+    document.getElementById('gd-modalTitle').innerText = "Chi tiết giao dịch / Chỉnh sửa";
+    document.getElementById('gd-fType').value = row[2] || 'Chi';
+    document.getElementById('gd-fDate').value = row[1] || '';
+    document.getElementById('gd-fAmount').value = row[3] || 0;
+    document.getElementById('gd-fSource').value = row[4] || '';
+    document.getElementById('gd-fJar').value = row[5] || '';
+    document.getElementById('gd-fContent').value = row[6] || '';
+    document.getElementById('gd-fNote').value = row[7] || '';
+}
+
+
+/* ========================================================================== */
+/* 6. XỬ LÝ SỬA NHANH KHOẢN CỐ ĐỊNH (QUICK FIXED AMOUNTS & BATCH SAVE)          */
+/* ========================================================================== */
+
+function familyOpenQuickModal() {
+    const modal = document.getElementById('gd-quickModal');
+    const container = document.getElementById('gd-quickListContainer');
+    const notif = document.getElementById('qe-notification');
+    if (!modal || !container) return;
+
+    if (notif) notif.style.display = 'none';
+
+    const monthSel = document.getElementById('gd-monthSelector');
+    const currentYear = new Date().getFullYear();
+    const selectedMonth = monthSel && monthSel.value !== 'all' ? parseInt(monthSel.value, 10) : new Date().getMonth() + 1;
+
+    modal.style.display = 'flex';
+
+    if (familyCachedFixedTemplates !== null && familyCachedFixedTemplates.length > 0) {
+        familyRenderZeroAmountFixedList(familyCachedFixedTemplates, selectedMonth, currentYear);
+    } else {
+        container.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">Đang tải danh sách...</div>`;
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler(function(templates) {
+                    familyCachedFixedTemplates = templates || [];
+                    familyRenderZeroAmountFixedList(familyCachedFixedTemplates, selectedMonth, currentYear);
+                })
+                .getFixedTransactions();
+        }
+    }
+}
+
+function familyRenderZeroAmountFixedList(templates, targetMonth, targetYear) {
+    const container = document.getElementById('gd-quickListContainer');
+    if (!container) return;
+
+    if (!templates || templates.length === 0) {
+        container.innerHTML = `<div class="text-xs text-slate-400 text-center py-4">Chưa cấu hình khoản cố định ở cột C-G trong sheet Categories.</div>`;
+        return;
+    }
+
+    const mmStr = String(targetMonth).padStart(2, '0');
+    let pendingItems = [];
+
+    templates.forEach(tpl => {
+        let isAlreadyExist = false;
+
+        familyData.forEach((row) => {
+            const rowMonth = parseInt(familyGetMonthFromDate(row[1]), 10);
+            const rowContent = String(row[6] || "").trim().toLowerCase();
+            const tplContent = String(tpl.noiDung || "").trim().toLowerCase();
+            
+            if (rowMonth === targetMonth && rowContent === tplContent) {
+                isAlreadyExist = true;
+            }
+        });
+
+        if (!isAlreadyExist) {
+            pendingItems.push({
+                tpl: tpl,
+                dateVal: String(tpl.ngay || 1).padStart(2, '0') + "/" + mmStr + "/" + targetYear,
+                sourceVal: tpl.phuongThuc || ""
+            });
+        }
+    });
+
+    if (pendingItems.length === 0) {
+        container.innerHTML = `<div class="text-xs text-emerald-600 font-semibold text-center py-6">🎉 Tuyệt vời! Tất cả các khoản cố định trong tháng này đã được điền đủ.</div>`;
+        return;
+    }
+
+    let html = `
+        <div class="grid grid-cols-12 gap-1 px-2 py-1 text-[10px] uppercase font-bold text-slate-400 border-b border-slate-200">
+            <div class="col-span-4">Tên (Nội dung)</div>
+            <div class="col-span-2 text-center">Ngày</div>
+            <div class="col-span-3">Phương thức</div>
+            <div class="col-span-3">Số tiền (¥)</div>
+        </div>
+        <div class="space-y-1 mt-1">
+    `;
+
+    pendingItems.forEach((item, index) => {
+        const tpl = item.tpl;
+        const dotColor = tpl.loai === 'Thu' ? 'bg-emerald-500' : 'bg-rose-500';
+
+        html += `
+            <div class="grid grid-cols-12 gap-1 items-center p-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition"
+                 data-template-name="${tpl.noiDung}"
+                 data-loai="${tpl.loai || 'Chi'}"
+                 data-hu="${tpl.hu || ''}"
+                 data-day="${tpl.ngay || 1}"
+                 data-month="${targetMonth}"
+                 data-year="${targetYear}">
+
+                <div class="col-span-4 flex items-center gap-1.5 min-w-0 pr-1">
+                    <span class="w-1.5 h-1.5 rounded-full ${dotColor} shrink-0"></span>
+                    <span class="text-xs font-bold text-slate-800 truncate" title="${tpl.noiDung}">${tpl.noiDung}</span>
+                </div>
+                <div class="col-span-2 pr-1">
+                    <input type="text" id="qe-date-${index}" value="${item.dateVal}" class="w-full bg-white border border-slate-200 rounded px-1 py-1 text-[11px] text-slate-700 text-center focus:outline-none focus:ring-1 focus:ring-pink-500" placeholder="DD/MM">
+                </div>
+                <div class="col-span-3 pr-1">
+                    <input type="text" id="qe-source-${index}" value="${item.sourceVal}" class="w-full bg-white border border-slate-200 rounded px-1 py-1 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-pink-500 truncate" placeholder="Phương thức">
+                </div>
+                <div class="col-span-3">
+                    <input type="number" id="qe-amount-${index}" value="" class="w-full bg-white border border-pink-300 rounded px-1 py-1 text-xs font-bold text-pink-600 focus:outline-none focus:ring-1 focus:ring-pink-500" placeholder="Nhập số tiền">
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function familyCloseQuickModal() {
+    const modal = document.getElementById('gd-quickModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function showQuickNotification(message, type = 'success') {
+    const notif = document.getElementById('qe-notification');
+    if (!notif) return;
+
+    notif.innerText = message;
+    notif.style.display = 'block';
+
+    if (type === 'success') {
+        notif.style.background = '#d1fae5';
+        notif.style.color = '#065f46';
+        notif.style.border = '1px solid #a7f3d0';
+    } else {
+        notif.style.background = '#fee2e2';
+        notif.style.color = '#991b1b';
+        notif.style.border = '1px solid #fecaca';
+    }
+}
+
+// Lưu hàng loạt các khoản cố định qua backend (Batch Save)
+async function familySaveQuickEdits() {
+    const container = document.getElementById('gd-quickListContainer');
+    const modalOverlay = document.getElementById('gd-quickModal');
+    const saveBtn = modalOverlay ? modalOverlay.querySelector('.gd-btn-save') : null;
+    const notif = document.getElementById('qe-notification');
+    
+    if (!container) return;
+    if (notif) notif.style.display = 'none';
+
+    const rowsDivs = container.querySelectorAll('[data-template-name]');
+    const itemsToSave = [];
+
+    rowsDivs.forEach((div, index) => {
+        const dateInput = document.getElementById(`qe-date-${index}`);
+        const sourceInput = document.getElementById(`qe-source-${index}`);
+        const amountInput = document.getElementById(`qe-amount-${index}`);
+        if (!dateInput || !sourceInput || !amountInput) return;
+
+        const newAmount = Number(amountInput.value) || 0;
+        if (newAmount > 0) {
+            itemsToSave.push({
+                divElement: div,
+                noiDung: div.getAttribute('data-template-name'),
+                loai: div.getAttribute('data-loai') || 'Chi',
+                hu: div.getAttribute('data-hu') || '',
+                day: div.getAttribute('data-day') || 1,
+                month: parseInt(div.getAttribute('data-month'), 10),
+                year: parseInt(div.getAttribute('data-year'), 10),
+                newDate: dateInput.value.trim(),
+                newSource: sourceInput.value.trim(),
+                newAmount
+            });
+        }
+    });
+
+    if (itemsToSave.length === 0) {
+        showQuickNotification("⚠️ Vui lòng nhập số tiền cho ít nhất một khoản cần lưu!", "error");
+        return;
+    }
+
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Đang lưu hàng loạt...";
+        saveBtn.style.opacity = "0.6";
+        saveBtn.style.cursor = "not-allowed";
+    }
+    rowsDivs.forEach((_, idx) => {
+        const dIn = document.getElementById(`qe-date-${idx}`);
+        const sIn = document.getElementById(`qe-source-${idx}`);
+        const aIn = document.getElementById(`qe-amount-${idx}`);
+        if (dIn) dIn.disabled = true;
+        if (sIn) sIn.disabled = true;
+        if (aIn) aIn.disabled = true;
+    });
+
+    const payload = itemsToSave.map(item => ({
+        noiDung: item.noiDung,
+        loai: item.loai,
+        hu: item.hu,
+        day: item.day,
+        month: item.month,
+        year: item.year,
+        newDate: item.newDate,
+        newSource: item.newSource,
+        newAmount: item.newAmount
+    }));
+
+    if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        showQuickNotification("❌ Môi trường Google Apps Script không khả dụng.", "error");
+        return;
+    }
+
+    google.script.run
+        .withSuccessHandler(function(res) {
+            if (res && res.success) {
+                itemsToSave.forEach(it => {
+                    const matchedRowIndex = familyData.findIndex(r => {
+                        const rMonth = parseInt(familyGetMonthFromDate(r[1]), 10);
+                        return rMonth === it.month && String(r[6]).trim().toLowerCase() === it.noiDung.toLowerCase();
+                    });
+
+                    if (matchedRowIndex !== -1) {
+                        familyData[matchedRowIndex][1] = it.newDate;
+                        familyData[matchedRowIndex][3] = it.newAmount;
+                        familyData[matchedRowIndex][4] = it.newSource;
+                    } else {
+                        familyData.push(["TC" + Math.floor(10000 + Math.random() * 90000), it.newDate, it.loai, it.newAmount, it.newSource, it.hu, it.noiDung, "Khoản cố định hàng tháng"]);
+                    }
+
+                    if (it.divElement) it.divElement.remove();
+                });
+
+                familyUpdateDashboard();
+                showQuickNotification(`🎉 Đã điền thành công ${itemsToSave.length} khoản cố định! Đang đóng...`, "success");
+                
+                setTimeout(() => {
+                    familyCloseQuickModal();
+                    if (notif) notif.style.display = 'none';
+                }, 1200);
+            } else {
+                showQuickNotification("❌ Lỗi từ server: " + (res && res.message ? res.message : "Không rõ nguyên nhân"), "error");
+                restoreInputs(rowsDivs, saveBtn);
+            }
+        })
+        .withFailureHandler(function(err) {
+            showQuickNotification("❌ Lỗi kết nối: " + err.message, "error");
+            restoreInputs(rowsDivs, saveBtn);
+        })
+        .saveBatchQuickFixedAmounts(payload);
+}
+
+function restoreInputs(rowsDivs, saveBtn) {
+    if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerText = "Lưu thay đổi";
+        saveBtn.style.opacity = "1";
+        saveBtn.style.cursor = "pointer";
+    }
+    rowsDivs.forEach((_, idx) => {
+        const dIn = document.getElementById(`qe-date-${idx}`);
+        const sIn = document.getElementById(`qe-source-${idx}`);
+        const aIn = document.getElementById(`qe-amount-${idx}`);
+        if (dIn) dIn.disabled = false;
+        if (sIn) sIn.disabled = false;
+        if (aIn) aIn.disabled = false;
+    });
+}
+
+
+/* ========================================================================== */
+/* 7. KẾT NỐI DỮ LIỆU GOOGLE SHEETS & KHỞI CHẠY (DATA FETCHING & INIT)          */
+/* ========================================================================== */
+
+// Tải toàn bộ dữ liệu cấu hình và giao dịch từ Google Sheets backend
+function familyLoadDataFromSheet() {
+    if (typeof google === 'undefined' || !google.script || !google.script.run) return;
+
+    google.script.run.withSuccessHandler(function(data) { familyHuList = data || []; }).getDanhSachHuCategories();
+    google.script.run.withSuccessHandler(function(data) { familyNoiDungMauList = data || []; }).getDanhSachNoiDungMau();
+    google.script.run.withSuccessHandler(function(data) {
+        familyData = data || [];
+        familyUpdateDashboard();
+    }).getFamilyData();
+    google.script.run.withSuccessHandler(function(data) { familyWalletList = data || []; }).getWalletNamesList();
+
+    google.script.run.withSuccessHandler(function(templates) {
+        familyCachedFixedTemplates = templates || [];
+    }).getFixedTransactions();
+}
+
+// Khởi chạy hệ thống ngay khi DOM được tải hoàn tất
+document.addEventListener("DOMContentLoaded", function() {
+    renderFamilyFinancials();
+});
+/* ========================================================================== */
+/* CẤU HÌNH VÀ THỐNG KÊ HŨ TÀI CHÍNH GIA ĐÌNH (NẠP TRƯỚC CACHE - TỐC ĐỘ 0 GIÂY)  */
+/* ========================================================================== */
+
+let familyBaseIncomeForConfig = 0;
+const FIXED_INVESTMENT_AMOUNT = 60000; // Cố định 6 man cho NISA
+let windowCachedJarData = null; // Biến cache lưu trữ dữ liệu sheet JAR
+
+// 0. Hàm nạp sẵn cache ngầm ngay khi mở trang web
+function preloadJarDataForCache() {
+    if (windowCachedJarData) return;
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+            .withSuccessHandler(function(res) {
+                if (res.success) {
+                    windowCachedJarData = res.data;
+                }
+            })
+            .getJarDataForWeb();
+    }
+}
+
+// Hàm lấy dữ liệu siêu tốc từ cache
+function fetchJarDataWithCacheInstant(callback) {
+    if (windowCachedJarData) {
+        callback(windowCachedJarData);
+        return;
+    }
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+            .withSuccessHandler(function(res) {
+                if (res.success) {
+                    windowCachedJarData = res.data;
+                    callback(windowCachedJarData);
+                } else {
+                    callback(null);
+                }
+            })
+            .withFailureHandler(() => callback(null))
+            .getJarDataForWeb();
+    } else {
+        callback(null);
+    }
+}
+
+// 1. Mở modal cấu hình %
+function familyOpenJarConfigModal() {
+    const modal = document.getElementById('gd-jarConfigModal');
+    const container = document.getElementById('gd-jarConfigListContainer');
+    const subtitle = document.getElementById('gd-jarConfigSubtitle');
+    const notif = document.getElementById('gd-jarConfigNotif');
+    
+    if (!modal || !container) return;
+    if (notif) notif.style.display = 'none';
+
+    const monthSel = document.getElementById('gd-monthSelector');
+    const currentMonthNum = monthSel && monthSel.value !== 'all' ? parseInt(monthSel.value, 10) : (new Date().getMonth() + 1);
+    const targetPrevMonth = currentMonthNum === 1 ? 12 : currentMonthNum - 1;
+
+    familyBaseIncomeForConfig = 0;
+    if (typeof familyData !== 'undefined') {
+        familyData.forEach(row => {
+            const rowMonth = parseInt(familyGetMonthFromDate(row[1]), 10);
+            const type = String(row[2] || '').trim().toLowerCase();
+            if (rowMonth === targetPrevMonth && type === 'thu') {
+                familyBaseIncomeForConfig += Number(row[3]) || 0;
+            }
+        });
+    }
+
+    if (subtitle) {
+        subtitle.innerText = `Căn cứ thu tháng ${targetPrevMonth}: ${familyBaseIncomeForConfig.toLocaleString()} ¥ (Đầu tư NISA cố định: 60,000 ¥)`;
+    }
+    modal.style.display = 'flex';
+
+    if (windowCachedJarData) {
+        processAndRenderConfigForm(windowCachedJarData, container, currentMonthNum);
+    } else {
+        fetchJarDataWithCacheInstant(function(rows) {
+            processAndRenderConfigForm(rows, container, currentMonthNum);
+        });
+    }
+}
+
+function processAndRenderConfigForm(rows, container, currentMonthNum) {
+    let currentPercents = {};
+    if (rows) {
+        const monthColIndex = currentMonthNum;
+        for (let i = 0; i < rows.length; i++) {
+            const rowLabel = String(rows[i][0] || '').trim();
+            if (rowLabel.startsWith('🏠')) {
+                const jarName = rowLabel.replace('🏠', '').trim();
+                const rawVal = Number(rows[i + 1][monthColIndex]) || 0;
+                currentPercents[jarName] = Math.round(rawVal * 100);
+            }
+        }
+    }
+    renderJarConfigForm(container, currentMonthNum, currentPercents);
+}
+
+function renderJarConfigForm(container, currentMonthNum, currentPercents) {
+    const allJars = (typeof familyHuList !== 'undefined' ? familyHuList : ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư"])
+        .filter(jar => String(jar).trim().toLowerCase() !== 'thu nhập' && String(jar).trim().toLowerCase() !== 'kinh doanh');
+    
+    const flexibleJars = allJars.filter(jar => jar.toLowerCase() !== 'đầu tư');
+    const defaultFlexiblePercent = flexibleJars.length > 0 ? Math.floor(100 / flexibleJars.length) : 0;
+
+    let html = `
+        <div style="display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; text-transform: uppercase; color: #94a3b8; padding: 0 4px 4px 4px; border-bottom: 1px solid #e2e8f0;">
+            <span>Hũ Chi tiêu</span>
+            <span>Tỷ lệ (%) & Tiền quy đổi (Preview)</span>
+        </div>
+    `;
+
+    html += `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #fdf2f8; padding: 8px 10px; border-radius: 8px; border: 1px solid #fbcfe8; margin-bottom: 6px;">
+            <div>
+                <span style="font-size: 0.8rem; font-weight: 700; color: #be185d;">Đầu tư (NISA)</span>
+                <div style="font-size: 0.65rem; color: #db2777;">Cố định hàng tháng</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #be185d;">60,000 ¥</span>
+            </div>
+        </div>
+    `;
+
+    flexibleJars.forEach((jarName, index) => {
+        const savedPct = currentPercents[jarName] !== undefined ? currentPercents[jarName] : defaultFlexiblePercent;
+
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 6px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: #1e293b;">${jarName}</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span id="jar-cfg-amt-${index}" style="font-size: 0.75rem; font-weight: 700; color: #64748b;">0 ¥</span>
+                    <div style="display: flex; align-items: center; gap: 2px;">
+                        <input type="number" 
+                               id="jar-cfg-input-${index}" 
+                               data-jar-name="${jarName}" 
+                               value="${savedPct}" 
+                               oninput="familyCalculateTotalJarPercent()"
+                               style="width: 55px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; font-size: 0.85rem; font-weight: 700; text-align: center; color: #e91e63; outline: none;"
+                               min="0" max="100">
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    familyCalculateTotalJarPercent();
+}
+
+function familyCloseJarConfigModal() {
+    const modal = document.getElementById('gd-jarConfigModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function familyCalculateTotalJarPercent() {
+    const container = document.getElementById('gd-jarConfigListContainer');
+    const totalSpan = document.getElementById('gd-jarConfigTotalPercent');
+    if (!container || !totalSpan) return;
+
+    const inputs = container.querySelectorAll('input[data-jar-name]');
+    let total = 0;
+    const remainingIncome = Math.max(0, familyBaseIncomeForConfig - FIXED_INVESTMENT_AMOUNT);
+
+    inputs.forEach((input, index) => {
+        const percentVal = Number(input.value) || 0;
+        total += percentVal;
+
+        const calculatedAmount = (remainingIncome * percentVal) / 100;
+        const amtSpan = document.getElementById(`jar-cfg-amt-${index}`);
+        if (amtSpan) {
+            amtSpan.innerText = calculatedAmount.toLocaleString() + ' ¥';
+        }
+    });
+
+    totalSpan.innerText = total;
+    totalSpan.style.color = (total === 100) ? '#10b981' : '#e91e63';
+}
+
+// 3. Lưu cấu hình % (Cập nhật trực tiếp cache ngay lập tức)
+function familySaveJarConfigs() {
+    const container = document.getElementById('gd-jarConfigListContainer');
+    const notif = document.getElementById('gd-jarConfigNotif');
+    if (!container) return;
+
+    const inputs = container.querySelectorAll('input[data-jar-name]');
+    let total = 0;
+    let configs = [];
+
+    inputs.forEach(input => {
+        const val = Number(input.value) || 0;
+        total += val;
+        configs.push({
+            jarName: input.getAttribute('data-jar-name'),
+            percent: val
+        });
+    });
+
+    if (total !== 100) {
+        if (notif) {
+            notif.style.display = 'block';
+            notif.style.background = '#fee2e2';
+            notif.style.color = '#991b1b';
+            notif.innerText = `⚠️ Tổng tỷ lệ % phải bằng đúng 100% (Hiện tại: ${total}%)`;
+        }
+        return;
+    }
+
+    const monthSel = document.getElementById('gd-monthSelector');
+    const selectedMonth = monthSel && monthSel.value !== 'all' ? parseInt(monthSel.value, 10) : (new Date().getMonth() + 1);
+    const currentYear = new Date().getFullYear();
+
+    if (notif) {
+        notif.style.display = 'block';
+        notif.style.background = '#e0f2fe';
+        notif.style.color = '#0369a1';
+        notif.innerText = `⏳ Đang lưu...`;
+    }
+
+    if (windowCachedJarData) {
+        const monthColIndex = selectedMonth;
+        configs.forEach(cfg => {
+            for (let i = 0; i < windowCachedJarData.length; i++) {
+                const rowLabel = String(windowCachedJarData[i][0] || '').trim().toLowerCase();
+                if (rowLabel.includes(cfg.jarName.toLowerCase())) {
+                    windowCachedJarData[i + 1][monthColIndex] = cfg.percent / 100;
+                    break;
+                }
+            }
+        });
+    }
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+            .withSuccessHandler(function(res) {
+                if (notif) {
+                    notif.style.display = 'block';
+                    notif.style.background = '#d1fae5';
+                    notif.style.color = '#065f46';
+                    notif.innerText = `🎉 Đã lưu thành công!`;
+                }
+                setTimeout(() => {
+                    familyCloseJarConfigModal();
+                    familyCalculateJarStats();
+                }, 500);
+            })
+            .withFailureHandler(function(err) {
+                windowCachedJarData = null;
+                if (notif) {
+                    notif.style.display = 'block';
+                    notif.style.background = '#fee2e2';
+                    notif.style.color = '#991b1b';
+                    notif.innerText = `❌ Lỗi: ${err.message}`;
+                }
+            })
+            .saveMonthlyJarConfig({ month: selectedMonth, year: currentYear, configs: configs });
+    } else {
+        setTimeout(() => {
+            familyCloseJarConfigModal();
+            familyCalculateJarStats();
+        }, 500);
+    }
+}
+
+// 4. Load thống kê lên web (Tốc độ tức thì nhờ dữ liệu đã preload sẵn)
+function familyCalculateJarStats() {
+    const progressContainer = document.getElementById('gd-jarsProgressList');
+    if (!progressContainer) return;
+
+    const monthSel = document.getElementById('gd-monthSelector');
+    const selectedMonthCol = monthSel && monthSel.value !== 'all' ? parseInt(monthSel.value, 10) : (new Date().getMonth() + 1);
+    const dataColIndex = selectedMonthCol;
+
+    fetchJarDataWithCacheInstant(function(rows) {
+        if (!rows) {
+            progressContainer.innerHTML = `<div style="color: #ef4444; padding: 10px;">Không đọc được dữ liệu.</div>`;
+            return;
+        }
+
+        let html = '';
+
+        for (let i = 0; i < rows.length; i++) {
+            const rowLabel = String(rows[i][0] || '').trim();
+
+            if (rowLabel.startsWith('🏠')) {
+                const jarName = rowLabel.replace('🏠', '').trim();
+                
+                const rawPct = Number(rows[i + 1][dataColIndex]) || 0;
+                const jarConfigPercent = jarName.toLowerCase() === 'đầu tư' ? 'Cố định' : `${Math.round(rawPct * 100)}%`;
+
+                const budget = Number(rows[i + 2][dataColIndex]) || 0;
+                const spent = Number(rows[i + 3][dataColIndex]) || 0;
+                const balance = Number(rows[i + 4][dataColIndex]) || 0;
+                const carryOver = Number(rows[i + 5][dataColIndex]) || 0;
+
+                const spentPercent = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
+                const remainingPercent = Math.max(0, 100 - spentPercent);
+                
+                const barColor = spentPercent > 90 ? '#ef4444' : '#10b981';
+                const jarLabel = jarName.toLowerCase() === 'đầu tư' ? 'Đầu tư (NISA - Cố định)' : jarName;
+
+                html += `
+                    <div style="background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-size: 0.85rem; font-weight: 800; color: #1e293b;">${jarLabel}</span>
+                            <div style="display: flex; gap: 6px; font-size: 0.75rem;">
+                                <span style="background: #e2e8f0; padding: 2px 5px; border-radius: 4px; color: #475569;">Hũ: <b>${jarConfigPercent}</b></span>
+                                <span style="background: #fef2f2; padding: 2px 5px; border-radius: 4px; color: #e11d48;">Đã dùng: <b>${spentPercent}%</b></span>
+                                <span style="background: #ecfdf5; padding: 2px 5px; border-radius: 4px; color: #059669;">Còn lại: <b>${remainingPercent}%</b></span>
+                            </div>
+                        </div>
+
+                        <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-bottom: 8px;">
+                            <div style="width: ${remainingPercent}%; height: 100%; background: ${barColor}; border-radius: 3px; transition: width 0.3s ease;"></div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; font-size: 0.75rem; background: #ffffff; padding: 6px 8px; border-radius: 6px; border: 1px solid #f1f5f9;">
+                            <div style="color: #475569;">🎯 Ngân sách: <b style="color: #0f172a;">${budget.toLocaleString()} ¥</b></div>
+                            <div style="color: #475569;">💸 Đã chi: <b style="color: #e91e63;">${spent.toLocaleString()} ¥</b></div>
+                            <div style="color: #475569;">✅ Số dư: <b style="color: ${balance >= 0 ? '#10b981' : '#ef4444'};">${balance.toLocaleString()} ¥</b></div>
+                            <div style="color: #475569;">📊 Lũy kế: <b style="color: #3b82f6;">${carryOver.toLocaleString()} ¥</b></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        progressContainer.innerHTML = html || '<div style="color: #64748b; padding: 10px;">Không có dữ liệu hũ nào.</div>';
+    });
+}
+
+// 📌 TỰ ĐỘNG GỌI NẠP TRƯỚC (PRELOAD) NGAY KHI TRANG VỪA TẢI XONG
+window.addEventListener('DOMContentLoaded', () => {
+    preloadJarDataForCache();
+});
+</script>

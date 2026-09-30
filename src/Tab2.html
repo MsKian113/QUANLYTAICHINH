@@ -246,11 +246,11 @@
 <!-- ========================================================================= -->
 <!-- MODAL: KHOẢN CỐ ĐỊNH NHANH -->
 <!-- ========================================================================= -->
-<div id="modal-quick-fixed" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-quick-fixed')">
+<div id="modal-quick-fixed" class="modal-overlay">
   <div class="modal-content !p-0 rounded-2xl border-t-4 border-amber-500 w-full max-w-[340px] max-h-[calc(100%-16px)] flex flex-col box-border overflow-hidden relative z-50 shadow-2xl">
     <div class="p-3 px-3.5 border-b flex justify-between items-center bg-white rounded-t-2xl shrink-0 z-20">
       <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1 truncate">⚡ Đóng Khoản Cố Định (Nhanh)</h3>
-      <button onclick="closeModal('modal-quick-fixed')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-quick-fixed')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
     <div class="px-3.5 pt-2 pb-1 bg-white shrink-0 z-20">
       <p class="text-[11px] font-medium text-slate-500">Nhập số tiền đóng hàng tháng cho các khoản bên dưới:</p>
@@ -259,7 +259,7 @@
         <p class="text-xs text-slate-400 italic text-center py-6">Đang tải danh sách khoản cố định...</p>
     </div>
     <div class="p-3 px-3.5 border-t border-slate-200 bg-white shrink-0 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] rounded-b-2xl">
-      <button id="btn-submit-quick-fixed" onclick="submitQuickFixed()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition flex items-center justify-center gap-1.5">
+      <button type="button" id="btn-submit-quick-fixed" onclick="submitQuickFixed()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition flex items-center justify-center gap-1.5">
         ⚡ Lưu
       </button>
     </div>

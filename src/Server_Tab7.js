@@ -47,13 +47,31 @@ function formatDateToYYYYMMDD(d) {
  * Ensures SplitFamilies sheet exists with correct headers and seed sample data
  */
 function getSplitFamiliesSheetHelper(ssTarget) {
-  var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
   if (!ss) return null;
   var sheet = ss.getSheetByName(SHEET_SPLIT_FAMILIES);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_SPLIT_FAMILIES);
-    sheet.appendRow(["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "sort_order", "status", "isme"]);
+    sheet.appendRow(["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]);
+  } else if (sheet.getLastColumn() > 8) {
+    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]]);
+    try { sheet.deleteColumns(9, sheet.getLastColumn() - 8); } catch (e) {}
+  } else if (sheet.getLastColumn() < 8) {
+    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]]);
   }
+
+  // Auto-seed default sample families if sheet only has header row or is empty
+  if (sheet.getLastRow() < 2) {
+    var seedRows = [
+      ["FAM-10001", "2F", "MEB-10001", "Quậy", "ADULT", 1.0, true, true],
+      ["FAM-10001", "2F", "MEB-10002", "Chi", "ADULT", 1.0, true, false],
+      ["FAM-10001", "2F", "MEB-10003", "Chít", "CHILD", 0.5, true, false],
+      ["FAM-10002", "Gia đình Tuyết Anh", "MEB-10004", "Tuyết Anh", "ADULT", 1.0, false, true],
+      ["FAM-10002", "Gia đình Tuyết Anh", "MEB-10005", "A Huân", "ADULT", 1.0, false, false]
+    ];
+    sheet.getRange(2, 1, seedRows.length, 8).setValues(seedRows);
+  }
+
   return sheet;
 }
 
@@ -86,16 +104,189 @@ function getSplitExpensesSheetHelper(ssTarget) {
 }
 
 /**
+ * TIỆN ÍCH CHUẨN HÓA SHEET SPLITFAMILIES (8 CỘT CHUẨN):
+ * 1. isme (Cột 7): chỉ có đúng 1 gia đình duy nhất (Gia đình tôi / 2F) có isme = true, còn lại = false.
+ * 2. repstatus (Cột 8): trong 1 gia đình chỉ có đúng 1 người đại diện = TRUE, các thành viên khác = FALSE.
+ */
+function standardizeSplitFamiliesSheet(ssTarget) {
+  try {
+    var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    if (!ss) return;
+    var sheet = ss.getSheetByName(SHEET_SPLIT_FAMILIES) || ss.getSheetByName("SplitFamilies");
+    if (!sheet || sheet.getLastRow() < 2) return;
+
+    var maxCol = Math.max(sheet.getLastColumn(), 10);
+    var lastRow = sheet.getLastRow();
+    var rawData = sheet.getRange(2, 1, lastRow - 1, maxCol).getValues();
+    var isMigrationNeeded = false;
+
+    // Check if sheet contains legacy 10-column data (Col 8 = "ACTIVE"/"INACTIVE"/"DELETED" or Col 7 is number 1,2,3)
+    for (var k = 0; k < rawData.length; k++) {
+      var col7Val = String(rawData[k][6] || "").trim();
+      var col8Val = String(rawData[k][7] || "").trim().toUpperCase();
+      if (col8Val === "ACTIVE" || col8Val === "INACTIVE" || col8Val === "DELETED" || col7Val === "1" || col7Val === "2" || col7Val === "3" || sheet.getLastColumn() > 8) {
+        isMigrationNeeded = true;
+        break;
+      }
+    }
+
+    var convertedRows = [];
+
+    if (isMigrationNeeded) {
+      for (var i = 0; i < rawData.length; i++) {
+        var row = rawData[i];
+        var famId = String(row[0] || "").trim();
+        var famName = String(row[1] || "").trim();
+        var memId = String(row[2] || "").trim();
+        var memName = String(row[3] || "").trim();
+        var memType = String(row[4] || "ADULT").trim().toUpperCase();
+        var weight = Number(row[5]);
+        if (isNaN(weight)) weight = (memType === "CHILD" ? 0.5 : (memType === "BABY" ? 0 : 1.0));
+
+        if (!famId && !famName && !memName) continue;
+
+        var col8Val = String(row[7] || "").trim().toUpperCase();
+        if (col8Val === "INACTIVE" || col8Val === "DELETED") continue; // Skip deleted legacy members
+
+        // Convert IDs to FAM-xxxxx and MEB-xxxxx if legacy format
+        if (!famId || !famId.startsWith("FAM-")) {
+          famId = "FAM-" + (famName ? famName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() : Math.floor(10000 + Math.random() * 90000));
+        }
+        if (!memId || !memId.startsWith("MEB-")) {
+          memId = "MEB-" + Math.floor(10000 + Math.random() * 90000);
+        }
+
+        // Detect isme from col 9 (row[8]) or fallback from col 7 if boolean or family name
+        var rawIsMe = row[8] !== undefined && row[8] !== "" ? row[8] : row[6];
+        var isMeVal = (rawIsMe === true || String(rawIsMe).toLowerCase() === "true" || famName.toLowerCase().includes("2f") || famName.toLowerCase().includes("tôi"));
+
+        // Detect repstatus from col 10 (row[9]) or sortOrder === 1 (row[6])
+        var rawRep = row[9] !== undefined && row[9] !== "" ? row[9] : row[6];
+        var isRepVal = (rawRep === true || String(rawRep).toLowerCase() === "true" || rawRep === 1 || rawRep === "1");
+
+        convertedRows.push([
+          famId,
+          famName,
+          memId,
+          memName,
+          memType,
+          weight,
+          isMeVal,
+          isRepVal
+        ]);
+      }
+    } else {
+      // Data is already 8 columns
+      for (var j = 0; j < rawData.length; j++) {
+        var r = rawData[j];
+        var fId = String(r[0] || "").trim();
+        var fName = String(r[1] || "").trim();
+        var mId = String(r[2] || "").trim();
+        var mName = String(r[3] || "").trim();
+        var mType = String(r[4] || "ADULT").trim().toUpperCase();
+        var w = Number(r[5]);
+        if (isNaN(w)) w = (mType === "CHILD" ? 0.5 : (mType === "BABY" ? 0 : 1.0));
+
+        if (!fId && !fName && !mName) continue;
+
+        if (!fId.startsWith("FAM-")) fId = "FAM-" + (fName ? fName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase() : Math.floor(10000 + Math.random() * 90000));
+        if (!mId.startsWith("MEB-")) mId = "MEB-" + Math.floor(10000 + Math.random() * 90000);
+
+        var meVal = (r[6] === true || String(r[6]).toLowerCase() === "true");
+        var repVal = (r[7] === true || String(r[7]).toLowerCase() === "true");
+
+        convertedRows.push([
+          fId,
+          fName,
+          mId,
+          mName,
+          mType,
+          w,
+          meVal,
+          repVal
+        ]);
+      }
+    }
+
+    // Now normalize isme & repstatus rules:
+    // 1. Only 1 family per sheet is isme = true
+    // 2. Only 1 rep per family is repstatus = true
+    var familyRowsMap = {};
+    for (var idx = 0; idx < convertedRows.length; idx++) {
+      var rowObj = convertedRows[idx];
+      var key = (rowObj[0] || rowObj[1]).toLowerCase();
+      if (!familyRowsMap[key]) familyRowsMap[key] = [];
+      familyRowsMap[key].push({ index: idx, row: rowObj });
+    }
+
+    var myFamilyKey = null;
+    for (var k1 in familyRowsMap) {
+      if (familyRowsMap[k1].some(function(item) { return item.row[6] === true; })) {
+        myFamilyKey = k1;
+        break;
+      }
+    }
+    if (!myFamilyKey) {
+      for (var k2 in familyRowsMap) {
+        if (k2.includes("2f") || k2.includes("tôi")) {
+          myFamilyKey = k2;
+          break;
+        }
+      }
+    }
+
+    var valuesChanged = isMigrationNeeded;
+    for (var fk in familyRowsMap) {
+      var items = familyRowsMap[fk];
+      var isMyFam = (fk === myFamilyKey);
+      var repIdx = items.findIndex(function(item) { return item.row[7] === true; });
+      if (repIdx < 0 && items.length > 0) repIdx = 0;
+
+      for (var m = 0; m < items.length; m++) {
+        var newMe = isMyFam;
+        var newRep = (m === repIdx);
+        if (items[m].row[6] !== newMe || items[m].row[7] !== newRep) {
+          valuesChanged = true;
+        }
+        items[m].row[6] = newMe;
+        items[m].row[7] = newRep;
+      }
+    }
+
+    if (valuesChanged) {
+      // Clear entire sheet content including extra columns and rewrite header + 8-column data
+      if (typeof sheet.clearContents === 'function') {
+        sheet.clearContents();
+      } else {
+        sheet.getRange(1, 1, sheet.getLastRow(), Math.max(sheet.getLastColumn(), 10)).clearContent();
+      }
+
+      sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "repstatus"]]);
+      if (convertedRows.length > 0) {
+        sheet.getRange(2, 1, convertedRows.length, 8).setValues(convertedRows);
+      }
+
+      if (sheet.getLastColumn() > 8 && typeof sheet.deleteColumns === 'function') {
+        try { sheet.deleteColumns(9, sheet.getLastColumn() - 8); } catch(e) {}
+      }
+    }
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Error standardizing SplitFamilies sheet: " + err.toString());
+  }
+}
+
+/**
  * 0. FETCH ALL FAMILIES & MEMBERS FROM SPLITFAMILIES
  */
 function getSplitFamilies(ssTarget) {
   try {
+    standardizeSplitFamiliesSheet(ssTarget);
     var sheet = getSplitFamiliesSheetHelper(ssTarget);
     if (!sheet || sheet.getLastRow() < 2) {
       return { success: true, families: [], rawMembers: [] };
     }
 
-    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
     var familyMap = {};
     var rawMembers = [];
 
@@ -107,28 +298,31 @@ function getSplitFamilies(ssTarget) {
       var memType = String(row[4] || "ADULT").trim().toUpperCase();
       var weight = Number(row[5]);
       if (isNaN(weight)) weight = (memType === "CHILD" ? 0.5 : (memType === "BABY" ? 0 : 1.0));
-      var rawSort = row[6];
-      var isRep = (rawSort === 1 || rawSort === "1" || Number(rawSort) === 1);
-      var sortOrder = isRep ? 1 : "";
-      var status = String(row[7] || "ACTIVE").trim().toUpperCase();
-      var rawIsMe = row[8];
+      
+      var rawIsMe = row[6];
       var isMeVal = (rawIsMe === true || String(rawIsMe).toLowerCase() === "true");
+      var rawRep = row[7];
+      var isRep = (rawRep === true || String(rawRep).toLowerCase() === "true");
 
-      if (!famId || !memId || status === "INACTIVE" || status === "DELETED") return;
+      if (!famId || !memId) return;
 
       var memObj = {
         family_id: famId,
         family_name: famName,
         member_id: memId,
+        id: memId,
         member_name: memName,
+        name: memName,
         member_type: memType,
+        type: memType,
         default_weight: weight,
-        sort_order: sortOrder,
-        status: status,
+        weight: weight,
         isMe: isMeVal,
         is_me: isMeVal,
         isme: isMeVal,
-        isRep: isRep
+        isRep: isRep,
+        repstatus: isRep,
+        rep_status: isRep
       };
 
       rawMembers.push(memObj);
@@ -195,6 +389,14 @@ function getFamilyCategorySuggestionsHelper(ssTarget) {
   }
 }
 
+function generateSplitFamilyId() {
+  return "FAM-" + Math.floor(10000 + Math.random() * 90000);
+}
+
+function generateSplitMemberId() {
+  return "MEB-" + Math.floor(10000 + Math.random() * 90000);
+}
+
 /**
  * SAVE OR UPDATE A MEMBER IN SPLITFAMILIES
  */
@@ -207,11 +409,11 @@ function saveSplitFamilyMember(memberData, ssTarget) {
     var memType = String(memberData.member_type || memberData.type || "ADULT").trim().toUpperCase();
     var weight = Number(memberData.default_weight !== undefined ? memberData.default_weight : memberData.weight);
     if (isNaN(weight)) weight = (memType === "CHILD" ? 0.5 : (memType === "BABY" ? 0 : 1.0));
-    var isRepMember = Boolean(memberData.isRep || memberData.sort_order === 1 || memberData.sort_order === "1" || memberData.sortOrder === 1 || memberData.sortOrder === "1");
-    var sortOrder = isRepMember ? 1 : "";
+    var isRepMember = Boolean(memberData.isRep || memberData.repstatus || memberData.rep_status);
     var isMeCol = Boolean(memberData.is_me || memberData.isMe || memberData.isme);
+    
     var famId = String(memberData.family_id || "").trim();
-    if (!famId) famId = famName ? ("FAM_" + famName.replace(/[^a-zA-Z0-9]/g, "")) : "FAM_001";
+    if (!famId || !famId.startsWith("FAM-")) famId = generateSplitFamilyId();
     var memId = String(memberData.member_id || memberData.id || "").trim();
 
     if (!famName) return { success: false, message: "⚠️ Vui lòng nhập tên Gia Đình!" };
@@ -220,7 +422,7 @@ function saveSplitFamilyMember(memberData, ssTarget) {
     var sheet = getSplitFamiliesSheetHelper(ssTarget);
     if (!sheet) return { success: false, message: "❌ Không tìm thấy sheet SplitFamilies!" };
 
-    var data = sheet.getLastRow() >= 2 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues() : [];
+    var data = sheet.getLastRow() >= 2 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues() : [];
     var existingRowIdx = -1;
 
     // 1. Match by member_id
@@ -243,22 +445,20 @@ function saveSplitFamilyMember(memberData, ssTarget) {
         var rowFamId = String(data[j][0] || "").trim().toLowerCase();
         var rowFamName = String(data[j][1] || "").trim().toLowerCase();
         var rowMemName = String(data[j][3] || "").trim().toLowerCase();
-        var rowStatus = String(data[j][7] || "ACTIVE").trim().toUpperCase();
 
-        if (rowStatus !== "DELETED" && (rowFamName === normFamName || rowFamId === normFamId) && rowMemName === normMemName) {
+        if ((rowFamName === normFamName || rowFamId === normFamId) && rowMemName === normMemName) {
           existingRowIdx = j + 2;
-          memId = String(data[j][2]).trim(); // Preserve existing member_id
+          memId = String(data[j][2]).trim();
           break;
         }
       }
     }
 
-    // If making this member representative, clear sort_order for other members of the same family
+    // If making this member representative, toggle true -> false for previous rep of same family
     if (isRepMember && sheet && (famId || famName)) {
       var lastR = sheet.getLastRow();
       if (lastR >= 2) {
-        var existingRange = sheet.getRange(2, 1, lastR - 1, 9);
-        var existingVals = existingRange.getValues();
+        var existingVals = sheet.getRange(2, 1, lastR - 1, 8).getValues();
         var normFId = famId ? famId.toLowerCase() : "";
         var normFName = famName ? famName.toLowerCase() : "";
         var normTargetMId = memId ? memId.toLowerCase() : "";
@@ -271,17 +471,17 @@ function saveSplitFamilyMember(memberData, ssTarget) {
           var rMName = String(existingVals[r][3] || "").trim().toLowerCase();
 
           if ((rFId === normFId || rFName === normFName) && rMId !== normTargetMId && rMName !== normTargetMName) {
-            sheet.getRange(r + 2, 7).setValue(""); // Clear sort_order of old representative
+            sheet.getRange(r + 2, 8).setValue(false); // Toggle old rep repstatus true -> false
           }
         }
       }
     }
 
-    // If isMeCol is specified for this family, sync isme column for all rows of this family
+    // If isMeCol is true for this family, set isme = false for all other families
     if (sheet && (famId || famName)) {
       var lastR2 = sheet.getLastRow();
       if (lastR2 >= 2) {
-        var existingVals2 = sheet.getRange(2, 1, lastR2 - 1, 9).getValues();
+        var existingVals2 = sheet.getRange(2, 1, lastR2 - 1, 8).getValues();
         var normFId2 = famId ? famId.toLowerCase() : "";
         var normFName2 = famName ? famName.toLowerCase() : "";
 
@@ -289,9 +489,9 @@ function saveSplitFamilyMember(memberData, ssTarget) {
           var rFId2 = String(existingVals2[r2][0] || "").trim().toLowerCase();
           var rFName2 = String(existingVals2[r2][1] || "").trim().toLowerCase();
           if (rFId2 === normFId2 || rFName2 === normFName2) {
-            sheet.getRange(r2 + 2, 9).setValue(isMeCol);
+            sheet.getRange(r2 + 2, 7).setValue(isMeCol);
           } else if (isMeCol) {
-            sheet.getRange(r2 + 2, 9).setValue(false); // Only 1 family is "Gia đình tôi"
+            sheet.getRange(r2 + 2, 7).setValue(false); // Only 1 family is "Gia đình tôi"
           }
         }
       }
@@ -304,12 +504,11 @@ function saveSplitFamilyMember(memberData, ssTarget) {
       sheet.getRange(existingRowIdx, 4).setValue(memName);
       sheet.getRange(existingRowIdx, 5).setValue(memType);
       sheet.getRange(existingRowIdx, 6).setValue(weight);
-      sheet.getRange(existingRowIdx, 7).setValue(sortOrder);
-      sheet.getRange(existingRowIdx, 8).setValue("ACTIVE");
-      sheet.getRange(existingRowIdx, 9).setValue(isMeCol);
+      sheet.getRange(existingRowIdx, 7).setValue(isMeCol);
+      sheet.getRange(existingRowIdx, 8).setValue(isRepMember);
     } else {
-      if (!memId) memId = generateSplitId("MBR");
-      sheet.appendRow([famId, famName, memId, memName, memType, weight, sortOrder, "ACTIVE", isMeCol]);
+      if (!memId || !memId.startsWith("MEB-")) memId = generateSplitMemberId();
+      sheet.appendRow([famId, famName, memId, memName, memType, weight, isMeCol, isRepMember]);
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -324,12 +523,12 @@ function saveSplitFamilyMember(memberData, ssTarget) {
         member_name: memName,
         member_type: memType,
         default_weight: weight,
-        sort_order: sortOrder,
-        status: "ACTIVE",
         isMe: isMeCol,
         is_me: isMeCol,
         isme: isMeCol,
-        isRep: isRepMember
+        isRep: isRepMember,
+        repstatus: isRepMember,
+        rep_status: isRepMember
       }
     };
   } catch (err) {
@@ -354,10 +553,25 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
     var sheet = getSplitFamiliesSheetHelper(ss);
     if (!sheet) return { success: false, message: "❌ Không tìm thấy sheet SplitFamilies!" };
 
-    var famId = "FAM_" + famName.replace(/[^a-zA-Z0-9]/g, "");
+    var famId = String(batchData.family_id || batchData.id || "").trim();
+    if (!famId || !famId.startsWith("FAM-")) {
+      famId = generateSplitFamilyId();
+    }
+    
     var lastRow = sheet.getLastRow();
-    var lastCol = Math.max(8, sheet.getLastColumn());
-    var existingData = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, Math.max(9, lastCol)).getValues() : [];
+    var existingData = lastRow >= 2 ? sheet.getRange(2, 1, lastRow - 1, 8).getValues() : [];
+
+    // Check if family already has an existing famId in sheet
+    var normFamName = famName.toLowerCase();
+    var normOldName = oldName ? oldName.toLowerCase() : "";
+    for (var e = 0; e < existingData.length; e++) {
+      var eFamId = String(existingData[e][0] || "").trim();
+      var eFamName = String(existingData[e][1] || "").trim().toLowerCase();
+      if (eFamId.startsWith("FAM-") && (eFamName === normFamName || (normOldName && eFamName === normOldName))) {
+        famId = eFamId;
+        break;
+      }
+    }
 
     var removedNameSet = {};
     var removedIdSet = {};
@@ -365,9 +579,6 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
       if (rm.id || rm.member_id) removedIdSet[String(rm.id || rm.member_id).trim().toLowerCase()] = true;
       if (rm.name) removedNameSet[String(rm.name).trim().toLowerCase()] = true;
     });
-
-    var normFamName = famName.toLowerCase();
-    var normOldName = oldName ? oldName.toLowerCase() : "";
 
     // Determine if this family is designated as "Gia đình tôi" (isMe / is_me / isme)
     var isFamMe = Boolean(batchData.is_me || batchData.isMe || batchData.isme || members.some(function(m) {
@@ -381,7 +592,7 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
         var rFamName = String(row[1] || "").trim().toLowerCase();
         var isTargetFam = (rFamName === normFamName || rFamId === famId.toLowerCase() || (normOldName && rFamName === normOldName));
         if (!isTargetFam) {
-          row[8] = false; // set column 9 (isme) to false for other families
+          row[6] = false; // set col 7 (isme) = false for other families
         }
       });
     }
@@ -405,21 +616,20 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
 
     // Find index of the representative member in members list
     var repIdx = members.findIndex(function(m) {
-      return Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
+      return Boolean(m.isRep || m.repstatus || m.rep_status);
     });
     if (repIdx < 0 && members.length > 0) repIdx = 0;
 
-    // Build new rows for active members
+    // Build new 8-column rows for active members
     members.forEach(function(m, idx) {
       var mType = String(m.type || m.member_type || "ADULT").trim().toUpperCase();
       var weight = Number(m.weight !== undefined ? m.weight : m.default_weight);
       if (isNaN(weight)) weight = (mType === "CHILD" ? 0.5 : (mType === "BABY" ? 0 : 1.0));
       var mName = String(m.name || m.member_name || "").trim();
       var mId = String(m.id || m.member_id || "").trim();
-      if (!mId) mId = "MBR_" + famName.replace(/[^a-zA-Z0-9]/g, "") + "_" + (mName.replace(/[^a-zA-Z0-9]/g, "") || (idx + 1));
+      if (!mId || !mId.startsWith("MEB-")) mId = generateSplitMemberId();
       
       var isRepMem = (idx === repIdx);
-      var sortOrder = isRepMem ? 1 : "";
       var isMeCol = isFamMe;
 
       cleanedData.push([
@@ -429,19 +639,26 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
         mName,
         mType,
         weight,
-        sortOrder,
-        "ACTIVE",
-        isMeCol
+        isMeCol,
+        isRepMem
       ]);
     });
 
-    // Write back in ONE atomic operation
-    var targetRange = sheet.getRange(2, 1, Math.max(existingData.length, cleanedData.length), 9);
-    if (typeof targetRange.clearContent === 'function') {
-      targetRange.clearContent();
-    }
+    // Write back in ONE atomic operation safely
     if (cleanedData.length > 0) {
-      sheet.getRange(2, 1, cleanedData.length, 9).setValues(cleanedData);
+      sheet.getRange(2, 1, cleanedData.length, 8).setValues(cleanedData);
+      if (existingData.length > cleanedData.length) {
+        var excessCount = existingData.length - cleanedData.length;
+        var clearRange = sheet.getRange(2 + cleanedData.length, 1, excessCount, 8);
+        if (typeof clearRange.clearContent === 'function') {
+          clearRange.clearContent();
+        }
+      }
+    } else if (existingData.length > 0) {
+      var targetRange = sheet.getRange(2, 1, existingData.length, 8);
+      if (typeof targetRange.clearContent === 'function') {
+        targetRange.clearContent();
+      }
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -474,7 +691,7 @@ function deleteSplitFamilyMember(memberId, ssTarget) {
     var sheet = getSplitFamiliesSheetHelper(ssTarget);
     if (!sheet || sheet.getLastRow() < 2) return { success: false, message: "❌ Không tìm thấy sheet SplitFamilies!" };
 
-    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, Math.max(10, sheet.getLastColumn())).getValues();
     var targetRowIdx = -1;
 
     for (var i = 0; i < data.length; i++) {
@@ -511,7 +728,7 @@ function deleteSplitFamilyEntirely(famNameOrId, ssTarget) {
     var sheet = getSplitFamiliesSheetHelper(ssTarget);
     if (!sheet || sheet.getLastRow() < 2) return { success: true, message: "Sheet rỗng" };
 
-    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, Math.max(10, sheet.getLastColumn())).getValues();
     for (var i = data.length - 1; i >= 0; i--) {
       var famId = String(data[i][0] || "").trim().toLowerCase();
       var famName = String(data[i][1] || "").trim().toLowerCase();

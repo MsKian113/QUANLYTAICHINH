@@ -24,6 +24,13 @@ function createMockSpreadsheet() {
             rows.splice(rowIdx - 1, 1);
           }
         },
+        deleteColumns(colIdx, count) {
+          rows.forEach(r => {
+            if (r.length >= colIdx) {
+              r.splice(colIdx - 1, count);
+            }
+          });
+        },
         getLastRow() {
           return rows.length;
         },
@@ -80,18 +87,18 @@ function createMockSpreadsheet() {
   };
 }
 
-test('SplitFamilies: Sheet creation without hardcoded seed sample data', () => {
+test('SplitFamilies: Sheet creation auto-seeds default sample families when empty', () => {
   const ss = createMockSpreadsheet();
   const sheet = Server_Tab7.getSplitFamiliesSheetHelper(ss);
   assert.ok(sheet);
-  assert.equal(sheet.getLastRow(), 1); // 1 header row only
+  assert.equal(sheet.getLastRow(), 6); // 1 header row + 5 seed rows
 
   const res = Server_Tab7.getSplitFamilies(ss);
   assert.equal(res.success, true);
-  assert.equal(res.families.length, 0); // Empty when initialized
+  assert.equal(res.families.length, 2); // 2 default families (2F and Gia đình Tuyết Anh)
 });
 
-test('SplitFamilies: saveSplitFamilyBatch sets sort_order = 1 for representative member and empty string for non-representatives', () => {
+test('SplitFamilies: saveSplitFamilyBatch uses 8 columns, FAM-xxxxx, MEB-xxxxx and toggles repstatus true/false', () => {
   const ss = createMockSpreadsheet();
 
   const batchRes = Server_Tab7.saveSplitFamilyBatch({
@@ -108,73 +115,87 @@ test('SplitFamilies: saveSplitFamilyBatch sets sort_order = 1 for representative
   const fam = batchRes.families.find(f => f.family_name === '2F');
   assert.ok(fam);
   assert.equal(fam.isMe, true);
+  assert.ok(fam.family_id.startsWith('FAM-'));
   assert.equal(fam.repMember.member_name, 'Chi');
 
   const chi = fam.members.find(m => m.member_name === 'Chi');
-  assert.equal(chi.sort_order, 1);
+  assert.ok(chi.member_id.startsWith('MEB-'));
   assert.equal(chi.isRep, true);
+  assert.equal(chi.repstatus, true);
   assert.equal(chi.isMe, true);
 
   const quay = fam.members.find(m => m.member_name === 'Quậy');
-  assert.equal(quay.sort_order, "");
+  assert.ok(quay.member_id.startsWith('MEB-'));
   assert.equal(quay.isRep, false);
+  assert.equal(quay.repstatus, false);
   assert.equal(quay.isMe, true);
 
   const chit = fam.members.find(m => m.member_name === 'Chít');
-  assert.equal(chit.sort_order, "");
+  assert.ok(chit.member_id.startsWith('MEB-'));
   assert.equal(chit.isRep, false);
+  assert.equal(chit.repstatus, false);
   assert.equal(chit.isMe, true);
 
-  // Switch representative back from Quậy to Chi
+  // Check 8-column sheet row values
+  const sheetObj = ss.getSheetByName('SplitFamilies');
+  const allRows = sheetObj.getRange(2, 1, sheetObj.getLastRow() - 1, 8).getValues();
+  const quayRow = allRows.find(r => r[3] === 'Quậy');
+  const chiRow = allRows.find(r => r[3] === 'Chi');
+  const chitRow = allRows.find(r => r[3] === 'Chít');
+  assert.equal(quayRow[7], false); // Quậy repstatus = false (col 8, index 7)
+  assert.equal(chiRow[7], true);   // Chi repstatus = true (col 8, index 7)
+  assert.equal(chitRow[7], false); // Chít repstatus = false (col 8, index 7)
+
+  // Switch representative from Chi to Quậy
   const batchRes3 = Server_Tab7.saveSplitFamilyBatch({
     family_name: '2F',
     is_me: true,
     members: [
-      { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: false },
-      { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: true },
+      { name: 'Quậy', type: 'ADULT', weight: 1.0, isRep: true },
+      { name: 'Chi', type: 'ADULT', weight: 1.0, isRep: false },
       { name: 'Chít', type: 'CHILD', weight: 0.5, isRep: false }
     ]
   }, ss);
 
   assert.equal(batchRes3.success, true);
   const fam3 = batchRes3.families.find(f => f.family_name === '2F');
-  assert.equal(fam3.repMember.member_name, 'Chi');
-  assert.equal(fam3.members.find(m => m.member_name === 'Chi').sort_order, 1);
-  assert.equal(fam3.members.find(m => m.member_name === 'Quậy').sort_order, "");
+  assert.equal(fam3.repMember.member_name, 'Quậy');
+  assert.equal(fam3.members.find(m => m.member_name === 'Chi').repstatus, false);
+  assert.equal(fam3.members.find(m => m.member_name === 'Quậy').repstatus, true);
 });
 
-test('SplitFamilies: saveSplitFamilyMember clears sort_order of old rep when new rep is saved', () => {
+test('SplitFamilies: saveSplitFamilyMember toggles repstatus of old rep from true to false', () => {
   const ss = createMockSpreadsheet();
 
-  // First save Quậy as representative (sort_order = 1)
-  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_2F', family_name: '2F', member_name: 'Quậy', member_type: 'ADULT', default_weight: 1, sort_order: 1, isRep: true }, ss);
-  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_2F', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, sort_order: "", isRep: false }, ss);
+  // First save Quậy as representative (repstatus = true)
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM-12345', family_name: '2F', member_name: 'Quậy', member_type: 'ADULT', default_weight: 1, isRep: true }, ss);
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM-12345', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, isRep: false }, ss);
 
   let check1 = Server_Tab7.getSplitFamilies(ss);
   let fam1 = check1.families.find(f => f.family_name === '2F');
   assert.equal(fam1.repMember.member_name, 'Quậy');
-  assert.equal(fam1.members.find(m => m.member_name === 'Quậy').sort_order, 1);
-  assert.equal(fam1.members.find(m => m.member_name === 'Chi').sort_order, "");
+  assert.equal(fam1.members.find(m => m.member_name === 'Quậy').repstatus, true);
+  assert.equal(fam1.members.find(m => m.member_name === 'Chi').repstatus, false);
 
-  // Now update Chi to be representative (sort_order = 1)
-  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_2F', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, sort_order: 1, isRep: true }, ss);
+  // Now update Chi to be representative (isRep: true)
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM-12345', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, isRep: true }, ss);
 
   let check2 = Server_Tab7.getSplitFamilies(ss);
   let fam2 = check2.families.find(f => f.family_name === '2F');
   assert.equal(fam2.repMember.member_name, 'Chi');
 
   const quayFinal = fam2.members.find(m => m.member_name === 'Quậy');
-  assert.equal(quayFinal.sort_order, "");
   assert.equal(quayFinal.isRep, false);
+  assert.equal(quayFinal.repstatus, false);
 
   const chiFinal = fam2.members.find(m => m.member_name === 'Chi');
-  assert.equal(chiFinal.sort_order, 1);
   assert.equal(chiFinal.isRep, true);
+  assert.equal(chiFinal.repstatus, true);
 });
 
-test('SplitFamilies: deleteSplitFamilyMember sets status to INACTIVE', () => {
+test('SplitFamilies: deleteSplitFamilyMember deletes row directly from database', () => {
   const ss = createMockSpreadsheet();
-  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM_001', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, sort_order: 1 }, ss);
+  Server_Tab7.saveSplitFamilyMember({ family_id: 'FAM-99999', family_name: '2F', member_name: 'Chi', member_type: 'ADULT', default_weight: 1, isRep: true }, ss);
 
   const initial = Server_Tab7.getSplitFamilies(ss);
   const memToDelete = initial.rawMembers.find(m => m.member_name === 'Chi');
@@ -198,13 +219,13 @@ test('SplitGroups: saves and reads 15 flat relational columns for 3 families 7 m
     status: 'OPEN',
     created_at: '2026-09-21 19:00',
     members: [
-      { groupMemberId: 'GM_001', id: 'MBR_001', name: 'Tuyết Anh', familyId: 'FAM_001', family: '1F', type: 'ADULT', weight: 1.0, sortOrder: 1 },
-      { groupMemberId: 'GM_002', id: 'MBR_002', name: 'A Huân', familyId: 'FAM_001', family: '1F', type: 'ADULT', weight: 1.0, sortOrder: 2 },
-      { groupMemberId: 'GM_003', id: 'MBR_003', name: 'Quậy', familyId: 'FAM_002', family: '2F', type: 'ADULT', weight: 1.0, sortOrder: 3 },
-      { groupMemberId: 'GM_004', id: 'MBR_004', name: 'Chi', familyId: 'FAM_002', family: '2F', type: 'ADULT', weight: 1.0, sortOrder: 4 },
-      { groupMemberId: 'GM_005', id: 'MBR_005', name: 'Bé', familyId: 'FAM_002', family: '2F', type: 'CHILD', weight: 0.5, sortOrder: 5 },
-      { groupMemberId: 'GM_006', id: 'MBR_006', name: 'Nam', familyId: 'FAM_003', family: 'Gia đình A', type: 'ADULT', weight: 1.0, sortOrder: 6 },
-      { groupMemberId: 'GM_007', id: 'MBR_007', name: 'Linh', familyId: 'FAM_003', family: 'Gia đình A', type: 'ADULT', weight: 1.0, sortOrder: 7 }
+      { groupMemberId: 'GM_001', id: 'MEB-00001', name: 'Tuyết Anh', familyId: 'FAM-00001', family: '1F', type: 'ADULT', weight: 1.0, sortOrder: 1 },
+      { groupMemberId: 'GM_002', id: 'MEB-00002', name: 'A Huân', familyId: 'FAM-00001', family: '1F', type: 'ADULT', weight: 1.0, sortOrder: 2 },
+      { groupMemberId: 'GM_003', id: 'MEB-00003', name: 'Quậy', familyId: 'FAM-00002', family: '2F', type: 'ADULT', weight: 1.0, sortOrder: 3 },
+      { groupMemberId: 'GM_004', id: 'MEB-00004', name: 'Chi', familyId: 'FAM-00002', family: '2F', type: 'ADULT', weight: 1.0, sortOrder: 4 },
+      { groupMemberId: 'GM_005', id: 'MEB-00005', name: 'Bé', familyId: 'FAM-00002', family: '2F', type: 'CHILD', weight: 0.5, sortOrder: 5 },
+      { groupMemberId: 'GM_006', id: 'MEB-00006', name: 'Nam', familyId: 'FAM-00003', family: 'Gia đình A', type: 'ADULT', weight: 1.0, sortOrder: 6 },
+      { groupMemberId: 'GM_007', id: 'MEB-00007', name: 'Linh', familyId: 'FAM-00003', family: 'Gia đình A', type: 'ADULT', weight: 1.0, sortOrder: 7 }
     ]
   };
 
@@ -213,10 +234,8 @@ test('SplitGroups: saves and reads 15 flat relational columns for 3 families 7 m
 
   const sheet = ss.getSheetByName(Server_Tab7.SHEET_SPLIT_GROUPS);
   assert.ok(sheet);
-  // 1 header + 7 flat member rows = 8 rows total
   assert.equal(sheet.getLastRow(), 8);
 
-  // Verify sheet contents match exact 15 flat columns
   const firstMemberRow = sheet.getRange(2, 1, 1, 15).getValues()[0];
   assert.equal(firstMemberRow[0], 'GRP_001');
   assert.equal(firstMemberRow[1], 'FOOD');
@@ -224,15 +243,13 @@ test('SplitGroups: saves and reads 15 flat relational columns for 3 families 7 m
   assert.equal(firstMemberRow[3], 'JPY');
   assert.equal(firstMemberRow[4], 'OPEN');
   assert.equal(firstMemberRow[6], 'GM_001');
-  assert.equal(firstMemberRow[7], 'MBR_001');
+  assert.equal(firstMemberRow[7], 'MEB-00001');
   assert.equal(firstMemberRow[8], 'Tuyết Anh');
-  assert.equal(firstMemberRow[9], 'FAM_001');
+  assert.equal(firstMemberRow[9], 'FAM-00001');
   assert.equal(firstMemberRow[10], '1F');
   assert.equal(firstMemberRow[11], 'ADULT');
   assert.equal(firstMemberRow[12], 1);
-  assert.equal(firstMemberRow[13], 1);
 
-  // Verify getSplitGroups reconstructs group with 7 members
   const fetchRes = Server_Tab7.getSplitGroups(ss);
   assert.equal(fetchRes.success, true);
   assert.equal(fetchRes.groups.length, 1);
@@ -241,9 +258,34 @@ test('SplitGroups: saves and reads 15 flat relational columns for 3 families 7 m
   assert.equal(fetchedG.category, 'FOOD');
   assert.equal(fetchedG.members.length, 7);
 
-  // Check 3 distinct families reconstructed
   const families = Array.from(new Set(fetchedG.members.map(m => m.family)));
   assert.equal(families.length, 3);
   assert.deepEqual(families.sort(), ['1F', '2F', 'Gia đình A'].sort());
 });
 
+test('standardizeSplitFamiliesSheet standardizes 8 columns and ensures 1 rep per family and 1 isme family', () => {
+  const ss = createMockSpreadsheet();
+  const sheet = ss.insertSheet('SplitFamilies');
+  sheet.appendRow(['family_id', 'family_name', 'member_id', 'member_name', 'member_type', 'default_weight', 'isme', 'repstatus']);
+  sheet.appendRow(['FAM-10001', '1F', 'MEB-10001', 'Member 1', 'ADULT', 1, false, false]);
+  sheet.appendRow(['FAM-10001', '1F', 'MEB-10002', 'Member 2', 'ADULT', 1, false, false]);
+  sheet.appendRow(['FAM-10002', '2F', 'MEB-10003', 'Member 3', 'ADULT', 1, true, true]);
+  sheet.appendRow(['FAM-10002', '2F', 'MEB-10004', 'Member 4', 'ADULT', 1, false, false]);
+
+  const res = Server_Tab7.getSplitFamilies(ss);
+  assert.equal(res.success, true);
+
+  const data = sheet.getRange(2, 1, 4, 8).getValues();
+  // FAM-10001 first member receives repstatus = true
+  assert.equal(data[0][7], true);
+  assert.equal(data[1][7], false);
+  // FAM-10002 Member 3 has repstatus = true
+  assert.equal(data[2][7], true);
+  assert.equal(data[3][7], false);
+
+  // FAM-10002 (2F) is "Gia đình tôi" (isme = true), FAM-10001 isme = false
+  assert.equal(data[0][6], false);
+  assert.equal(data[1][6], false);
+  assert.equal(data[2][6], true);
+  assert.equal(data[3][6], true);
+});

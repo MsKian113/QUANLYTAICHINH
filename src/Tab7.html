@@ -170,14 +170,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL 1: TẠO / SỬA CHUYẾN ĐÍ & THÀNH VIÊN (modal-tab7-group) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-group" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-group')">
+<div id="modal-tab7-group" class="modal-overlay hidden">
   <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <div class="flex items-center gap-2">
         <span id="t7-group-modal-icon" class="text-xl">✈️</span>
         <h3 id="t7-group-modal-title" class="font-bold text-sm text-slate-800">Tạo Chuyến Đi Mới</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-group')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-group')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <input type="hidden" id="t7-group-id" value="" />
@@ -263,14 +263,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL 2: CHI TIẾT KHOẢN CHI (modal-tab7-expense) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-expense" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-expense')">
+<div id="modal-tab7-expense" class="modal-overlay hidden">
   <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3 max-h-[92vh] flex flex-col">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
       <div class="flex items-center gap-2">
         <span class="text-xl">🧾</span>
         <h3 id="t7-expense-modal-title" class="font-bold text-sm text-slate-800">Chi tiết khoản chi</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-expense')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-expense')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <input type="hidden" id="t7-expense-id" value="" />
@@ -360,14 +360,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL: CHỌN VÍ CÁ NHÂN TRỪ TIỀN (KHI CHỌN GIA ĐÌNH 2F - TÔI) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-select-wallet" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-select-wallet')">
+<div id="modal-tab7-select-wallet" class="modal-overlay hidden">
   <div class="modal-content max-w-[340px] w-full p-4 rounded-2xl bg-white shadow-2xl space-y-3">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
         <span>💳</span>
         <span>Chọn ví cá nhân cần trừ tiền:</span>
       </h3>
-      <button onclick="closeModal('modal-tab7-select-wallet')" class="text-slate-400 font-bold text-lg hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-select-wallet')" class="text-slate-400 font-bold text-lg hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <!-- TEXTBOX SUGGEST FOR WALLETS -->
@@ -380,7 +380,7 @@
       <!-- Dynamic wallet buttons -->
     </div>
     <div class="pt-2 border-t border-slate-100 flex justify-end">
-      <button onclick="closeModal('modal-tab7-select-wallet')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs">
+      <button type="button" onclick="closeModal('modal-tab7-select-wallet')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs">
         Bỏ qua
       </button>
     </div>
@@ -390,10 +390,10 @@
 <!-- ========================================================================= -->
 <!-- MODAL 3: KẾT THÚC CHUYẾN ĐÍ & XUẤT BÁO CÁO CÔNG NỢ DẠNG ẢNH (modal-tab7-finalize) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-finalize" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-finalize')">
+<div id="modal-tab7-finalize" class="modal-overlay hidden">
   <div class="modal-content max-w-[480px] w-full p-4 rounded-2xl bg-white shadow-2xl space-y-3 border-t-4 border-emerald-600 max-h-[92vh] flex flex-col relative">
     <!-- ABSOLUTE FLOATING CLOSE BUTTON AT TOP-RIGHT (Z-50 GUARANTEES NEVER COVERED) -->
-    <button onclick="closeModal('modal-tab7-finalize')" class="absolute top-2.5 right-2.5 z-50 text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-100 active:scale-90 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer font-extrabold text-xl shadow-md border border-slate-200" title="Đóng modal">&times;</button>
+    <button type="button" onclick="closeModal('modal-tab7-finalize')" class="absolute top-2.5 right-2.5 z-50 text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-100 active:scale-90 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer font-extrabold text-xl shadow-md border border-slate-200" title="Đóng modal">&times;</button>
     
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0 pr-10">
       <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -547,14 +547,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL: BẢNG QUẢN LÝ DANH SÁCH GIA ĐÌNH (modal-tab7-family-manager) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-family-manager" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-family-manager')">
+<div id="modal-tab7-family-manager" class="modal-overlay hidden">
   <div class="modal-content max-w-[400px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5 max-h-[85vh] flex flex-col">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
       <div class="flex items-center gap-2">
         <span class="text-xl">🏡</span>
         <h3 class="font-bold text-sm text-slate-800">Bảng Quản Lý Danh Sách Gia Đình</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-family-manager')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-family-manager')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
@@ -592,14 +592,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL: THÊM / SỬA GIA ĐÌNH VÀO DATABASE (modal-tab7-add-family) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-add-family" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-add-family')">
+<div id="modal-tab7-add-family" class="modal-overlay hidden">
   <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5 max-h-[90vh] flex flex-col">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
       <div class="flex items-center gap-2">
         <span class="text-xl">🏡</span>
         <h3 id="t7-fam-modal-title" class="font-bold text-sm text-slate-800">Thêm Gia Đình Mới</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-add-family')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-add-family')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
@@ -630,8 +630,8 @@
     </div>
 
     <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 shrink-0">
-      <button onclick="closeModal('modal-tab7-add-family')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
-      <button onclick="t7_saveFamilyFromModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
+      <button type="button" onclick="closeModal('modal-tab7-add-family')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
+      <button type="button" onclick="t7_saveFamilyFromModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
         <span>💾 Lưu Gia Đình</span>
       </button>
     </div>
@@ -673,6 +673,13 @@
         const parsedFams = JSON.parse(cachedFams);
         if (Array.isArray(parsedFams) && parsedFams.length > 0) {
           window.T7_STATE.splitFamilies = parsedFams;
+        }
+      }
+      const cachedRaw = localStorage.getItem('T7_CACHE_RAW_MEMBERS');
+      if (cachedRaw) {
+        const parsedRaw = JSON.parse(cachedRaw);
+        if (Array.isArray(parsedRaw) && parsedRaw.length > 0) {
+          window.T7_STATE.rawFamilyMembers = parsedRaw;
         }
       }
     } catch(e) {}
@@ -746,7 +753,11 @@
     t7_renderUI();
   }
 
-  function t7_loadAllData() {
+  function t7_loadAllData(forceRefresh) {
+    if (window.T7_STATE && window.T7_STATE.groups && window.T7_STATE.groups.length > 0 && window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0) {
+      if (typeof t7_renderUI === 'function') t7_renderUI();
+    }
+
     if (typeof google === 'undefined' || !google.script || !google.script.run) {
       console.warn("GAS google.script.run not available in standalone preview.");
       return;
@@ -777,6 +788,8 @@
           window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
           try {
             localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
+            localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawMembers || []));
+            localStorage.removeItem('T7_DELETED_FAMILIES');
           } catch(e) {}
 
           t7_renderUI();
@@ -1639,13 +1652,14 @@
   function t7_getFamilyDatabaseMap() {
     const familyMap = new Map();
     const deletedSet = t7_getDeletedFamiliesSet();
+    const isServerLoaded = Boolean(window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0);
 
     // 1. Primary Source of Truth: Server SplitFamilies sheet data
-    if (window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0) {
+    if (isServerLoaded) {
       window.T7_STATE.splitFamilies.forEach(f => {
         const key = (f.family_name || f.family_id || '').trim().toLowerCase();
-        if (!key || deletedSet.has(key)) return;
-        const isFamMe = Boolean(f.isMe || f.is_me || f.isme || (f.members && f.members.some(m => Boolean(m.isMe || m.is_me || m.isme))));
+        if (!key) return;
+        const isFamMe = Boolean(f.isMe || f.is_me || f.isme);
 
         const memberDedupeMap = new Map();
         (f.members || []).forEach(m => {
@@ -1654,16 +1668,14 @@
           const normKey = cleanName.toLowerCase();
           if (!normKey) return;
 
-          const isMRep = Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
+          const isMRep = Boolean(m.isRep || m.repstatus || m.rep_status);
 
           if (memberDedupeMap.has(normKey)) {
             const existing = memberDedupeMap.get(normKey);
             if (isMRep) {
               existing.isRep = true;
-              existing.sort_order = 1;
-              existing.sortOrder = 1;
+              existing.repstatus = true;
             }
-            if (isFamMe) existing.isMe = true;
           } else {
             memberDedupeMap.set(normKey, {
               id: m.member_id || m.id,
@@ -1672,11 +1684,9 @@
               type: m.member_type || m.type || 'ADULT',
               member_type: m.member_type || m.type || 'ADULT',
               weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
-              sort_order: isMRep ? 1 : "",
-              sortOrder: isMRep ? 1 : "",
-              status: m.status,
               isMe: isFamMe,
-              isRep: isMRep
+              isRep: isMRep,
+              repstatus: isMRep
             });
           }
         });
@@ -1692,52 +1702,31 @@
       });
     }
 
-    try {
-      const stored = localStorage.getItem('T7_FAMILY_DATABASE');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(f => {
-            if (f && f.name) {
-              const key = f.name.trim().toLowerCase();
-              if (!deletedSet.has(key)) {
-                if (!familyMap.has(key)) {
+    // 2. Local storage fallback ONLY when server is not loaded
+    if (!isServerLoaded) {
+      try {
+        const stored = localStorage.getItem('T7_FAMILY_DATABASE');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(f => {
+              if (f && f.name) {
+                const key = f.name.trim().toLowerCase();
+                if (!deletedSet.has(key) && !familyMap.has(key)) {
                   const cleanedMembers = (f.members || []).map(m => {
                     const cleanName = t7_normalizeMemberName(m.name || m.member_name || '') || (m.name || m.member_name || '');
-                    return { ...m, name: cleanName, member_name: cleanName, isMe: Boolean(f.isMe || m.isMe || m.is_me || m.isme) };
+                    return { ...m, name: cleanName, member_name: cleanName, isMe: Boolean(f.isMe) };
                   });
                   familyMap.set(key, { ...f, members: cleanedMembers, isMe: Boolean(f.isMe) });
-                } else {
-                  const existingFam = familyMap.get(key);
-                  (f.members || []).forEach(m => {
-                    const rawName = (m.name || m.member_name || '').trim();
-                    const cleanName = t7_normalizeMemberName(rawName) || rawName;
-                    const normKey = cleanName.toLowerCase();
-                    if (normKey) {
-                      const existing = existingFam.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
-                      if (existing) {
-                        if (existingFam.isMe || m.isMe || m.is_me || m.isme) existing.isMe = true;
-                      } else {
-                        existingFam.members.push({
-                          id: m.id || m.member_id || '',
-                          name: cleanName,
-                          member_name: cleanName,
-                          type: m.type || m.member_type || 'ADULT',
-                          member_type: m.type || m.member_type || 'ADULT',
-                          weight: m.weight !== undefined ? m.weight : 1.0,
-                          isMe: Boolean(existingFam.isMe || m.isMe || m.is_me || m.isme)
-                        });
-                      }
-                    }
-                  });
                 }
               }
-            }
-          });
+            });
+          }
         }
-      }
-    } catch(e) {}
+      } catch(e) {}
+    }
 
+    // 3. Fallback dynamically discovered families from trip groups
     const groups = window.T7_STATE.groups || [];
     groups.forEach(g => {
       (g.members || []).forEach(m => {
@@ -1758,9 +1747,7 @@
 
           if (normKey) {
             const existing = famObj.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
-            if (existing) {
-              if (famObj.isMe || m.isMe || m.is_me || m.isme) existing.isMe = true;
-            } else {
+            if (!existing) {
               famObj.members.push({
                 id: m.id || m.member_id || '',
                 name: cleanName,
@@ -1768,7 +1755,7 @@
                 type: m.type || m.member_type || 'ADULT',
                 member_type: m.type || m.member_type || 'ADULT',
                 weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-                isMe: Boolean(famObj.isMe || m.isMe || m.is_me || m.isme)
+                isMe: Boolean(famObj.isMe)
               });
             }
           }
@@ -1860,7 +1847,7 @@
 
       const memberNamesStr = members.map(m => {
         const icon = m.type === 'CHILD' ? '🧒' : (m.type === 'BABY' ? '🍼' : '👤');
-        const isRep = Boolean(m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.isRep);
+        const isRep = Boolean(m.isRep || m.repstatus || m.rep_status);
         return `${icon} ${m.name}${isRep ? ' 👑' : ''}`;
       }).join(' • ');
 
@@ -1918,7 +1905,7 @@
           name: m.name || m.member_name || ''
         }));
 
-        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1"));
+        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep || m.repstatus || m.rep_status));
         if (repIdx < 0) {
           repIdx = famObj.members.findIndex(m => Boolean(m.isMe || m.is_me));
         }
@@ -2037,8 +2024,8 @@
 
     const members = rawMembers.map((m) => ({
       ...m,
-      sort_order: m.isRep ? 1 : "",
-      sortOrder: m.isRep ? 1 : ""
+      repstatus: Boolean(m.isRep),
+      isRep: Boolean(m.isRep)
     }));
 
     // Find removed members for deactivation
@@ -2076,6 +2063,11 @@
           if (res && res.success) {
             window.T7_STATE.splitFamilies = res.families || [];
             window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
+            try {
+              localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
+              localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawMembers || []));
+              localStorage.removeItem('T7_DELETED_FAMILIES');
+            } catch(e) {}
             t7_renderFamilyCardsList();
             t7_renderPresetFamilyChips();
             t7_updateHistoryDatalists();
@@ -2102,31 +2094,40 @@
 
   function t7_deleteFamilyFromDatabase(famName) {
     if (!famName) return;
-    if (!confirm(`Bạn có chắc muốn xóa gia đình [${famName}] khỏi Database?`)) return;
-    const cleanKey = famName.trim().toLowerCase();
+    showConfirmModal(
+      "⚠️ Xóa Gia Đình",
+      `Bạn có chắc chắn muốn xóa gia đình [${famName}] khỏi Database không?`,
+      function() {
+        const cleanKey = famName.trim().toLowerCase();
+        t7_addDeletedFamilyKey(cleanKey);
 
-    t7_addDeletedFamilyKey(cleanKey);
+        const familyMap = t7_getFamilyDatabaseMap();
+        familyMap.delete(cleanKey);
+        t7_saveFamilyDatabaseMap(familyMap);
 
-    const familyMap = t7_getFamilyDatabaseMap();
-    const famObj = familyMap.get(cleanKey);
+        let fams = t7_getCustomPresetFamilies();
+        fams = fams.filter(f => f.trim().toLowerCase() !== cleanKey);
+        t7_saveCustomPresetFamilies(fams);
 
-    // Server-side deletion sync (Hard row deletion from SplitFamilies)
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      google.script.run.deleteSplitFamilyEntirely(famName);
-      setTimeout(t7_loadAllData, 500);
-    }
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function(res) {
+              showToast(res && res.message ? res.message : `🗑️ Đã xóa gia đình [${famName}] khỏi Database`);
+              t7_loadAllData(true);
+            })
+            .withFailureHandler(function(err) {
+              showToast("❌ Lỗi xóa gia đình: " + err, true);
+              t7_loadAllData(true);
+            })
+            .deleteSplitFamilyEntirely(famName);
+        }
 
-    familyMap.delete(cleanKey);
-    t7_saveFamilyDatabaseMap(familyMap);
-
-    let fams = t7_getCustomPresetFamilies();
-    fams = fams.filter(f => f.trim().toLowerCase() !== cleanKey);
-    t7_saveCustomPresetFamilies(fams);
-
-    t7_renderFamilyCardsList();
-    t7_renderPresetFamilyChips();
-    t7_updateHistoryDatalists();
-    showToast(`🗑️ Đã xóa gia đình [${famName}] khỏi Database`);
+        t7_renderFamilyCardsList();
+        t7_renderPresetFamilyChips();
+        t7_updateHistoryDatalists();
+      },
+      "🗑️ Xóa Vĩnh Viễn"
+    );
   }
 
   function t7_useFamilyForCategory(famName, targetCategory) {

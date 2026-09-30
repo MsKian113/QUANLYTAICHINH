@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <base target="_top" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f8fafc; font-family: sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+    ::-webkit-scrollbar { display: none; }
+    
+    /* BỘ KHUNG ĐIỆN THOẠI FIX CỐ ĐỊNH CHIỀU CAO THEO MÀN HÌNH */
+    .app-container { 
+      width: 100%; 
+      max-width: 420px; 
+      height: 760px; 
+      max-height: 92vh;
+      background: white; 
+      border-radius: 40px; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+      border: 8px solid #1e293b; 
+      position: relative; 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      margin: 5px auto;
+    }
+    
+    @media (max-width: 480px) {
+      body { padding: 0; background-color: white; }
+      .app-container { 
+        width: 100vw; 
+        height: 100vh; 
+        max-height: 100vh; 
+        border-radius: 0; 
+        border: none; 
+        margin: 0; 
+        box-shadow: none;
+      }
+      .notch { display: none; }
+    }
+    
+    .notch { 
+      position: absolute; 
+      top: 0; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      width: 140px; 
+      height: 25px; 
+      background: #1e293b; 
+      border-bottom-left-radius: 16px; 
+      border-bottom-right-radius: 16px; 
+      z-index: 50; 
+    }
+    
+    .modal-overlay { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      z-index: 100; 
+      display: none; 
+      justify-content: center; 
+      align-items: flex-end; 
+      backdrop-filter: blur(2px); 
+    }
+    .modal-overlay.active { display: flex !important; }
+    
+    .modal-content { 
+      background: white; 
+      width: 100%; 
+      max-width: 420px; 
+      border-top-left-radius: 24px; 
+      border-top-right-radius: 24px; 
+      padding: 24px; 
+      max-height: 90vh; 
+      overflow-y: auto; 
+      animation: slideUp 0.3s ease-out; 
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    
+    .suggest-box::-webkit-scrollbar { display: block; width: 4px; }
+    .suggest-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* CẤU HÌNH LƯỚT MƯỢT TRÊN ĐIỆN THOẠI (SMOOTH TOUCH SCROLLING & MOMENTUM) */
+    .scroll-touch {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: contain !important;
+    }
+
+    .custom-scroll::-webkit-scrollbar { display: block !important; width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    #quick-fixed-list {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: contain !important;
+    }
+    #quick-fixed-list::-webkit-scrollbar { display: block !important; width: 5px; }
+    #quick-fixed-list::-webkit-scrollbar-track { background: #fffbebf5; border-radius: 4px; }
+    #quick-fixed-list::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 4px; }
+    #quick-fixed-list::-webkit-scrollbar-thumb:hover { background: #d97706; }
+
+    /* NGUYÊN TẮC FLEXBOX CHUẨN: BẮT BUỘC KHÔNG CHO NỘI DUNG ĐẨY MENU BOTTOM XUỐNG DƯỚI */
+    .app-tab-view { 
+      display: none; 
+      flex-direction: column; 
+      flex: 1 1 0%; 
+      min-height: 0 !important; 
+      overflow: hidden; 
+      position: relative; 
+    }
+    .app-tab-view.active-tab { display: flex !important; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  
+  <script>
+    // ==========================================
+    // INSTANT SERVER-SIDE PRE-LOADED DATA (0ms DELAY)
+    // ==========================================
+    try {
+        window.SERVER_INITIAL_DATA = <?!= initialDataJson ?>;
+    } catch(e) {
+        window.SERVER_INITIAL_DATA = null;
+    }
+
+    // ==========================================
+    // SHARED GLOBAL STATE & AUTO-SUGGEST ENGINE
+    // ==========================================
+    window.CATEGORIES_RAW = [];
+    window.DESC_LIST = ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"];
+    window.NGUON_LIST = ["Ví Tiền Mặt", "Thẻ Rakuten", "Thẻ Ufj", "Thẻ SMBC", "PayPay"];
+    window.JAR_LIST = ["Đầu tư", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi"];
+    window.GLOBAL_JARS_DATA = [];
+    window.suggestTimeouts = {};
+
+    window.bizSuggestData = window.bizSuggestData || {
+        sp: ["Iphone 13 Pro Max cũ", "Iphone 15 Pro", "Mỹ phẩm Amazon", "Áo khoác Uniqlo", "Giày Nike", "Vitamin E", "Thực phẩm chức năng"],
+        spKho: ["Iphone 13 Pro Max (Kho Nhật - Tồn: 3)", "Iphone 13 Pro Max (Kho VN - Tồn: 2)", "Vitamin E (Kho Nhật - Tồn: 10)", "Mỹ phẩm Amazon (Chờ Ship - Tồn: 5)"],
+        nguon: ["Ví Tiền Mặt", "Thẻ Rakuten", "Thẻ Ufj", "Thẻ SMBC", "PayPay"],
+        doitac: ["Anh A (Cty Logistics)", "Chị B (Shop xách tay)", "Công ty C", "Đại lý D"],
+        noimua: ["Amazon", "Mercari", "Yahoo Auctions", "Don Quijote", "Rakuten", "Cửa hàng vật lý"]
+    };
+
+    window.debtSuggestData = window.debtSuggestData || {
+        nguon: ["Ví Tiền Mặt", "Thẻ Rakuten", "Thẻ Ufj", "Thẻ SMBC", "PayPay"]
+    };
+
+    function removeAccents(str) {
+        if (!str) return "";
+        return String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
+    }
+
+    function getItemName(item) {
+        if (item === null || item === undefined) return "";
+        if (typeof item === 'object') {
+            return item.tenSP || item.name || item.tên || item.id || String(item);
+        }
+        return String(item);
+    }
+
+    function filterItems(query, list) {
+        if (!list || !Array.isArray(list)) return [];
+        const rawQ = (query || "").toString().trim();
+        if (!rawQ) return list;
+        const qClean = removeAccents(rawQ.toLowerCase());
+        return list.filter(item => {
+            const name = getItemName(item);
+            return removeAccents(name.toLowerCase()).includes(qClean);
+        });
+    }
+
+    function fetchCategories() {
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getInitialData === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    if (res.categories && res.categories.length > 0) {
+                        window.CATEGORIES_RAW = res.categories;
+                        window.DESC_LIST = res.categories.map(item => item.name).filter(Boolean);
+                    }
+                    if (res.wallets && res.wallets.length > 0) {
+                        window.NGUON_LIST = res.wallets;
+                        if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;
+                        if (window.debtSuggestData) window.debtSuggestData.nguon = res.wallets;
+                    }
+                }
+            }).getInitialData();
+        }
+    }
+
+    function renderSuggest(inputId, type, showAllOnFocus = false) {
+        if (window.suggestTimeouts[inputId]) {
+            clearTimeout(window.suggestTimeouts[inputId]);
+            window.suggestTimeouts[inputId] = null;
+        }
+
+        const input = document.getElementById(inputId);
+        const box = document.getElementById('box-' + inputId);
+        if (!input || !box) return;
+
+        let dataList = [];
+        if (type === 'jar') {
+            dataList = window.JAR_LIST;
+        } else if (type === 'partner' || type === 'ten' || type === 'doituong') {
+            dataList = (window.PARTNER_LIST && window.PARTNER_LIST.length > 0) ? window.PARTNER_LIST : (window.DESC_LIST || []);
+        } else if (type === 'source' || type === 'nguon' || type === 'wallet' || type === 'debit') {
+            dataList = (window.NGUON_LIST && window.NGUON_LIST.length > 0) ? window.NGUON_LIST : ["Ví Tiền Mặt", "Thẻ Rakuten", "Thẻ Ufj", "Thẻ SMBC", "PayPay"];
+        } else if (type === 'desc' || type === 'template') {
+            dataList = (window.DESC_LIST && window.DESC_LIST.length > 0) ? window.DESC_LIST : ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"];
+        } else {
+            dataList = (window.bizSuggestData && window.bizSuggestData[type]) || (window.debtSuggestData && window.debtSuggestData[type]) || [];
+        }
+
+        const matches = (showAllOnFocus || !input.value.trim()) ? dataList : filterItems(input.value, dataList);
+        box.innerHTML = '';
+
+        if (!matches || matches.length === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+
+        const jarIcons = {
+            "Đầu tư": "📈",
+            "Thiết yếu": "🏠",
+            "Tiết kiệm": "💰",
+            "Giáo dục": "📚",
+            "Giải trí": "☕",
+            "Cho đi": "❤️"
+        };
+
+        box.innerHTML = matches.map(item => {
+            const itemName = getItemName(item);
+            const safeItem = itemName.replace(/'/g, "\\'");
+            if (type === 'jar') {
+                const jarObj = (window.GLOBAL_JARS_DATA || []).find(j => j && j.name && removeAccents(String(j.name).toLowerCase()) === removeAccents(itemName.toLowerCase()));
+                const icon = jarIcons[itemName] || "🍯";
+                const remainVal = jarObj ? Number(jarObj.remain || 0) : 0;
+                const remainText = typeof formatMoney === 'function' ? formatMoney(remainVal) : (remainVal.toLocaleString() + " ¥");
+                const badgeHtml = `<span class="text-[9px] font-bold ${remainVal > 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-2 py-0.5 rounded-md border">Còn: ${remainText}</span>`;
+                return `<div class="px-3.5 py-2.5 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                             ontouchstart="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');"
+                             onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                            <span class="text-slate-800 flex items-center gap-1.5">
+                                <span class="text-sm">${icon}</span> <span>${itemName}</span>
+                            </span>
+                            ${badgeHtml}
+                        </div>`;
+            }
+            if (type === 'sp') {
+                const stockVal = (typeof item === 'object' && item.qty !== undefined) ? item.qty : null;
+                const badgeHtml = stockVal !== null 
+                    ? `<span class="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">Tồn: ${stockVal}</span>` 
+                    : '';
+                return `<div class="px-3.5 py-2.5 hover:bg-amber-50 active:bg-amber-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                             ontouchstart="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');"
+                             onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                            <span class="text-slate-800 flex items-center gap-1.5">
+                                <span class="text-sm">📦</span> <span>${itemName}</span>
+                            </span>
+                            ${badgeHtml}
+                        </div>`;
+            }
+            const typeBadge = (typeof item === 'object' && item.type) ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${item.type === 'CREDIT' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600'}">${item.type}</span>` : '';
+            return `<div class="px-3.5 py-2.5 hover:bg-pink-50 active:bg-pink-100 cursor-pointer text-sm font-medium text-slate-700 border-b border-slate-100 last:border-0 flex justify-between items-center"
+                         ontouchstart="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');"
+                         onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
+                        <span>${itemName}</span>
+                        ${typeBadge}
+                    </div>`;
+        }).join('');
+        box.classList.remove('hidden');
+    }
+
+    function selectSuggest(inputId, value, type) {
+        if (window.suggestTimeouts[inputId]) {
+            clearTimeout(window.suggestTimeouts[inputId]);
+            window.suggestTimeouts[inputId] = null;
+        }
+
+        const input = document.getElementById(inputId);
+        if (input) {
+            if (inputId === 'add-debt-name' || input.getAttribute('data-multi') === 'true') {
+                const currentVal = input.value;
+                const lastCommaIdx = currentVal.lastIndexOf(',');
+                if (lastCommaIdx !== -1) {
+                    const prefix = currentVal.substring(0, lastCommaIdx + 1).trim();
+                    input.value = prefix + ' ' + value;
+                } else {
+                    input.value = value;
+                }
+            } else {
+                input.value = value;
+            }
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        if (type === 'desc' || type === 'template') {
+            let mode = inputId.split('-')[0];
+            checkAutoFill(value, mode);
+        }
+
+        if (inputId.startsWith('tf-jar') && typeof validateTransferAmount === 'function') {
+            validateTransferAmount();
+        }
+
+        const box = document.getElementById('box-' + inputId);
+        if (box) box.classList.add('hidden');
+    }
+
+    function hideSuggest(inputId) {
+        if (window.suggestTimeouts[inputId]) {
+            clearTimeout(window.suggestTimeouts[inputId]);
+        }
+        window.suggestTimeouts[inputId] = setTimeout(() => {
+            const input = document.getElementById(inputId);
+            if (input && document.activeElement === input) return;
+            const box = document.getElementById('box-' + inputId);
+            if (box) box.classList.add('hidden');
+        }, 300);
+    }
+
+    function checkAutoFill(val, mode) {
+        const inputMoney = document.getElementById(mode + '-money');
+        const selSource = document.getElementById(mode + '-source');
+        const selJar = document.getElementById(mode + '-jar');
+        const msg = document.getElementById(mode + '-autofill-msg');
+        let filled = false;
+
+        const qVal = removeAccents(String(val || "").trim().toLowerCase());
+        if (!qVal) {
+            if (msg) msg.classList.add('hidden');
+            return;
+        }
+
+        let matched = (window.CATEGORIES_RAW || []).find(c => c && removeAccents(String(c.name || "").trim().toLowerCase()) === qVal);
+        if (!matched) {
+            matched = (window.CATEGORIES_RAW || []).find(c => c && c.name && removeAccents(String(c.name).toLowerCase()).includes(qVal));
+        }
+
+        if (matched) {
+            if (matched.source && selSource) { selSource.value = matched.source; filled = true; }
+            if (matched.jar && selJar) { selJar.value = matched.jar; filled = true; }
+        } else {
+            if (qVal.includes('xang') || qVal.includes('eneos')) {
+                if(selSource) selSource.value = 'Thẻ Rakuten';
+                if(selJar) selJar.value = 'Thiết yếu';
+                filled = true;
+            } else if (qVal.includes('sieu thi') || qVal.includes('aeon')) {
+                if(selSource) selSource.value = 'Ví Tiền Mặt';
+                if(selJar) selJar.value = 'Thiết yếu';
+                filled = true;
+            } else if (qVal.includes('tien nha') || qVal.includes('nha leo')) {
+                if(inputMoney && !inputMoney.value) inputMoney.value = '50000';
+                if(selSource) selSource.value = 'Thẻ Ufj';
+                if(selJar) selJar.value = 'Thiết yếu';
+                filled = true;
+            }
+        }
+
+        if (msg) {
+            if(filled) {
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3500);
+            } else {
+                msg.classList.add('hidden');
+            }
+        }
+    }
+
+    function applyAppData(res) {
+        if (!res || !res.success) return;
+        if (res.categories && res.categories.length > 0) {
+            window.CATEGORIES_RAW = res.categories;
+            window.DESC_LIST = res.categories.map(item => item.name).filter(Boolean);
+        }
+        if (res.wallets && res.wallets.length > 0) {
+            window.NGUON_LIST = res.wallets;
+            if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;
+            if (window.debtSuggestData) window.debtSuggestData.nguon = res.wallets;
+            window.t1_walletsData = res.wallets;
+            if (typeof renderTab1Wallets === 'function') renderTab1Wallets();
+        }
+        if (res.quickFixed && res.quickFixed.length > 0) {
+            window.QUICK_FIXED_ITEMS = res.quickFixed;
+        }
+        if (res.tab2) {
+            const t2 = res.tab2;
+            if (t2.summary) {
+                const netVal = t2.summary.net ?? t2.summary.netBalance ?? 0;
+                const incVal = t2.summary.income ?? t2.summary.totalIncome ?? 0;
+                const expVal = t2.summary.expense ?? t2.summary.totalExpense ?? 0;
+                const netSign = netVal >= 0 ? '+' : '';
+                
+                const netEl = document.getElementById('dashboard-net');
+                const incEl = document.getElementById('dashboard-income');
+                const expEl = document.getElementById('dashboard-expense');
+
+                if (netEl) netEl.innerText = netSign + (typeof formatMoney === 'function' ? formatMoney(netVal) : netVal + " ¥");
+                if (incEl) incEl.innerText = '+' + (typeof formatMoney === 'function' ? formatMoney(incVal) : incVal + " ¥");
+                if (expEl) expEl.innerText = '-' + (typeof formatMoney === 'function' ? formatMoney(expVal) : expVal + " ¥");
+            }
+            if (t2.transactions && typeof renderTransactionList === 'function') {
+                renderTransactionList(t2.transactions);
+            }
+            if (t2.jars && t2.jars.length > 0) {
+                window.GLOBAL_JARS_DATA = t2.jars;
+                if (typeof renderJarCards === 'function') renderJarCards(t2.jars);
+            }
+            window.t2_initialLoaded = true;
+        }
+    }
+
+    function loadAppData() {
+        // 1. Instant 0ms pre-render from browser LocalStorage
+        try {
+            const cachedStr = localStorage.getItem("APP_LOCAL_CACHE_V5");
+            if (cachedStr) {
+                const cachedData = JSON.parse(cachedStr);
+                if (cachedData && cachedData.success) {
+                    applyAppData(cachedData);
+                }
+            }
+        } catch (e) {}
+
+        // 2. If server-side preloaded data exists
+        if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.success) {
+            applyAppData(window.SERVER_INITIAL_DATA);
+            try { localStorage.setItem("APP_LOCAL_CACHE_V5", JSON.stringify(window.SERVER_INITIAL_DATA)); } catch(e) {}
+            return;
+        }
+
+        // 3. Background RPC sync
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            const m = (new Date().getMonth() + 1).toString();
+            const y = new Date().getFullYear().toString();
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success) {
+                    applyAppData(res);
+                    try { localStorage.setItem("APP_LOCAL_CACHE_V5", JSON.stringify(res)); } catch(e) {}
+                }
+            }).getAppData(m, y);
+        } else {
+            fetchCategories();
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        loadAppData();
+    });
+  </script>
+
+  <div class="app-container">
+    <div class="notch"></div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: VÍ & THẺ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab1" class="app-tab-view active-tab bg-slate-50">
+        <?!= include('Tab1'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: THU / CHI & QUẢN LÝ HŨ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab2" class="app-tab-view bg-white">
+        <?!= include('Tab2'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: KINH DOANH -->
+    <!-- ========================================================================= -->
+    <div id="view-tab3" class="app-tab-view bg-slate-50">
+        <?!= include('Tab3'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: CÔNG NỢ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab4" class="app-tab-view bg-slate-50">
+        <?!= include('Tab4'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- BOTTOM NAV (THANH ĐIỀU HƯỚNG CỐ ĐỊNH Ở ĐÁY ĐIỆN THOẠI) -->
+    <!-- ========================================================================= -->
+    <div class="bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div onclick="switchAppTab('tab1', 'text-blue-600')" class="nav-item tab1 flex flex-col items-center cursor-pointer text-blue-600 scale-110 transition">
+            <span class="text-2xl mb-1">💳</span><span class="text-[10px] font-bold">Ví & Thẻ</span>
+        </div>
+        <div onclick="switchAppTab('tab2', 'text-pink-600')" class="nav-item tab2 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-2xl mb-1">🏠</span><span class="text-[10px] font-bold text-slate-600">Thu / Chi</span>
+        </div>
+        <div onclick="switchAppTab('tab3', 'text-amber-500')" class="nav-item tab3 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-2xl mb-1">🛒</span><span class="text-[10px] font-bold text-slate-600">Kinh Doanh</span>
+        </div>
+        <div onclick="switchAppTab('tab4', 'text-indigo-600')" class="nav-item tab4 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-2xl mb-1">🤝</span><span class="text-[10px] font-bold text-slate-600">Công Nợ</span>
+        </div>
+    </div>
+
+    <!-- GLOBAL TOAST NOTIFICATION CONTAINER -->
+    <div id="global-toast" class="absolute top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 hidden -translate-y-2 opacity-0 flex items-center gap-2 max-w-[90%] text-center"></div>
+
+    <!-- GLOBAL CONFIRM MODAL (THAY THẾ BROWSER CONFIRM) -->
+    <div id="modal-global-confirm" class="modal-overlay !items-center !justify-center" style="z-index: 290;" onclick="if(event.target === this) closeModal('modal-global-confirm')">
+      <div class="modal-content rounded-2xl border-t-4 border-rose-500 max-w-[320px] w-full p-3.5 shadow-2xl bg-white my-auto">
+        <div class="flex justify-between items-center mb-2 border-b pb-1.5">
+          <h3 id="global-confirm-title" class="text-xs font-bold text-slate-900">⚠️ Xác Nhận</h3>
+          <button onclick="closeModal('modal-global-confirm')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        </div>
+        <div class="space-y-4">
+          <p id="global-confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
+          <div class="flex gap-2 pt-1">
+              <button onclick="closeModal('modal-global-confirm')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+              <button id="btn-global-confirm-submit" onclick="executeGlobalConfirm()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let globalConfirmCallback = null;
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('global-toast') || document.getElementById('t1-toast');
+        if (!toast) return;
+        toast.innerText = msg;
+        toast.className = `absolute top-14 left-1/2 -translate-x-1/2 z-[300] px-3.5 py-2 rounded-2xl text-xs font-bold text-white shadow-2xl transition-all duration-300 flex items-center justify-center text-center max-w-[85%] w-auto whitespace-normal break-words leading-tight ${isError ? 'bg-rose-600 border border-rose-400' : 'bg-emerald-600 border border-emerald-400'}`;
+        toast.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            toast.classList.remove('-translate-y-2', 'opacity-0');
+        });
+        setTimeout(() => {
+            toast.classList.add('-translate-y-2', 'opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3200);
+    }
+
+    function showConfirmModal(title, msg, onConfirm, btnText = "Xác Nhận") {
+        const titleEl = document.getElementById('global-confirm-title');
+        const msgEl = document.getElementById('global-confirm-msg');
+        const btnEl = document.getElementById('btn-global-confirm-submit');
+        if (titleEl) titleEl.innerText = title || "⚠️ Xác Nhận Hành Động";
+        if (msgEl) msgEl.innerText = msg || "Bạn có chắc chắn muốn thực hiện?";
+        if (btnEl) btnEl.innerText = btnText;
+        globalConfirmCallback = onConfirm;
+        openModal('modal-global-confirm');
+    }
+
+    function executeGlobalConfirm() {
+        closeModal('modal-global-confirm');
+        if (typeof globalConfirmCallback === 'function') {
+            globalConfirmCallback();
+            globalConfirmCallback = null;
+        }
+    }
+
+    function switchAppTab(tabId, activeColorClass) {
+        ['tab1', 'tab2', 'tab3', 'tab4'].forEach(id => {
+            const el = document.getElementById('view-' + id);
+            if (el) el.classList.remove('active-tab');
+        });
+        
+        const activeView = document.getElementById('view-' + tabId);
+        if (activeView) activeView.classList.add('active-tab');
+
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.className = item.className.replace(/text-(blue|pink|amber|indigo)-\d+/g, '');
+            item.classList.remove('scale-110', 'opacity-100');
+            item.classList.add('opacity-50');
+            const label = item.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-[10px] font-bold text-slate-600";
+        });
+
+        const activeNav = document.querySelector('.nav-item.' + tabId);
+        if (activeNav) {
+            activeNav.classList.remove('opacity-50');
+            activeNav.classList.add('scale-110', 'opacity-100');
+            if (activeColorClass) activeNav.classList.add(activeColorClass);
+            const label = activeNav.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-[10px] font-bold";
+        }
+
+        if (tabId === 'tab2' && typeof reloadTab2Data === 'function') {
+            reloadTab2Data();
+        } else if (tabId === 'tab3' && typeof reloadTab3Data === 'function') {
+            reloadTab3Data();
+        } else if (tabId === 'tab4' && typeof reloadTab4Data === 'function') {
+            reloadTab4Data();
+        } else if (tabId === 'tab1' && typeof reloadTab1Data === 'function') {
+            reloadTab1Data();
+        }
+    }
+  </script>
+</body>
+</html>

@@ -20,6 +20,7 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    .hidden { display: none !important; }
     body { background-color: #f8fafc; font-family: sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
     ::-webkit-scrollbar { display: none; }
     
@@ -385,10 +386,6 @@
             dataList = dataList.map(getItemName).filter(Boolean);
         }
 
-        if (type === 'sp' || type === 'product' || type === 'tenSP') {
-            dataList = dataList.filter(item => String(item).trim().toLowerCase().startsWith('film'));
-        }
-
         let queryText = input.value || "";
         if (inputId === 'add-debt-name' || input.getAttribute('data-multi') === 'true') {
             const lastCommaIdx = queryText.lastIndexOf(',');
@@ -635,6 +632,41 @@
         if (res.tab4 && typeof applyTab4Data === 'function') {
             applyTab4Data(res.tab4);
         }
+        if (res.tab5 && typeof applyTab5Data === 'function') {
+            applyTab5Data(res.tab5);
+        }
+        if (res.splitFamilies || res.splitGroups) {
+            if (!window.T7_STATE) {
+                window.T7_STATE = {
+                    groups: [],
+                    splitFamilies: [],
+                    rawFamilyMembers: [],
+                    activeGroup: null,
+                    activeCategory: "DINING",
+                    currentView: "LIST",
+                    expenses: [],
+                    memberBalances: [],
+                    settlements: [],
+                    currentSplitMode: "WEIGHT",
+                    isBalanceSectionOpen: true
+                };
+            }
+            if (res.splitFamilies && Array.isArray(res.splitFamilies)) {
+                window.T7_STATE.splitFamilies = res.splitFamilies;
+                try { localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.splitFamilies)); } catch(e) {}
+            }
+            if (res.rawFamilyMembers && Array.isArray(res.rawFamilyMembers)) {
+                window.T7_STATE.rawFamilyMembers = res.rawFamilyMembers;
+                try { localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawFamilyMembers)); } catch(e) {}
+            }
+            if (res.splitGroups && Array.isArray(res.splitGroups)) {
+                window.T7_STATE.groups = res.splitGroups;
+                try { localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(res.splitGroups)); } catch(e) {}
+            }
+            if (typeof t7_renderUI === 'function') {
+                t7_renderUI();
+            }
+        }
         if (typeof renderTab6Data === 'function') {
             renderTab6Data();
         }
@@ -690,11 +722,51 @@
     };
 
     document.addEventListener("DOMContentLoaded", function() {
-        loadAppData();
+        // App data will be loaded upon unlocking via performUnlock()
     });
   </script>
 
-  <div class="app-container">
+  <!-- MÀN HÌNH KHÓA APP -->
+  <div id="app-lock-screen" style="position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100vw !important; height: 100vh !important; background-color: #0f172a !important; z-index: 9999999 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; padding: 24px !important;" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6">
+    <div class="bg-white p-5 rounded-3xl shadow-2xl w-full max-w-[320px] text-center transform transition-all space-y-3">
+      <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
+        🔒
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-800">Ứng Dụng Đã Khóa</h2>
+        <p id="app-lock-subtitle" class="text-xs text-slate-500 mt-0.5">Mở khóa ứng dụng để tiếp tục</p>
+      </div>
+
+      <!-- Toggle Buttons: Vẽ Mật Khẩu / Nhập Mật Khẩu -->
+      <div class="flex bg-slate-100 p-1 rounded-xl">
+        <button id="btn-app-lock-mode-pattern" onclick="switchAppLockMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-2xs">✍️ Vẽ Mật Khẩu</button>
+        <button id="btn-app-lock-mode-pin" onclick="switchAppLockMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
+      </div>
+
+      <!-- Mode 1: VẼ MẬT KHẨU (3x3 PATTERN LOCK GRID) -->
+      <div id="app-lock-pattern-container" class="space-y-2">
+        <div class="relative w-[210px] h-[210px] mx-auto bg-slate-900 rounded-2xl shadow-inner border border-slate-700 flex items-center justify-center touch-none select-none">
+          <canvas id="app-pattern-canvas" width="210" height="210" class="cursor-pointer rounded-2xl"></canvas>
+        </div>
+        <div class="flex justify-between items-center px-1 text-[10px]">
+          <button onclick="resetAppPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
+          <span class="text-slate-400 font-medium">Nối từ 3 điểm trở lên</span>
+        </div>
+      </div>
+
+      <!-- Mode 2: NHẬP MẬT KHẨU CHỮ / SỐ (PIN) -->
+      <div id="app-lock-pin-container" class="space-y-2.5 hidden">
+        <input type="password" id="app-password-input" placeholder="Nhập mật khẩu..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center text-sm font-bold text-slate-800 tracking-widest outline-none focus:border-blue-500 focus:bg-white transition" />
+        <button onclick="unlockAppWithPin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer">
+          Mở Khóa
+        </button>
+      </div>
+
+      <p id="app-lock-error" class="text-xs text-rose-500 font-bold hidden">❌ Mật khẩu hoặc hình vẽ không chính xác!</p>
+    </div>
+  </div>
+
+  <div class="app-container hidden" id="main-app-container" style="display: none !important;">
     <div class="notch"></div>
 
     <!-- ========================================================================= -->
@@ -900,28 +972,28 @@
   <!-- ========================================================================= -->
 
   <!-- MODAL XÁC NHẬN (CONFIRM DIALOG - THAY THẾ BROWSER CONFIRM) -->
-  <div id="modal-confirm-dialog" class="modal-overlay" style="z-index: 280;" onclick="if(event.target === this) closeModal('modal-confirm-dialog')">
+  <div id="modal-confirm-dialog" class="modal-overlay" style="z-index: 280;">
     <div class="modal-content rounded-2xl border-t-4 border-rose-500 !p-3.5 max-w-[320px] w-full">
       <div class="flex justify-between items-center mb-2 border-b pb-1.5">
         <h3 id="confirm-title" class="text-xs font-bold text-slate-900">⚠️ Xác Nhận</h3>
-        <button onclick="closeModal('modal-confirm-dialog')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-confirm-dialog')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-3">
         <p id="confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
         <div class="flex gap-2 pt-1">
-            <button onclick="closeModal('modal-confirm-dialog')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
-            <button onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận Xoá</button>
+            <button type="button" onclick="closeModal('modal-confirm-dialog')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+            <button type="button" onclick="executeConfirmAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận Xoá</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- FORM CHUYỂN TIỀN NỘI BỘ (VÍ ĐẾN VÍ) -->
-  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;" onclick="if(event.target === this) closeModal('modal-transfer-wallet')">
+  <div id="modal-transfer-wallet" class="modal-overlay" style="z-index: 200;">
     <div class="modal-content rounded-2xl border-t-4 border-indigo-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900">🔄 Chuyển Tiền Nội Bộ</h3>
-        <button onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-transfer-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5">
         <div class="grid grid-cols-2 gap-2.5 relative z-40">
@@ -950,11 +1022,11 @@
   </div>
 
   <!-- FORM THÊM MỚI / SỬA VÍ THẺ -->
-  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;" onclick="if(event.target === this) closeModal('modal-add-wallet')">
+  <div id="modal-add-wallet" class="modal-overlay" style="z-index: 210;">
     <div class="modal-content rounded-2xl border-t-4 border-slate-800 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 id="wa-title" class="text-xs font-bold text-slate-900">🛠️ Thông Tin Ví / Thẻ</h3>
-        <button onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-add-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5">
         <input type="hidden" id="wa-id" value="" />
@@ -1006,14 +1078,14 @@
   </div>
 
   <!-- SỔ PHỤ VÍ DEBIT -->
-  <div id="modal-statement-debit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-debit')">
+  <div id="modal-statement-debit" class="modal-overlay">
     <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
       <div class="p-3 border-b bg-blue-50 flex justify-between items-center rounded-t-2xl">
         <div>
             <p class="text-[9px] uppercase text-blue-500 font-bold tracking-wider">Chi Tiết Giao Dịch</p>
             <h3 id="debit-statement-title" class="text-xs font-bold text-blue-900">Tên Thẻ</h3>
         </div>
-        <button onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
+        <button type="button" onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
       </div>
       <div class="flex-1 overflow-y-auto p-3 bg-white">
         <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
@@ -1021,7 +1093,7 @@
                 <span class="text-xs font-medium text-slate-500">Số dư trên App:</span>
                 <span id="debit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
             </div>
-            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+            <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
         </div>
         <div id="debit-statement-list" class="space-y-2">
             <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
@@ -1031,14 +1103,14 @@
   </div>
 
   <!-- SỔ PHỤ THẺ TÍN DỤNG (CREDIT) -->
-  <div id="modal-statement-credit" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-statement-credit')">
+  <div id="modal-statement-credit" class="modal-overlay">
     <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
       <div class="p-3 border-b bg-rose-50 flex justify-between items-center rounded-t-2xl">
         <div>
             <p class="text-[9px] uppercase text-rose-500 font-bold tracking-wider">Lịch Sử Giao Dịch Thẻ</p>
             <h3 id="credit-statement-title" class="text-xs font-bold text-rose-900">Tên Thẻ</h3>
         </div>
-        <button onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
+        <button type="button" onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
       </div>
       <div class="flex-1 overflow-y-auto p-3 bg-white">
         <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
@@ -1046,7 +1118,7 @@
                 <span class="text-xs font-medium text-slate-500">Dư nợ trên App:</span>
                 <span id="credit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
             </div>
-            <button onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+            <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
         </div>
         <div id="credit-statement-list" class="space-y-2">
             <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
@@ -1056,11 +1128,11 @@
   </div>
 
   <!-- MODAL SỬA GIAO DỊCH CHI TIẾT SỔ PHỤ -->
-  <div id="modal-edit-statement-tx" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-edit-statement-tx')">
+  <div id="modal-edit-statement-tx" class="modal-overlay" style="z-index: 250;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">🛠️ Sửa Giao Dịch Chi Tiết</h3>
-        <button onclick="closeModal('modal-edit-statement-tx')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-edit-statement-tx')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5 text-xs">
         <input type="hidden" id="edit-st-id" value="" />
@@ -1080,7 +1152,7 @@
           <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Nội Dung / Ghi Chú</label>
           <input type="text" id="edit-st-note" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-400" />
         </div>
-        <button id="btn-submit-edit-st" onclick="submitEditStatementTx()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
+        <button type="button" id="btn-submit-edit-st" onclick="submitEditStatementTx()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
           Lưu Thay Đổi
         </button>
       </div>
@@ -1088,11 +1160,11 @@
   </div>
 
   <!-- FORM ĐIỀU CHỈNH CÂN BẰNG SỔ (COMPACT UI) -->
-  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-adjust-balance')">
+  <div id="modal-adjust-balance" class="modal-overlay" style="z-index: 220;">
     <div class="modal-content rounded-2xl border-t-4 border-amber-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">⚠️ Chênh Lệch Số Dư Ví / Thẻ</h3>
-        <button onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-adjust-balance')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5 text-xs">
         <div class="bg-amber-50/80 p-2 rounded-lg border border-amber-200 flex justify-between items-center">
@@ -1112,7 +1184,7 @@
             <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số dư THỰC TẾ thực cầm (¥)</label>
             <input type="number" id="adj-actual-balance" placeholder="Nhập số tiền thực tế..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-amber-400" />
         </div>
-        <button id="btn-submit-adjust" onclick="submitAdjustBalance()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
+        <button type="button" id="btn-submit-adjust" onclick="submitAdjustBalance()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">
             Lưu Chênh Lệch
         </button>
       </div>
@@ -1120,11 +1192,11 @@
   </div>
 
   <!-- MODAL TẤT TOÁN THẺ TÍN DỤNG -->
-  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;" onclick="if(event.target === this) closeModal('modal-settle-card')">
+  <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
       <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
         <h3 class="text-xs font-bold text-slate-900">Thanh Toán Thẻ</h3>
-        <button onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-settle-card')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-2.5">
         <div>
@@ -1140,23 +1212,23 @@
           <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Số tiền thanh toán (¥)</label>
           <input type="number" id="settle-amount" placeholder="Nhập số tiền..." class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-blue-400 outline-none" />
         </div>
-        <button id="btn-submit-settle" onclick="submitCreditSettlement()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">Xác Nhận Thanh Toán</button>
+        <button type="button" id="btn-submit-settle" onclick="submitCreditSettlement()" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition">Xác Nhận Thanh Toán</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL XÁC THỰC MẬT KHẨU BẢO MẬT THẺ (VẼ HÌNH HOẶC NHẬP MK) -->
-  <div id="modal-card-info-auth" class="modal-overlay" style="z-index: 230;" onclick="if(event.target === this) closeModal('modal-card-info-auth')">
+  <div id="modal-card-info-auth" class="modal-overlay" style="z-index: 230;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-600 !p-4 max-w-[340px] w-full text-center">
       <div class="flex justify-between items-center mb-2.5 border-b pb-2">
         <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">🔐 MỞ KHÓA BẢO MẬT</h3>
-        <button onclick="closeModal('modal-card-info-auth')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-card-info-auth')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
       </div>
 
       <!-- CHỌN CHẾ ĐỘ: VẼ MẬT KHẨU HOẶC NHẬP MẬT KHẨU -->
       <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
-        <button id="btn-auth-mode-pattern" onclick="t1_switchAuthMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs">✍️ Vẽ Mật Khẩu</button>
-        <button id="btn-auth-mode-pin" onclick="t1_switchAuthMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
+        <button type="button" id="btn-auth-mode-pattern" onclick="t1_switchAuthMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-xs">✍️ Vẽ Mật Khẩu</button>
+        <button type="button" id="btn-auth-mode-pin" onclick="t1_switchAuthMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
       </div>
 
       <!-- CHẾ ĐỘ 1: VẼ MẬT KHẨU (3x3 PATTERN LOCK GRID) -->
@@ -1166,7 +1238,7 @@
           <canvas id="pattern-canvas" width="220" height="220" class="cursor-pointer rounded-2xl"></canvas>
         </div>
         <div class="flex justify-between items-center px-2 pt-1 text-[11px]">
-          <button onclick="t1_resetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
+          <button type="button" onclick="t1_resetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
           <span class="text-slate-400">Nối từ 3 điểm trở lên</span>
         </div>
       </div>
@@ -1177,7 +1249,7 @@
         <div>
           <input type="password" id="card-info-pwd-input" onkeyup="if(event.key==='Enter') submitCardInfoAuth()" placeholder="Nhập Mật Khẩu..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" />
         </div>
-        <button id="btn-submit-card-auth" onclick="submitCardInfoAuth()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
+        <button type="button" id="btn-submit-card-auth" onclick="submitCardInfoAuth()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
           🔓 MỞ KHÓA MẬT KHẨU
         </button>
       </div>
@@ -1185,17 +1257,17 @@
   </div>
 
   <!-- MODAL THIẾT LẬP MẬT KHẨU HÌNH VẼ MỚI (SET PATTERN PWD MODAL) -->
-  <div id="modal-set-pattern-pwd" class="modal-overlay" style="z-index: 250;" onclick="if(event.target === this) closeModal('modal-set-pattern-pwd')">
+  <div id="modal-set-pattern-pwd" class="modal-overlay" style="z-index: 250;">
     <div class="modal-content rounded-2xl border-t-4 border-emerald-600 !p-4 max-w-[340px] w-full text-center">
       <div class="flex justify-between items-center mb-2.5 border-b pb-2">
         <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">🎨 THIẾT LẬP MẬT KHẨU MỚI</h3>
-        <button onclick="closeModal('modal-set-pattern-pwd')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-set-pattern-pwd')" class="text-slate-400 font-bold text-lg cursor-pointer hover:text-slate-600">&times;</button>
       </div>
 
       <!-- CHỌN CHẾ ĐỘ THIẾT LẬP -->
       <div class="flex bg-slate-100 p-1 rounded-xl mb-3">
-        <button id="btn-set-mode-pattern" onclick="t1_switchSetMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs">✍️ Vẽ Hình Mẫu Mới</button>
-        <button id="btn-set-mode-pin" onclick="t1_switchSetMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Chữ / Số</button>
+        <button type="button" id="btn-set-mode-pattern" onclick="t1_switchSetMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-emerald-700 bg-white shadow-xs">✍️ Vẽ Hình Mẫu Mới</button>
+        <button type="button" id="btn-set-mode-pin" onclick="t1_switchSetMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Chữ / Số</button>
       </div>
 
       <!-- CHẾ ĐỘ 1: VẼ HÌNH MẪU MỚI (RECORD PATTERN) -->
@@ -1205,10 +1277,10 @@
           <canvas id="pattern-set-canvas" width="220" height="220" class="cursor-pointer rounded-2xl"></canvas>
         </div>
         <div class="flex justify-between items-center px-2 pt-1 text-[11px]">
-          <button onclick="t1_resetSetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer">🔄 Vẽ lại</button>
+          <button type="button" onclick="t1_resetSetPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer">🔄 Vẽ lại</button>
           <span id="pattern-set-code-badge" class="font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] hidden">Mã: --</span>
         </div>
-        <button id="btn-save-set-pattern" onclick="t1_saveSetPatternPassword()" disabled class="w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5">
+        <button type="button" id="btn-save-set-pattern" onclick="t1_saveSetPatternPassword()" disabled class="w-full py-2.5 bg-slate-300 text-slate-500 rounded-xl text-xs font-bold cursor-not-allowed transition flex items-center justify-center gap-1.5">
           💾 LƯU HÌNH VẼ MỚI
         </button>
       </div>
@@ -1219,7 +1291,7 @@
         <div>
           <input type="text" id="card-info-new-pwd-input" placeholder="Nhập mật khẩu mới..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-center text-sm font-bold tracking-widest text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 transition" />
         </div>
-        <button onclick="t1_saveSetTextPassword()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
+        <button type="button" onclick="t1_saveSetTextPassword()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition flex items-center justify-center gap-1.5">
           💾 LƯU MẬT KHẨU MỚI
         </button>
       </div>
@@ -1229,11 +1301,11 @@
   </div>
 
   <!-- MODAL SỬA THÔNG TIN BẢO MẬT THẺ & THẺ ẢO (CỘT L->R) -->
-  <div id="modal-edit-card-security" class="modal-overlay" style="z-index: 240;" onclick="if(event.target === this) closeModal('modal-edit-card-security')">
+  <div id="modal-edit-card-security" class="modal-overlay" style="z-index: 240;">
     <div class="modal-content rounded-2xl border-t-4 border-indigo-600 !p-4 max-w-[360px] w-full">
       <div class="flex justify-between items-center mb-3 border-b pb-2">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">✏️ Sửa Thông Tin Bảo Mật Thẻ</h3>
-        <button onclick="closeModal('modal-edit-card-security')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+        <button type="button" onclick="closeModal('modal-edit-card-security')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
       </div>
       <div class="space-y-3 text-xs max-h-[75vh] overflow-y-auto pr-1">
         <input type="hidden" id="sec-card-id" value="" />
@@ -3871,11 +3943,11 @@
 <!-- ========================================================================= -->
 <!-- MODAL: KHOẢN CỐ ĐỊNH NHANH -->
 <!-- ========================================================================= -->
-<div id="modal-quick-fixed" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-quick-fixed')">
+<div id="modal-quick-fixed" class="modal-overlay">
   <div class="modal-content !p-0 rounded-2xl border-t-4 border-amber-500 w-full max-w-[340px] max-h-[calc(100%-16px)] flex flex-col box-border overflow-hidden relative z-50 shadow-2xl">
     <div class="p-3 px-3.5 border-b flex justify-between items-center bg-white rounded-t-2xl shrink-0 z-20">
       <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1 truncate">⚡ Đóng Khoản Cố Định (Nhanh)</h3>
-      <button onclick="closeModal('modal-quick-fixed')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-quick-fixed')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
     <div class="px-3.5 pt-2 pb-1 bg-white shrink-0 z-20">
       <p class="text-[11px] font-medium text-slate-500">Nhập số tiền đóng hàng tháng cho các khoản bên dưới:</p>
@@ -3884,7 +3956,7 @@
         <p class="text-xs text-slate-400 italic text-center py-6">Đang tải danh sách khoản cố định...</p>
     </div>
     <div class="p-3 px-3.5 border-t border-slate-200 bg-white shrink-0 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] rounded-b-2xl">
-      <button id="btn-submit-quick-fixed" onclick="submitQuickFixed()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition flex items-center justify-center gap-1.5">
+      <button type="button" id="btn-submit-quick-fixed" onclick="submitQuickFixed()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition flex items-center justify-center gap-1.5">
         ⚡ Lưu
       </button>
     </div>
@@ -5066,13 +5138,13 @@
   </div>
 
   <!-- MODAL: GHI NHẬP MUA HÀNG -->
-  <div id="modal-biz-mua" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-biz-mua')">
+  <div id="modal-biz-mua" class="modal-overlay">
     <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-teal-600 p-4 max-w-md w-full bg-white shadow-2xl space-y-2.5 text-xs">
       <div class="flex justify-between items-center border-b pb-2 mb-1">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
           <span>➕</span> <span>Ghi Nhập Mua Hàng</span>
         </h3>
-        <button onclick="closeModal('modal-biz-mua')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        <button type="button" onclick="closeModal('modal-biz-mua')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
       </div>
 
       <!-- Hàng 1: Ngày mua + Nơi Mua -->
@@ -5156,13 +5228,13 @@
   </div>
 
   <!-- MODAL: GHI XUẤT BÁN HÀNG -->
-  <div id="modal-biz-ban" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-biz-ban')">
+  <div id="modal-biz-ban" class="modal-overlay">
     <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-amber-500 p-4 max-w-md w-full bg-white shadow-2xl space-y-2.5 text-xs">
       <div class="flex justify-between items-center border-b pb-2 mb-1">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
           <span>📤</span> <span>Ghi Xuất Bán Hàng</span>
         </h3>
-        <button onclick="closeModal('modal-biz-ban')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        <button type="button" onclick="closeModal('modal-biz-ban')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
       </div>
 
       <!-- Hàng 1: Ngày Bán + Ví Nhận Tiền -->
@@ -5364,14 +5436,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL POPUP 1: CHI TIẾT TÀI KHOẢN (KHI BẤM VÀO NÚT TK) -->
 <!-- ========================================================================= -->
-<div id="modal-t5-acc-detail" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-t5-acc-detail')">
+<div id="modal-t5-acc-detail" class="modal-overlay">
   <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[360px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
     
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-1.5">
         <span>👤</span> <span id="t5-md-acc-name">TK Joshin KA</span>
       </h3>
-      <button onclick="closeModal('modal-t5-acc-detail')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-t5-acc-detail')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <!-- CHỈ HIỆN NGÀY MUA GẦN NHẤT & TÊN SP -->
@@ -5387,10 +5459,10 @@
     </div>
 
     <div class="flex gap-2 pt-1">
-      <button onclick="t5_openQuickBuyFromDetailModal()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-2xs transition cursor-pointer">
+      <button type="button" onclick="t5_openQuickBuyFromDetailModal()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-2xs transition cursor-pointer">
         ⚡ Ghi Nhận Mua Mới
       </button>
-      <button id="t5-btn-cancel-cooldown" onclick="t5_handleCancelCooldownFromModal()" class="py-2 px-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition cursor-pointer">
+      <button type="button" id="t5-btn-cancel-cooldown" onclick="t5_handleCancelCooldownFromModal()" class="py-2 px-3 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-700 font-bold rounded-xl transition cursor-pointer">
         ❌ Hủy Cooldown
       </button>
     </div>
@@ -5404,13 +5476,13 @@
 <!-- ========================================================================= -->
 <!-- MODAL POPUP 3: FORM THÊM TÀI KHOẢN MỚI VÀO CATEGORIES CỘT G -->
 <!-- ========================================================================= -->
-<div id="modal-t5-add-acc" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-t5-add-acc')">
+<div id="modal-t5-add-acc" class="modal-overlay">
   <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[360px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
         <span>➕</span> <span>Thêm Tài Khoản</span>
       </h3>
-      <button onclick="closeModal('modal-t5-add-acc')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-t5-add-acc')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <form onsubmit="event.preventDefault(); t5_handleAddAccount();" class="space-y-3">
@@ -5446,13 +5518,13 @@
 <!-- ========================================================================= -->
 <!-- MODAL POPUP 4: SỬA SỐ NGÀY COOLDOWN CỬA HÀNG (DÂN CỬA HÀNG ĐƯỢC CHỌN) -->
 <!-- ========================================================================= -->
-<div id="modal-t5-store-cooldown" class="modal-overlay" style="z-index: 300;" onclick="if(event.target === this) t5_closeStoreCooldownModal()">
+<div id="modal-t5-store-cooldown" class="modal-overlay" style="z-index: 300;">
   <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[340px] w-full p-4 shadow-2xl bg-white space-y-3 text-xs">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
         <span>⚙️</span> <span>Sửa Cooldown Cửa Hàng</span>
       </h3>
-      <button onclick="t5_closeStoreCooldownModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="t5_closeStoreCooldownModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <form onsubmit="event.preventDefault(); t5_handleSaveSingleStoreCooldown();" class="space-y-3">
@@ -5498,12 +5570,24 @@
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  function t5_loadData() {
+  function applyTab5Data(res) {
+    if (res && res.success) {
+      window.TAB5_DATA = res;
+      if (typeof t5_renderMatrix === 'function') {
+        t5_renderMatrix();
+      }
+    }
+  }
+
+  function t5_loadData(forceRefresh) {
+    if (!forceRefresh && window.TAB5_DATA && window.TAB5_DATA.matrix && window.TAB5_DATA.matrix.length > 0) {
+      if (typeof t5_renderMatrix === 'function') t5_renderMatrix();
+      return;
+    }
     if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab5Data === 'function') {
       google.script.run.withSuccessHandler(function(res) {
         if (res && res.success) {
-          window.TAB5_DATA = res;
-          t5_renderMatrix();
+          applyTab5Data(res);
         } else {
           showToast("❌ Không thể tải dữ liệu Lịch Mua!", true);
         }
@@ -5987,14 +6071,14 @@
 </div>
 
 <!-- MODAL XEM & SỬA CHI TIẾT ĐƠN HÀNG TỒN KHO -->
-<div id="modal-product-detail" class="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-[200] hidden" onclick="if(event.target===this) closeProductDetailModal()">
+<div id="modal-product-detail" class="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-[200] hidden">
   <div class="bg-white w-full max-w-[420px] rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85%] animate-slide-up">
     <div class="bg-teal-600 text-white p-2.5 px-3.5 flex justify-between items-center shrink-0">
       <div>
         <h3 id="product-detail-title" class="font-bold text-xs">Chi Tiết Tồn Kho</h3>
         <p id="product-detail-sub" class="text-[9px] text-teal-100">Danh sách tất cả các đợt nhập mua</p>
       </div>
-      <button onclick="closeProductDetailModal()" class="text-white/80 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg cursor-pointer">&times;</button>
+      <button type="button" onclick="closeProductDetailModal()" class="text-white/80 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg cursor-pointer">&times;</button>
     </div>
     
     <div id="product-detail-body" class="p-2 overflow-y-auto space-y-1.5 flex-1 text-xs">
@@ -6284,7 +6368,7 @@
           }
       }
 
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.confirmRefundOrderPayment === 'function') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               restoreBtn();
               closeConfirmRefundModal();
@@ -7201,10 +7285,9 @@
   }
 
   function updateWarehouseDropdowns(warehouses) {
-      const defaultWhs = ["Chờ Ship", "Chusen", "Kho Nhật", "Kho VN"];
-      const whList = (Array.isArray(warehouses) && warehouses.length > 0) 
-          ? Array.from(new Set(warehouses)) 
-          : defaultWhs;
+      const defaultWhs = ["Chờ Ship", "Chusen", "1F", "2F", "Kho Nhật", "Kho VN"];
+      const inputWhs = Array.isArray(warehouses) ? warehouses : [];
+      const whList = Array.from(new Set(inputWhs.concat(defaultWhs)));
 
       const fromWhSelect = document.getElementById('transfer-from-wh');
       if (fromWhSelect) {
@@ -7265,8 +7348,10 @@
               
               if (whVal && whVal !== 'ALL') {
                   const cleanWh = whVal.trim().toLowerCase();
-                  if (cleanWh.includes('hủy')) {
+                  if (cleanWh.includes('hủy') || cleanWh.includes('cancel')) {
                       if (!isCancelled) return false;
+                  } else if (cleanWh.includes('chờ ship') || cleanWh.includes('chusen')) {
+                      if (!isChoShipOrChusen) return false;
                   } else {
                       if (isCancelled || isChoShipOrChusen || isPreOrder) return false;
                       if (!itemWh.includes(cleanWh)) return false;
@@ -7275,8 +7360,11 @@
                   if (isCancelled || isChoShipOrChusen || isPreOrder) return false;
               }
 
-              // Only include items with remaining stock > 0
-              const remTon = (item.tonKho !== undefined && item.tonKho !== null && !isNaN(Number(item.tonKho))) ? Number(item.tonKho) : 0;
+              // Only include items with remaining stock > 0 (or for Chờ Ship / Chusen, item.qty > 0)
+              const isCheckingPending = whVal && (whVal.toLowerCase().includes('chờ ship') || whVal.toLowerCase().includes('chusen'));
+              const remTon = (item.tonKho !== undefined && item.tonKho !== null && !isNaN(Number(item.tonKho)) && Number(item.tonKho) > 0)
+                  ? Number(item.tonKho)
+                  : (isCheckingPending || isChoShipOrChusen ? Number(item.qty || 1) : 0);
               if (remTon <= 0) return false;
 
               if (searchVal) {
@@ -7311,7 +7399,9 @@
                   };
               }
               const g = groupsMap[key];
-              const qty = Number(it.tonKho) || 0;
+              const qty = (it.tonKho !== undefined && it.tonKho !== null && !isNaN(Number(it.tonKho)) && Number(it.tonKho) > 0)
+                  ? Number(it.tonKho)
+                  : Number(it.qty || 1);
               if (qty > 0) {
                   g.totalQty += qty;
                   g.totalValue += (qty * (Number(it.price) || 0));
@@ -7754,13 +7844,17 @@
           }
       }
 
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateBatchWarehouseStatus === 'function') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               restoreBtn();
               if (res && res.success) {
                   if (window.SELECTED_BATCH_ITEM_IDS) window.SELECTED_BATCH_ITEM_IDS.clear();
+                  document.querySelectorAll('.wh-item-chk').forEach(c => c.checked = false);
+                  const selectAllChk = document.getElementById('chk-select-all-wh');
+                  if (selectAllChk) selectAllChk.checked = false;
                   showToast(res.message || `✅ Đã chuyển ${itemIds.length} đơn hàng sang ${targetWh}!`);
-                  reloadTab3Data();
+                  if (res.freshData) applyTab3Data(res.freshData);
+                  else reloadTab3Data(true);
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
               }
@@ -7819,26 +7913,36 @@
       let year = yearSelect ? yearSelect.value : 'ALL';
       const cacheKey = 'T3_CACHE_BUSINESS_DATA_' + month + '_' + year;
 
-      if (forceRefresh) {
+      const shouldForce = (forceRefresh === true || forceRefresh === undefined);
+
+      if (shouldForce) {
           if (typeof showToast === 'function') showToast("🔄 Đang làm mới dữ liệu từ Google Sheets...");
+      } else if (window.lastTab3Res && window.lastTab3Res._month === month && window.lastTab3Res._year === year) {
+          applyTab3Data(window.lastTab3Res);
+          return;
       } else {
-          if (!window.lastTab3Res) {
-              try {
-                  const cached = localStorage.getItem(cacheKey) || localStorage.getItem('T3_CACHE_BUSINESS_DATA_LATEST');
-                  if (cached) {
-                      window.lastTab3Res = JSON.parse(cached);
+          try {
+              const cached = localStorage.getItem(cacheKey) || localStorage.getItem('T3_CACHE_BUSINESS_DATA_LATEST');
+              if (cached) {
+                  const parsed = JSON.parse(cached);
+                  if (parsed) {
+                      window.lastTab3Res = parsed;
+                      applyTab3Data(parsed);
                   }
-              } catch(e) {}
-          }
-          if (window.lastTab3Res) {
-              applyTab3Data(window.lastTab3Res);
-          }
+              }
+          } catch(e) {}
       }
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getBusinessData === 'function') {
-          google.script.run.withSuccessHandler(applyTab3Data).withFailureHandler(function(err) {
+          google.script.run.withSuccessHandler(function(res) {
+              if (res) {
+                  res._month = month;
+                  res._year = year;
+                  applyTab3Data(res);
+              }
+          }).withFailureHandler(function(err) {
               if (typeof showToast === 'function') showToast("❌ Lỗi tải dữ liệu kinh doanh: " + err, true);
-          }).getBusinessData(month, year, null, forceRefresh || false);
+          }).getBusinessData(month, year, null, true);
       }
   }
 
@@ -8520,7 +8624,8 @@
                           showToast(res.message || `✅ Đã hủy đơn ${itemName}!`);
                           const el = document.getElementById(rowId);
                           if (el) el.remove();
-                          reloadTab3Data();
+                          if (res.freshData) applyTab3Data(res.freshData);
+                          else reloadTab3Data(true);
                       } else {
                           showToast("❌ " + (res ? res.message : "Không thể hủy đơn"), true);
                           if (item && item.trangThaiKho) selectElem.value = item.trangThaiKho;
@@ -8535,8 +8640,16 @@
       } else {
           if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateWarehouseStatus === 'function') {
               google.script.run.withSuccessHandler(function(res) {
-                  showToast(res.message || `✅ Đã chuyển ${itemName} sang ${newStatus}`);
-                  reloadTab3Data();
+                  if (res && res.success) {
+                      showToast(res.message || `✅ Đã chuyển ${itemName} sang ${newStatus}`);
+                      if (res.freshData) applyTab3Data(res.freshData);
+                      else reloadTab3Data(true);
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
+                      if (item && item.trangThaiKho) selectElem.value = item.trangThaiKho;
+                  }
+              }).withFailureHandler(function(err) {
+                  showToast("❌ Lỗi kết nối: " + err, true);
               }).updateWarehouseStatus(orderId, newStatus);
           } else {
               showToast(`✅ Đã chuyển ${itemName} sang ${newStatus}`);
@@ -8721,11 +8834,12 @@
 
       showToast("⏳ Đang thực hiện chuyển kho...");
 
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateBatchWarehouseStatus === 'function') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
                   showToast(res.message || `✅ Đã chuyển ${itemIds.length} đơn hàng sang ${targetWh}!`);
-                  reloadTab3Data(true);
+                  if (res.freshData) applyTab3Data(res.freshData);
+                  else reloadTab3Data(true);
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
                   reloadTab3Data(true);
@@ -9003,11 +9117,11 @@
 </div>
 
 <!-- MODAL: GHI THÊM / SỬA KHOẢN NỢ -->
-<div id="modal-add-debt" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-add-debt')">
+<div id="modal-add-debt" class="modal-overlay">
 <div class="modal-content !overflow-visible rounded-b-2xl border-t-4 border-indigo-500 !p-4 max-w-md w-full">
   <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
     <h3 id="add-debt-title" class="text-xs font-bold text-slate-900">Ghi Nợ Mới</h3>
-    <button onclick="closeModal('modal-add-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    <button type="button" onclick="closeModal('modal-add-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
   </div>
   
   <div class="space-y-2.5 text-xs">
@@ -9041,17 +9155,17 @@
         <input type="text" id="add-debt-note" placeholder="Lý do cho vay / mượn..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400" />
     </div>
 
-    <button onclick="submitAddDebt()" id="btn-add-debt-submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Lưu Khoản Nợ</button>
+    <button type="button" onclick="submitAddDebt()" id="btn-add-debt-submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Lưu Khoản Nợ</button>
   </div>
 </div>
 </div>
 
 <!-- MODAL: THANH TOÁN NỢ -->
-<div id="modal-pay-debt" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-pay-debt')">
+<div id="modal-pay-debt" class="modal-overlay">
 <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full mb-16 shadow-2xl">
   <div class="flex justify-between items-center mb-1 border-b pb-1.5">
     <h3 id="pay-debt-title" class="text-xs font-bold text-slate-900">Thanh Toán Nợ</h3>
-    <button onclick="closeModal('modal-pay-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    <button type="button" onclick="closeModal('modal-pay-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
   </div>
   <p class="text-[10px] text-slate-500 mb-2">Tiền sẽ được tự động cập nhật vào Ví/Thẻ tương ứng và gạch nợ.</p>
 
@@ -9125,30 +9239,41 @@
       return `${yyyy}-${mm}-${dd}`;
   }
 
-  function reloadTab4Data() {
+  function applyTab4Data(res) {
+      if (!res || !res.success) return;
+      if (res.summary) {
+          const net = res.summary.net || 0;
+          const netEl = document.getElementById('debt-dashboard-net');
+          const recEl = document.getElementById('debt-dashboard-receivables');
+          const payEl = document.getElementById('debt-dashboard-payables');
+          if (netEl) netEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
+          if (recEl) recEl.innerText = (res.summary.receivables || 0).toLocaleString() + ' ¥';
+          if (payEl) payEl.innerText = (res.summary.payables || 0).toLocaleString() + ' ¥';
+      }
+      if (res.partners) {
+          window.PARTNER_LIST = res.partners;
+      }
+      window.TAB4_DEBTS = res.debts || [];
+      if (typeof renderDebtCardsList === 'function') {
+          renderDebtCardsList(window.TAB4_DEBTS);
+      }
+  }
+
+  function reloadTab4Data(forceRefresh) {
       const monthSelect = document.getElementById('t4-filter-month');
       const yearSelect = document.getElementById('t4-filter-year');
       const month = monthSelect ? monthSelect.value : 'ALL';
       const year = yearSelect ? yearSelect.value : 'ALL';
 
-      if (typeof reloadTab3Data === 'function') {
-          reloadTab3Data();
+      if (!forceRefresh && window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
+          renderDebtCardsList(window.TAB4_DEBTS);
+          return;
       }
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab4Data === 'function') {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
-                  if (res.summary) {
-                      const net = res.summary.net || 0;
-                      document.getElementById('debt-dashboard-net').innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
-                      document.getElementById('debt-dashboard-receivables').innerText = (res.summary.receivables || 0).toLocaleString() + ' ¥';
-                      document.getElementById('debt-dashboard-payables').innerText = (res.summary.payables || 0).toLocaleString() + ' ¥';
-                  }
-                  if (res.partners) {
-                      window.PARTNER_LIST = res.partners;
-                  }
-                  window.TAB4_DEBTS = res.debts || [];
-                  renderDebtCardsList(window.TAB4_DEBTS);
+                  applyTab4Data(res);
               } else if (res && res.message) {
                   showToast("❌ " + res.message, true);
               }
@@ -10022,14 +10147,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL 1: TẠO / SỬA CHUYẾN ĐÍ & THÀNH VIÊN (modal-tab7-group) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-group" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-group')">
+<div id="modal-tab7-group" class="modal-overlay hidden">
   <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <div class="flex items-center gap-2">
         <span id="t7-group-modal-icon" class="text-xl">✈️</span>
         <h3 id="t7-group-modal-title" class="font-bold text-sm text-slate-800">Tạo Chuyến Đi Mới</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-group')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-group')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <input type="hidden" id="t7-group-id" value="" />
@@ -10115,14 +10240,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL 2: CHI TIẾT KHOẢN CHI (modal-tab7-expense) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-expense" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-expense')">
+<div id="modal-tab7-expense" class="modal-overlay hidden">
   <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3 max-h-[92vh] flex flex-col">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
       <div class="flex items-center gap-2">
         <span class="text-xl">🧾</span>
         <h3 id="t7-expense-modal-title" class="font-bold text-sm text-slate-800">Chi tiết khoản chi</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-expense')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-expense')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <input type="hidden" id="t7-expense-id" value="" />
@@ -10212,14 +10337,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL: CHỌN VÍ CÁ NHÂN TRỪ TIỀN (KHI CHỌN GIA ĐÌNH 2F - TÔI) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-select-wallet" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-select-wallet')">
+<div id="modal-tab7-select-wallet" class="modal-overlay hidden">
   <div class="modal-content max-w-[340px] w-full p-4 rounded-2xl bg-white shadow-2xl space-y-3">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2">
       <h3 class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
         <span>💳</span>
         <span>Chọn ví cá nhân cần trừ tiền:</span>
       </h3>
-      <button onclick="closeModal('modal-tab7-select-wallet')" class="text-slate-400 font-bold text-lg hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-select-wallet')" class="text-slate-400 font-bold text-lg hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <!-- TEXTBOX SUGGEST FOR WALLETS -->
@@ -10232,7 +10357,7 @@
       <!-- Dynamic wallet buttons -->
     </div>
     <div class="pt-2 border-t border-slate-100 flex justify-end">
-      <button onclick="closeModal('modal-tab7-select-wallet')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs">
+      <button type="button" onclick="closeModal('modal-tab7-select-wallet')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-lg text-xs">
         Bỏ qua
       </button>
     </div>
@@ -10242,10 +10367,10 @@
 <!-- ========================================================================= -->
 <!-- MODAL 3: KẾT THÚC CHUYẾN ĐÍ & XUẤT BÁO CÁO CÔNG NỢ DẠNG ẢNH (modal-tab7-finalize) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-finalize" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-finalize')">
+<div id="modal-tab7-finalize" class="modal-overlay hidden">
   <div class="modal-content max-w-[480px] w-full p-4 rounded-2xl bg-white shadow-2xl space-y-3 border-t-4 border-emerald-600 max-h-[92vh] flex flex-col relative">
     <!-- ABSOLUTE FLOATING CLOSE BUTTON AT TOP-RIGHT (Z-50 GUARANTEES NEVER COVERED) -->
-    <button onclick="closeModal('modal-tab7-finalize')" class="absolute top-2.5 right-2.5 z-50 text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-100 active:scale-90 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer font-extrabold text-xl shadow-md border border-slate-200" title="Đóng modal">&times;</button>
+    <button type="button" onclick="closeModal('modal-tab7-finalize')" class="absolute top-2.5 right-2.5 z-50 text-slate-600 hover:text-rose-600 bg-slate-100 hover:bg-rose-100 active:scale-90 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer font-extrabold text-xl shadow-md border border-slate-200" title="Đóng modal">&times;</button>
     
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0 pr-10">
       <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -10399,14 +10524,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL: BẢNG QUẢN LÝ DANH SÁCH GIA ĐÌNH (modal-tab7-family-manager) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-family-manager" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-family-manager')">
+<div id="modal-tab7-family-manager" class="modal-overlay hidden">
   <div class="modal-content max-w-[400px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5 max-h-[85vh] flex flex-col">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
       <div class="flex items-center gap-2">
         <span class="text-xl">🏡</span>
         <h3 class="font-bold text-sm text-slate-800">Bảng Quản Lý Danh Sách Gia Đình</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-family-manager')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-family-manager')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
@@ -10444,14 +10569,14 @@
 <!-- ========================================================================= -->
 <!-- MODAL: THÊM / SỬA GIA ĐÌNH VÀO DATABASE (modal-tab7-add-family) -->
 <!-- ========================================================================= -->
-<div id="modal-tab7-add-family" class="modal-overlay hidden" onclick="if(event.target===this) closeModal('modal-tab7-add-family')">
+<div id="modal-tab7-add-family" class="modal-overlay hidden">
   <div class="modal-content max-w-[420px] w-full p-4 rounded-t-3xl bg-white shadow-2xl space-y-3.5 max-h-[90vh] flex flex-col">
     <div class="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
       <div class="flex items-center gap-2">
         <span class="text-xl">🏡</span>
         <h3 id="t7-fam-modal-title" class="font-bold text-sm text-slate-800">Thêm Gia Đình Mới</h3>
       </div>
-      <button onclick="closeModal('modal-tab7-add-family')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+      <button type="button" onclick="closeModal('modal-tab7-add-family')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
     <div class="space-y-3 text-xs overflow-y-auto pr-1 flex-1">
@@ -10482,8 +10607,8 @@
     </div>
 
     <div class="pt-3 border-t border-slate-100 flex justify-end gap-2 shrink-0">
-      <button onclick="closeModal('modal-tab7-add-family')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
-      <button onclick="t7_saveFamilyFromModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
+      <button type="button" onclick="closeModal('modal-tab7-add-family')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">Hủy</button>
+      <button type="button" onclick="t7_saveFamilyFromModal()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold px-5 py-2 rounded-xl text-xs transition shadow-md cursor-pointer flex items-center gap-1">
         <span>💾 Lưu Gia Đình</span>
       </button>
     </div>
@@ -10525,6 +10650,13 @@
         const parsedFams = JSON.parse(cachedFams);
         if (Array.isArray(parsedFams) && parsedFams.length > 0) {
           window.T7_STATE.splitFamilies = parsedFams;
+        }
+      }
+      const cachedRaw = localStorage.getItem('T7_CACHE_RAW_MEMBERS');
+      if (cachedRaw) {
+        const parsedRaw = JSON.parse(cachedRaw);
+        if (Array.isArray(parsedRaw) && parsedRaw.length > 0) {
+          window.T7_STATE.rawFamilyMembers = parsedRaw;
         }
       }
     } catch(e) {}
@@ -10598,7 +10730,11 @@
     t7_renderUI();
   }
 
-  function t7_loadAllData() {
+  function t7_loadAllData(forceRefresh) {
+    if (window.T7_STATE && window.T7_STATE.groups && window.T7_STATE.groups.length > 0 && window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0) {
+      if (typeof t7_renderUI === 'function') t7_renderUI();
+    }
+
     if (typeof google === 'undefined' || !google.script || !google.script.run) {
       console.warn("GAS google.script.run not available in standalone preview.");
       return;
@@ -10629,6 +10765,8 @@
           window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
           try {
             localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
+            localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawMembers || []));
+            localStorage.removeItem('T7_DELETED_FAMILIES');
           } catch(e) {}
 
           t7_renderUI();
@@ -11491,13 +11629,14 @@
   function t7_getFamilyDatabaseMap() {
     const familyMap = new Map();
     const deletedSet = t7_getDeletedFamiliesSet();
+    const isServerLoaded = Boolean(window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0);
 
     // 1. Primary Source of Truth: Server SplitFamilies sheet data
-    if (window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0) {
+    if (isServerLoaded) {
       window.T7_STATE.splitFamilies.forEach(f => {
         const key = (f.family_name || f.family_id || '').trim().toLowerCase();
-        if (!key || deletedSet.has(key)) return;
-        const isFamMe = Boolean(f.isMe || f.is_me || f.isme || (f.members && f.members.some(m => Boolean(m.isMe || m.is_me || m.isme))));
+        if (!key) return;
+        const isFamMe = Boolean(f.isMe || f.is_me || f.isme);
 
         const memberDedupeMap = new Map();
         (f.members || []).forEach(m => {
@@ -11506,16 +11645,14 @@
           const normKey = cleanName.toLowerCase();
           if (!normKey) return;
 
-          const isMRep = Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1");
+          const isMRep = Boolean(m.isRep || m.repstatus || m.rep_status);
 
           if (memberDedupeMap.has(normKey)) {
             const existing = memberDedupeMap.get(normKey);
             if (isMRep) {
               existing.isRep = true;
-              existing.sort_order = 1;
-              existing.sortOrder = 1;
+              existing.repstatus = true;
             }
-            if (isFamMe) existing.isMe = true;
           } else {
             memberDedupeMap.set(normKey, {
               id: m.member_id || m.id,
@@ -11524,11 +11661,9 @@
               type: m.member_type || m.type || 'ADULT',
               member_type: m.member_type || m.type || 'ADULT',
               weight: m.default_weight !== undefined ? m.default_weight : (m.weight !== undefined ? m.weight : (m.member_type === 'CHILD' ? 0.5 : (m.member_type === 'BABY' ? 0.0 : 1.0))),
-              sort_order: isMRep ? 1 : "",
-              sortOrder: isMRep ? 1 : "",
-              status: m.status,
               isMe: isFamMe,
-              isRep: isMRep
+              isRep: isMRep,
+              repstatus: isMRep
             });
           }
         });
@@ -11544,52 +11679,31 @@
       });
     }
 
-    try {
-      const stored = localStorage.getItem('T7_FAMILY_DATABASE');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(f => {
-            if (f && f.name) {
-              const key = f.name.trim().toLowerCase();
-              if (!deletedSet.has(key)) {
-                if (!familyMap.has(key)) {
+    // 2. Local storage fallback ONLY when server is not loaded
+    if (!isServerLoaded) {
+      try {
+        const stored = localStorage.getItem('T7_FAMILY_DATABASE');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(f => {
+              if (f && f.name) {
+                const key = f.name.trim().toLowerCase();
+                if (!deletedSet.has(key) && !familyMap.has(key)) {
                   const cleanedMembers = (f.members || []).map(m => {
                     const cleanName = t7_normalizeMemberName(m.name || m.member_name || '') || (m.name || m.member_name || '');
-                    return { ...m, name: cleanName, member_name: cleanName, isMe: Boolean(f.isMe || m.isMe || m.is_me || m.isme) };
+                    return { ...m, name: cleanName, member_name: cleanName, isMe: Boolean(f.isMe) };
                   });
                   familyMap.set(key, { ...f, members: cleanedMembers, isMe: Boolean(f.isMe) });
-                } else {
-                  const existingFam = familyMap.get(key);
-                  (f.members || []).forEach(m => {
-                    const rawName = (m.name || m.member_name || '').trim();
-                    const cleanName = t7_normalizeMemberName(rawName) || rawName;
-                    const normKey = cleanName.toLowerCase();
-                    if (normKey) {
-                      const existing = existingFam.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
-                      if (existing) {
-                        if (existingFam.isMe || m.isMe || m.is_me || m.isme) existing.isMe = true;
-                      } else {
-                        existingFam.members.push({
-                          id: m.id || m.member_id || '',
-                          name: cleanName,
-                          member_name: cleanName,
-                          type: m.type || m.member_type || 'ADULT',
-                          member_type: m.type || m.member_type || 'ADULT',
-                          weight: m.weight !== undefined ? m.weight : 1.0,
-                          isMe: Boolean(existingFam.isMe || m.isMe || m.is_me || m.isme)
-                        });
-                      }
-                    }
-                  });
                 }
               }
-            }
-          });
+            });
+          }
         }
-      }
-    } catch(e) {}
+      } catch(e) {}
+    }
 
+    // 3. Fallback dynamically discovered families from trip groups
     const groups = window.T7_STATE.groups || [];
     groups.forEach(g => {
       (g.members || []).forEach(m => {
@@ -11610,9 +11724,7 @@
 
           if (normKey) {
             const existing = famObj.members.find(em => (em.name || em.member_name || '').trim().toLowerCase() === normKey);
-            if (existing) {
-              if (famObj.isMe || m.isMe || m.is_me || m.isme) existing.isMe = true;
-            } else {
+            if (!existing) {
               famObj.members.push({
                 id: m.id || m.member_id || '',
                 name: cleanName,
@@ -11620,7 +11732,7 @@
                 type: m.type || m.member_type || 'ADULT',
                 member_type: m.type || m.member_type || 'ADULT',
                 weight: m.weight !== undefined ? m.weight : (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0.0 : 1.0)),
-                isMe: Boolean(famObj.isMe || m.isMe || m.is_me || m.isme)
+                isMe: Boolean(famObj.isMe)
               });
             }
           }
@@ -11712,7 +11824,7 @@
 
       const memberNamesStr = members.map(m => {
         const icon = m.type === 'CHILD' ? '🧒' : (m.type === 'BABY' ? '🍼' : '👤');
-        const isRep = Boolean(m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.isRep);
+        const isRep = Boolean(m.isRep || m.repstatus || m.rep_status);
         return `${icon} ${m.name}${isRep ? ' 👑' : ''}`;
       }).join(' • ');
 
@@ -11770,7 +11882,7 @@
           name: m.name || m.member_name || ''
         }));
 
-        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep || m.sort_order === 1 || m.sort_order === "1" || m.sortOrder === 1 || m.sortOrder === "1"));
+        let repIdx = famObj.members.findIndex(m => Boolean(m.isRep || m.repstatus || m.rep_status));
         if (repIdx < 0) {
           repIdx = famObj.members.findIndex(m => Boolean(m.isMe || m.is_me));
         }
@@ -11889,8 +12001,8 @@
 
     const members = rawMembers.map((m) => ({
       ...m,
-      sort_order: m.isRep ? 1 : "",
-      sortOrder: m.isRep ? 1 : ""
+      repstatus: Boolean(m.isRep),
+      isRep: Boolean(m.isRep)
     }));
 
     // Find removed members for deactivation
@@ -11928,6 +12040,11 @@
           if (res && res.success) {
             window.T7_STATE.splitFamilies = res.families || [];
             window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
+            try {
+              localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
+              localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawMembers || []));
+              localStorage.removeItem('T7_DELETED_FAMILIES');
+            } catch(e) {}
             t7_renderFamilyCardsList();
             t7_renderPresetFamilyChips();
             t7_updateHistoryDatalists();
@@ -11954,31 +12071,40 @@
 
   function t7_deleteFamilyFromDatabase(famName) {
     if (!famName) return;
-    if (!confirm(`Bạn có chắc muốn xóa gia đình [${famName}] khỏi Database?`)) return;
-    const cleanKey = famName.trim().toLowerCase();
+    showConfirmModal(
+      "⚠️ Xóa Gia Đình",
+      `Bạn có chắc chắn muốn xóa gia đình [${famName}] khỏi Database không?`,
+      function() {
+        const cleanKey = famName.trim().toLowerCase();
+        t7_addDeletedFamilyKey(cleanKey);
 
-    t7_addDeletedFamilyKey(cleanKey);
+        const familyMap = t7_getFamilyDatabaseMap();
+        familyMap.delete(cleanKey);
+        t7_saveFamilyDatabaseMap(familyMap);
 
-    const familyMap = t7_getFamilyDatabaseMap();
-    const famObj = familyMap.get(cleanKey);
+        let fams = t7_getCustomPresetFamilies();
+        fams = fams.filter(f => f.trim().toLowerCase() !== cleanKey);
+        t7_saveCustomPresetFamilies(fams);
 
-    // Server-side deletion sync (Hard row deletion from SplitFamilies)
-    if (typeof google !== 'undefined' && google.script && google.script.run) {
-      google.script.run.deleteSplitFamilyEntirely(famName);
-      setTimeout(t7_loadAllData, 500);
-    }
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+            .withSuccessHandler(function(res) {
+              showToast(res && res.message ? res.message : `🗑️ Đã xóa gia đình [${famName}] khỏi Database`);
+              t7_loadAllData(true);
+            })
+            .withFailureHandler(function(err) {
+              showToast("❌ Lỗi xóa gia đình: " + err, true);
+              t7_loadAllData(true);
+            })
+            .deleteSplitFamilyEntirely(famName);
+        }
 
-    familyMap.delete(cleanKey);
-    t7_saveFamilyDatabaseMap(familyMap);
-
-    let fams = t7_getCustomPresetFamilies();
-    fams = fams.filter(f => f.trim().toLowerCase() !== cleanKey);
-    t7_saveCustomPresetFamilies(fams);
-
-    t7_renderFamilyCardsList();
-    t7_renderPresetFamilyChips();
-    t7_updateHistoryDatalists();
-    showToast(`🗑️ Đã xóa gia đình [${famName}] khỏi Database`);
+        t7_renderFamilyCardsList();
+        t7_renderPresetFamilyChips();
+        t7_updateHistoryDatalists();
+      },
+      "🗑️ Xóa Vĩnh Viễn"
+    );
   }
 
   function t7_useFamilyForCategory(famName, targetCategory) {
@@ -14230,30 +14356,30 @@
     <div id="global-toast" class="absolute top-14 left-1/2 -translate-x-1/2 z-[300] px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 hidden -translate-y-2 opacity-0 flex items-center gap-2 max-w-[90%] text-center"></div>
 
     <!-- GLOBAL CONFIRM MODAL (THAY THẾ BROWSER CONFIRM) -->
-    <div id="modal-global-confirm" class="modal-overlay" style="z-index: 290;" onclick="if(event.target === this) closeModal('modal-global-confirm')">
+    <div id="modal-global-confirm" class="modal-overlay" style="z-index: 290;">
       <div class="modal-content rounded-2xl border-t-4 border-rose-500 max-w-[320px] w-full p-3.5 shadow-2xl bg-white">
         <div class="flex justify-between items-center mb-2 border-b pb-1.5">
           <h3 id="global-confirm-title" class="text-xs font-bold text-slate-900">⚠️ Xác Nhận</h3>
-          <button onclick="closeModal('modal-global-confirm')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+          <button type="button" onclick="closeModal('modal-global-confirm')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
         </div>
         <div class="space-y-4">
           <p id="global-confirm-msg" class="text-xs font-medium text-slate-700 leading-relaxed">Bạn có chắc chắn muốn thực hiện hành động này không?</p>
           <div class="flex gap-2 pt-1">
-              <button onclick="closeModal('modal-global-confirm')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
-              <button id="btn-global-confirm-submit" onclick="executeGlobalConfirm()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận</button>
+              <button type="button" onclick="closeModal('modal-global-confirm')" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition cursor-pointer">Hủy Bỏ</button>
+              <button type="button" id="btn-global-confirm-submit" onclick="executeGlobalConfirm()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-xs transition cursor-pointer">Xác Nhận</button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- MODAL: XUẤT BÁO CÁO CÔNG NỢ DẠNG ẢNH chuẩn MẪU (GLOBAL) -->
-    <div id="modal-export-debt-image" class="modal-overlay hidden" style="z-index: 295;" onclick="if(event.target===this) closeModal('modal-export-debt-image')">
+    <div id="modal-export-debt-image" class="modal-overlay hidden" style="z-index: 295;">
       <div class="modal-content rounded-2xl border-t-4 border-indigo-600 max-w-[390px] w-full p-3.5 shadow-2xl bg-white overflow-hidden">
           <div class="flex justify-between items-center border-b border-slate-100 pb-1.5 mb-2.5">
               <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <span>📸</span> <span>Báo Cáo Công Nợ Ảnh</span>
               </h3>
-              <button onclick="closeModal('modal-export-debt-image')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+              <button type="button" onclick="closeModal('modal-export-debt-image')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
           </div>
 
           <!-- PREVIEW WRAPPER FOR HTML2CANVAS -->
@@ -14299,10 +14425,10 @@
 
           <!-- ACTION BUTTONS -->
           <div class="flex gap-1.5 pt-2.5">
-              <button onclick="copyDebtReportImageToClipboard()" id="btn-copy-rpt-img" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer text-xs flex items-center justify-center gap-1">
+              <button type="button" onclick="copyDebtReportImageToClipboard()" id="btn-copy-rpt-img" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs transition cursor-pointer text-xs flex items-center justify-center gap-1">
                   <span>📋</span> <span>Sao Chép Ảnh</span>
               </button>
-              <button onclick="downloadDebtReportImage()" id="btn-download-rpt-img" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer text-xs flex items-center justify-center gap-1">
+              <button type="button" onclick="downloadDebtReportImage()" id="btn-download-rpt-img" class="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition cursor-pointer text-xs flex items-center justify-center gap-1">
                   <span>📥</span> <span>Tải File</span>
               </button>
           </div>
@@ -14310,7 +14436,7 @@
     </div>
 
     <!-- MODAL CHỌN NGÀY TRỪ THẺ THỰC TẾ PRE-ORDER (GLOBAL) -->
-    <div id="modal-confirm-preorder-date" class="modal-overlay hidden" style="z-index: 285;" onclick="if(event.target===this) closeConfirmPreorderDateModal()">
+    <div id="modal-confirm-preorder-date" class="modal-overlay hidden" style="z-index: 285;">
       <div class="modal-content rounded-2xl border-t-4 border-blue-600 max-w-[360px] w-full p-4 shadow-2xl bg-white flex flex-col">
         <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
           <div class="flex items-center gap-2">
@@ -14320,7 +14446,7 @@
               <p id="preorder-date-modal-sub" class="text-[10px] text-blue-600 font-medium">Chọn ngày đã trừ thẻ thực tế</p>
             </div>
           </div>
-          <button onclick="closeConfirmPreorderDateModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+          <button type="button" onclick="closeConfirmPreorderDateModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
         </div>
         
         <div class="space-y-2.5 text-xs">
@@ -14331,22 +14457,22 @@
         </div>
         
         <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-1.5 shrink-0">
-          <button onclick="closeConfirmPreorderDateModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer transition text-center">Hủy</button>
-          <button onclick="submitPreorderCancelFromModal()" class="flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold py-2 rounded-xl text-xs cursor-pointer transition text-center flex items-center justify-center gap-0.5">❌ Hủy Đơn</button>
-          <button id="btn-submit-preorder-date" onclick="submitPreorderConfirmWithDate()" class="flex-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2 rounded-xl text-xs cursor-pointer transition shadow-xs flex items-center justify-center gap-0.5">✅ Đã Trừ Thẻ</button>
+          <button type="button" onclick="closeConfirmPreorderDateModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 rounded-xl text-xs cursor-pointer transition text-center">Hủy</button>
+          <button type="button" onclick="submitPreorderCancelFromModal()" class="flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold py-2 rounded-xl text-xs cursor-pointer transition text-center flex items-center justify-center gap-0.5">❌ Hủy Đơn</button>
+          <button type="button" id="btn-submit-preorder-date" onclick="submitPreorderConfirmWithDate()" class="flex-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-2 rounded-xl text-xs cursor-pointer transition shadow-xs flex items-center justify-center gap-0.5">✅ Đã Trừ Thẻ</button>
         </div>
       </div>
     </div>
 
     <!-- MODAL XEM & THAO TÁC CHI TIẾT CÁC ĐƠN PRE-ORDER GOM NHÓM (GLOBAL) -->
-    <div id="modal-preorder-detail" class="modal-overlay hidden" style="z-index: 280;" onclick="if(event.target===this) closePreorderDetailModal()">
+    <div id="modal-preorder-detail" class="modal-overlay hidden" style="z-index: 280;">
       <div class="modal-content rounded-2xl border-t-4 border-blue-600 max-w-[420px] w-full p-3.5 shadow-2xl bg-white overflow-hidden flex flex-col max-h-[85vh]">
         <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-2">
           <div>
             <h3 id="preorder-detail-title" class="font-bold text-xs text-slate-800">Chi Tiết Đơn Pre-order</h3>
             <p id="preorder-detail-sub" class="text-[9px] text-blue-600">Danh sách các đơn chờ trừ thẻ</p>
           </div>
-          <button onclick="closePreorderDetailModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+          <button type="button" onclick="closePreorderDetailModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
         </div>
         
         <div id="preorder-detail-body" class="space-y-1.5 overflow-y-auto flex-1 text-xs pr-1">
@@ -14354,13 +14480,13 @@
         </div>
         
         <div class="pt-2 border-t mt-2 flex justify-end gap-2 shrink-0">
-          <button onclick="closePreorderDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg text-[11px] cursor-pointer">Đóng</button>
+          <button type="button" onclick="closePreorderDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg text-[11px] cursor-pointer">Đóng</button>
         </div>
       </div>
     </div>
 
     <!-- MODAL CHỌN VÍ & NGÀY NHẬN HOÀN TIỀN (GLOBAL) -->
-    <div id="modal-confirm-refund-date" class="modal-overlay hidden" style="z-index: 280;" onclick="if(event.target===this) closeConfirmRefundModal()">
+    <div id="modal-confirm-refund-date" class="modal-overlay hidden" style="z-index: 280;">
       <div class="modal-content rounded-2xl border-t-4 border-amber-500 max-w-[340px] w-full p-4 shadow-2xl bg-white flex flex-col space-y-3">
         <div class="flex justify-between items-center border-b border-slate-100 pb-2">
           <div class="flex items-center gap-2">
@@ -14369,7 +14495,7 @@
               <h3 class="font-bold text-xs text-slate-800">Xác Nhận Đã Nhận Hoàn Tiền</h3>
             </div>
           </div>
-          <button onclick="closeConfirmRefundModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+          <button type="button" onclick="closeConfirmRefundModal()" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
         </div>
         
         <div class="space-y-2.5 text-xs">
@@ -14388,8 +14514,8 @@
         </div>
         
         <div class="pt-2 border-t border-slate-100 flex justify-end gap-2 shrink-0">
-          <button onclick="closeConfirmRefundModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer transition">Hủy</button>
-          <button id="btn-submit-confirm-refund" onclick="submitConfirmRefundWithWallet()" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold px-4 py-1.5 rounded-xl text-xs cursor-pointer transition shadow-xs flex items-center gap-1">
+          <button type="button" onclick="closeConfirmRefundModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-1.5 rounded-xl text-xs cursor-pointer transition">Hủy</button>
+          <button type="button" id="btn-submit-confirm-refund" onclick="submitConfirmRefundWithWallet()" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold px-4 py-1.5 rounded-xl text-xs cursor-pointer transition shadow-xs flex items-center gap-1">
             <span>💰 Xác Nhận Nhận Tiền</span>
           </button>
         </div>
@@ -14397,13 +14523,13 @@
     </div>
 
     <!-- MODAL THU TIỀN KHÁCH NỢ TAB 3 (GLOBAL) -->
-    <div id="modal-pay-debt-t3" class="modal-overlay hidden" style="z-index: 280;" onclick="if(event.target === this) closeModal('modal-pay-debt-t3')">
+    <div id="modal-pay-debt-t3" class="modal-overlay hidden" style="z-index: 280;">
       <div class="modal-content !overflow-visible bg-white rounded-2xl border-t-4 border-emerald-500 p-4 max-w-md w-full shadow-2xl relative transform transition-all">
         <div class="flex justify-between items-center pb-2 border-b border-slate-100">
           <h3 id="t3-pay-debt-title" class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
             <span>💰</span> <span>Nhận Tiền Thu Nợ</span>
           </h3>
-          <button onclick="closeModal('modal-pay-debt-t3')" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none cursor-pointer px-1">&times;</button>
+          <button type="button" onclick="closeModal('modal-pay-debt-t3')" class="text-slate-400 hover:text-slate-600 font-bold text-xl leading-none cursor-pointer px-1">&times;</button>
         </div>
 
         <p class="text-[10px] text-slate-500 my-2">Tiền sẽ được tự động cập nhật vào Ví/Thẻ tương ứng và gạch nợ thành công.</p>
@@ -14745,47 +14871,9 @@
         }
     }, true);
 </script>
-<!-- MÀN HÌNH KHÓA APP -->
-<div id="app-lock-screen" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[99999] flex flex-col items-center justify-center p-6 hidden">
-  <div class="bg-white p-5 rounded-3xl shadow-2xl w-full max-w-[320px] text-center transform transition-all space-y-3">
-    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl shadow-inner">
-      🔒
-    </div>
-    <div>
-      <h2 class="text-base font-bold text-slate-800">Ứng Dụng Đã Khóa</h2>
-      <p id="app-lock-subtitle" class="text-xs text-slate-500 mt-0.5">Mở khóa ứng dụng để tiếp tục</p>
-    </div>
 
-    <!-- Toggle Buttons: Vẽ Mật Khẩu / Nhập Mật Khẩu -->
-    <div class="flex bg-slate-100 p-1 rounded-xl">
-      <button id="btn-app-lock-mode-pattern" onclick="switchAppLockMode('PATTERN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-blue-700 bg-white shadow-2xs">✍️ Vẽ Mật Khẩu</button>
-      <button id="btn-app-lock-mode-pin" onclick="switchAppLockMode('PIN')" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">⌨️ Nhập Mật Khẩu</button>
-    </div>
-
-    <!-- Mode 1: VẼ MẬT KHẨU (3x3 PATTERN LOCK GRID) -->
-    <div id="app-lock-pattern-container" class="space-y-2">
-      <div class="relative w-[210px] h-[210px] mx-auto bg-slate-900 rounded-2xl shadow-inner border border-slate-700 flex items-center justify-center touch-none select-none">
-        <canvas id="app-pattern-canvas" width="210" height="210" class="cursor-pointer rounded-2xl"></canvas>
-      </div>
-      <div class="flex justify-between items-center px-1 text-[10px]">
-        <button onclick="resetAppPatternCanvas()" class="text-slate-500 hover:text-slate-700 font-bold cursor-pointer flex items-center gap-1">🔄 Vẽ lại</button>
-        <span class="text-slate-400 font-medium">Nối từ 3 điểm trở lên</span>
-      </div>
-    </div>
-
-    <!-- Mode 2: NHẬP MẬT KHẨU CHỮ / SỐ (PIN) -->
-    <div id="app-lock-pin-container" class="space-y-2.5 hidden">
-      <input type="password" id="app-password-input" placeholder="Nhập mật khẩu..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center text-sm font-bold text-slate-800 tracking-widest outline-none focus:border-blue-500 focus:bg-white transition" />
-      <button onclick="unlockAppWithPin()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition cursor-pointer">
-        Mở Khóa
-      </button>
-    </div>
-
-    <p id="app-lock-error" class="text-xs text-rose-500 font-bold hidden">❌ Mật khẩu hoặc hình vẽ không chính xác!</p>
-  </div>
-</div>
 <!-- MODAL CHUYỂN KHO HÀNG LOẠT -->
-<div id="modal-transfer-warehouse" class="modal-overlay hidden" onclick="if(event.target === this) closeModal('modal-transfer-warehouse')">
+<div id="modal-transfer-warehouse" class="modal-overlay hidden">
   <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-amber-500 p-4 max-w-sm w-full bg-white shadow-2xl space-y-3 text-xs">
     <div class="flex justify-between items-center border-b pb-2">
       <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -15091,8 +15179,16 @@
 
   function performUnlock() {
     const lockScreen = document.getElementById('app-lock-screen');
+    const mainApp = document.getElementById('main-app-container');
     const errText = document.getElementById('app-lock-error');
-    if (lockScreen) lockScreen.classList.add('hidden');
+    if (lockScreen) {
+      lockScreen.classList.add('hidden');
+      lockScreen.style.setProperty('display', 'none', 'important');
+    }
+    if (mainApp) {
+      mainApp.classList.remove('hidden');
+      mainApp.style.setProperty('display', 'flex', 'important');
+    }
     if (errText) errText.classList.add('hidden');
     localStorage.setItem('APP_UNLOCKED', 'true');
     resetIdleTimer();
@@ -15103,10 +15199,18 @@
 
   function lockApp() {
     const lockScreen = document.getElementById('app-lock-screen');
+    const mainApp = document.getElementById('main-app-container');
     const passInput = document.getElementById('app-password-input');
     const errText = document.getElementById('app-lock-error');
     
-    if (lockScreen) lockScreen.classList.remove('hidden');
+    if (lockScreen) {
+      lockScreen.classList.remove('hidden');
+      lockScreen.style.setProperty('display', 'flex', 'important');
+    }
+    if (mainApp) {
+      mainApp.classList.add('hidden');
+      mainApp.style.setProperty('display', 'none', 'important');
+    }
     if (passInput) passInput.value = '';
     if (errText) errText.classList.add('hidden');
     
@@ -15134,7 +15238,10 @@
     document.addEventListener(evt, resetIdleTimer, true);
   });
 
-  // Check initial state
+  // Lock app immediately
+  lockApp();
+
+  // Check initial state - Always lock app on initial load
   window.addEventListener('DOMContentLoaded', () => {
     const passInput = document.getElementById('app-password-input');
     if (passInput) {
@@ -15143,11 +15250,7 @@
         });
     }
 
-    if (localStorage.getItem('APP_UNLOCKED') !== 'true') {
-      lockApp();
-    } else {
-      resetIdleTimer();
-    }
+    lockApp();
   });
 </script>
 </body>

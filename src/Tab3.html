@@ -40,13 +40,13 @@
   </div>
 
   <!-- MODAL: GHI NHẬP MUA HÀNG -->
-  <div id="modal-biz-mua" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-biz-mua')">
+  <div id="modal-biz-mua" class="modal-overlay">
     <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-teal-600 p-4 max-w-md w-full bg-white shadow-2xl space-y-2.5 text-xs">
       <div class="flex justify-between items-center border-b pb-2 mb-1">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
           <span>➕</span> <span>Ghi Nhập Mua Hàng</span>
         </h3>
-        <button onclick="closeModal('modal-biz-mua')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        <button type="button" onclick="closeModal('modal-biz-mua')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
       </div>
 
       <!-- Hàng 1: Ngày mua + Nơi Mua -->
@@ -130,13 +130,13 @@
   </div>
 
   <!-- MODAL: GHI XUẤT BÁN HÀNG -->
-  <div id="modal-biz-ban" class="modal-overlay" onclick="if(event.target === this) closeModal('modal-biz-ban')">
+  <div id="modal-biz-ban" class="modal-overlay">
     <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-amber-500 p-4 max-w-md w-full bg-white shadow-2xl space-y-2.5 text-xs">
       <div class="flex justify-between items-center border-b pb-2 mb-1">
         <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
           <span>📤</span> <span>Ghi Xuất Bán Hàng</span>
         </h3>
-        <button onclick="closeModal('modal-biz-ban')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+        <button type="button" onclick="closeModal('modal-biz-ban')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
       </div>
 
       <!-- Hàng 1: Ngày Bán + Ví Nhận Tiền -->
@@ -306,14 +306,14 @@
 </div>
 
 <!-- MODAL XEM & SỬA CHI TIẾT ĐƠN HÀNG TỒN KHO -->
-<div id="modal-product-detail" class="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-[200] hidden" onclick="if(event.target===this) closeProductDetailModal()">
+<div id="modal-product-detail" class="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-[200] hidden">
   <div class="bg-white w-full max-w-[420px] rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85%] animate-slide-up">
     <div class="bg-teal-600 text-white p-2.5 px-3.5 flex justify-between items-center shrink-0">
       <div>
         <h3 id="product-detail-title" class="font-bold text-xs">Chi Tiết Tồn Kho</h3>
         <p id="product-detail-sub" class="text-[9px] text-teal-100">Danh sách tất cả các đợt nhập mua</p>
       </div>
-      <button onclick="closeProductDetailModal()" class="text-white/80 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg cursor-pointer">&times;</button>
+      <button type="button" onclick="closeProductDetailModal()" class="text-white/80 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg cursor-pointer">&times;</button>
     </div>
     
     <div id="product-detail-body" class="p-2 overflow-y-auto space-y-1.5 flex-1 text-xs">
@@ -603,7 +603,7 @@
           }
       }
 
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.confirmRefundOrderPayment === 'function') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               restoreBtn();
               closeConfirmRefundModal();
@@ -1520,10 +1520,9 @@
   }
 
   function updateWarehouseDropdowns(warehouses) {
-      const defaultWhs = ["Chờ Ship", "Chusen", "Kho Nhật", "Kho VN"];
-      const whList = (Array.isArray(warehouses) && warehouses.length > 0) 
-          ? Array.from(new Set(warehouses)) 
-          : defaultWhs;
+      const defaultWhs = ["Chờ Ship", "Chusen", "1F", "2F", "Kho Nhật", "Kho VN"];
+      const inputWhs = Array.isArray(warehouses) ? warehouses : [];
+      const whList = Array.from(new Set(inputWhs.concat(defaultWhs)));
 
       const fromWhSelect = document.getElementById('transfer-from-wh');
       if (fromWhSelect) {
@@ -1584,8 +1583,10 @@
               
               if (whVal && whVal !== 'ALL') {
                   const cleanWh = whVal.trim().toLowerCase();
-                  if (cleanWh.includes('hủy')) {
+                  if (cleanWh.includes('hủy') || cleanWh.includes('cancel')) {
                       if (!isCancelled) return false;
+                  } else if (cleanWh.includes('chờ ship') || cleanWh.includes('chusen')) {
+                      if (!isChoShipOrChusen) return false;
                   } else {
                       if (isCancelled || isChoShipOrChusen || isPreOrder) return false;
                       if (!itemWh.includes(cleanWh)) return false;
@@ -1594,8 +1595,11 @@
                   if (isCancelled || isChoShipOrChusen || isPreOrder) return false;
               }
 
-              // Only include items with remaining stock > 0
-              const remTon = (item.tonKho !== undefined && item.tonKho !== null && !isNaN(Number(item.tonKho))) ? Number(item.tonKho) : 0;
+              // Only include items with remaining stock > 0 (or for Chờ Ship / Chusen, item.qty > 0)
+              const isCheckingPending = whVal && (whVal.toLowerCase().includes('chờ ship') || whVal.toLowerCase().includes('chusen'));
+              const remTon = (item.tonKho !== undefined && item.tonKho !== null && !isNaN(Number(item.tonKho)) && Number(item.tonKho) > 0)
+                  ? Number(item.tonKho)
+                  : (isCheckingPending || isChoShipOrChusen ? Number(item.qty || 1) : 0);
               if (remTon <= 0) return false;
 
               if (searchVal) {
@@ -1630,7 +1634,9 @@
                   };
               }
               const g = groupsMap[key];
-              const qty = Number(it.tonKho) || 0;
+              const qty = (it.tonKho !== undefined && it.tonKho !== null && !isNaN(Number(it.tonKho)) && Number(it.tonKho) > 0)
+                  ? Number(it.tonKho)
+                  : Number(it.qty || 1);
               if (qty > 0) {
                   g.totalQty += qty;
                   g.totalValue += (qty * (Number(it.price) || 0));
@@ -2073,13 +2079,17 @@
           }
       }
 
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateBatchWarehouseStatus === 'function') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               restoreBtn();
               if (res && res.success) {
                   if (window.SELECTED_BATCH_ITEM_IDS) window.SELECTED_BATCH_ITEM_IDS.clear();
+                  document.querySelectorAll('.wh-item-chk').forEach(c => c.checked = false);
+                  const selectAllChk = document.getElementById('chk-select-all-wh');
+                  if (selectAllChk) selectAllChk.checked = false;
                   showToast(res.message || `✅ Đã chuyển ${itemIds.length} đơn hàng sang ${targetWh}!`);
-                  reloadTab3Data();
+                  if (res.freshData) applyTab3Data(res.freshData);
+                  else reloadTab3Data(true);
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
               }
@@ -2138,26 +2148,36 @@
       let year = yearSelect ? yearSelect.value : 'ALL';
       const cacheKey = 'T3_CACHE_BUSINESS_DATA_' + month + '_' + year;
 
-      if (forceRefresh) {
+      const shouldForce = (forceRefresh === true || forceRefresh === undefined);
+
+      if (shouldForce) {
           if (typeof showToast === 'function') showToast("🔄 Đang làm mới dữ liệu từ Google Sheets...");
+      } else if (window.lastTab3Res && window.lastTab3Res._month === month && window.lastTab3Res._year === year) {
+          applyTab3Data(window.lastTab3Res);
+          return;
       } else {
-          if (!window.lastTab3Res) {
-              try {
-                  const cached = localStorage.getItem(cacheKey) || localStorage.getItem('T3_CACHE_BUSINESS_DATA_LATEST');
-                  if (cached) {
-                      window.lastTab3Res = JSON.parse(cached);
+          try {
+              const cached = localStorage.getItem(cacheKey) || localStorage.getItem('T3_CACHE_BUSINESS_DATA_LATEST');
+              if (cached) {
+                  const parsed = JSON.parse(cached);
+                  if (parsed) {
+                      window.lastTab3Res = parsed;
+                      applyTab3Data(parsed);
                   }
-              } catch(e) {}
-          }
-          if (window.lastTab3Res) {
-              applyTab3Data(window.lastTab3Res);
-          }
+              }
+          } catch(e) {}
       }
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getBusinessData === 'function') {
-          google.script.run.withSuccessHandler(applyTab3Data).withFailureHandler(function(err) {
+          google.script.run.withSuccessHandler(function(res) {
+              if (res) {
+                  res._month = month;
+                  res._year = year;
+                  applyTab3Data(res);
+              }
+          }).withFailureHandler(function(err) {
               if (typeof showToast === 'function') showToast("❌ Lỗi tải dữ liệu kinh doanh: " + err, true);
-          }).getBusinessData(month, year, null, forceRefresh || false);
+          }).getBusinessData(month, year, null, true);
       }
   }
 
@@ -2839,7 +2859,8 @@
                           showToast(res.message || `✅ Đã hủy đơn ${itemName}!`);
                           const el = document.getElementById(rowId);
                           if (el) el.remove();
-                          reloadTab3Data();
+                          if (res.freshData) applyTab3Data(res.freshData);
+                          else reloadTab3Data(true);
                       } else {
                           showToast("❌ " + (res ? res.message : "Không thể hủy đơn"), true);
                           if (item && item.trangThaiKho) selectElem.value = item.trangThaiKho;
@@ -2854,8 +2875,16 @@
       } else {
           if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateWarehouseStatus === 'function') {
               google.script.run.withSuccessHandler(function(res) {
-                  showToast(res.message || `✅ Đã chuyển ${itemName} sang ${newStatus}`);
-                  reloadTab3Data();
+                  if (res && res.success) {
+                      showToast(res.message || `✅ Đã chuyển ${itemName} sang ${newStatus}`);
+                      if (res.freshData) applyTab3Data(res.freshData);
+                      else reloadTab3Data(true);
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
+                      if (item && item.trangThaiKho) selectElem.value = item.trangThaiKho;
+                  }
+              }).withFailureHandler(function(err) {
+                  showToast("❌ Lỗi kết nối: " + err, true);
               }).updateWarehouseStatus(orderId, newStatus);
           } else {
               showToast(`✅ Đã chuyển ${itemName} sang ${newStatus}`);
@@ -3040,11 +3069,12 @@
 
       showToast("⏳ Đang thực hiện chuyển kho...");
 
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.updateBatchWarehouseStatus === 'function') {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
                   showToast(res.message || `✅ Đã chuyển ${itemIds.length} đơn hàng sang ${targetWh}!`);
-                  reloadTab3Data(true);
+                  if (res.freshData) applyTab3Data(res.freshData);
+                  else reloadTab3Data(true);
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
                   reloadTab3Data(true);

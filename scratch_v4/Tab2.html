@@ -1,0 +1,590 @@
+
+    <div class="pt-10 pb-4 px-5 text-white bg-pink-600 shadow-md flex justify-between items-center z-10 relative">
+      <h1 class="text-lg font-bold">🏠 Thu Chi</h1>
+      <div class="flex gap-2">
+          <select id="filter-month" class="bg-pink-700/80 border border-pink-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+          <select id="filter-year" class="bg-pink-700/80 border border-pink-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      </div>
+    </div>
+
+    <div class="px-4 pt-4 z-10 relative">
+        <div class="flex p-1 bg-slate-200 rounded-xl">
+            <button onclick="switchTab2('giaodich')" id="btn-t2-giaodich" class="flex-1 py-2 text-xs font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer">💸 Giao Dịch</button>
+            <button onclick="switchTab2('hu')" id="btn-t2-hu" class="flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer">🍯 Quản Lý Hũ</button>
+        </div>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pb-6 p-4">
+      
+      <div id="t2-giaodich" class="space-y-4">
+          <div class="bg-gradient-to-br from-pink-500 to-rose-600 text-white p-5 rounded-3xl shadow-lg relative overflow-hidden">
+            <p class="text-[10px] uppercase tracking-wider text-pink-200">Dư Ròng Tháng Này</p>
+            <h2 class="text-3xl font-bold mt-1">+100,000 ¥</h2>
+            <div class="flex gap-2 mt-4 pt-4 border-t border-pink-400/50">
+                 <div class="flex-1">
+                     <p class="text-[9px] text-pink-200 uppercase font-bold mb-0.5">Tổng Thu</p>
+                     <p class="text-sm font-bold text-emerald-300">250,000 ¥</p>
+                 </div>
+                 <div class="flex-1 border-l border-pink-400/50 pl-2">
+                     <p class="text-[9px] text-pink-200 uppercase font-bold mb-0.5">Tổng Chi</p>
+                     <p class="text-sm font-bold text-rose-200">150,000 ¥</p>
+                 </div>
+            </div>
+          </div>
+
+          <div>
+              <button onclick="openModal('modal-quick-fixed')" class="w-full py-3 bg-white hover:bg-slate-50 transition text-slate-700 border border-slate-200 rounded-2xl shadow-sm cursor-pointer relative font-bold text-sm">
+                  ⚡ Đóng Tiền Khoản Cố Định (Tháng Này)
+                  <span class="absolute top-3 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+              </button>
+          </div>
+
+          <div class="flex gap-3 mt-4">
+              <!-- CỘT CHI -->
+              <div class="flex-1">
+                  <div class="flex justify-between items-center border-b border-rose-200 pb-2 mb-2">
+                      <h3 class="text-xs font-bold text-rose-500">📉 CHI</h3>
+                      <button onclick="openAddTx('CHI')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-2 py-1 rounded shadow-sm font-bold text-xs transition cursor-pointer">➕ Thêm</button>
+                  </div>
+                  <div class="space-y-2">
+                      <div onclick="openEditTx('Đi siêu thị Aeon', 5000, 'Ví Tiền Mặt', 'Thiết Yếu', '2026-09-04', 'CHI', false, true)" class="p-2 bg-white border border-slate-200 rounded-xl shadow-sm cursor-pointer hover:border-rose-400 transition">
+                          <p class="text-xs font-bold text-slate-800 truncate">Đi siêu thị Aeon <span class="text-[8px] bg-slate-100 text-slate-500 px-1 rounded ml-1">Mẫu</span></p>
+                          <p class="text-xs font-bold text-rose-500 mt-1">-5,000 ¥</p>
+                          <p class="text-[9px] text-slate-400 mt-1 truncate">Hũ: Thiết Yếu</p>
+                      </div>
+                      <div onclick="openEditTx('Tiền nhà Leo', 50000, 'Thẻ Rakuten', 'Thiết Yếu', '2026-09-27', 'CHI', true, true)" class="p-2 bg-white border border-slate-200 rounded-xl shadow-sm cursor-pointer hover:border-rose-400 transition">
+                          <p class="text-xs font-bold text-slate-800 truncate">Tiền nhà Leo <span class="text-[8px] bg-amber-100 text-amber-600 px-1 rounded ml-1">Cố định</span></p>
+                          <p class="text-xs font-bold text-rose-500 mt-1">-50,000 ¥</p>
+                          <p class="text-[9px] text-slate-400 mt-1 truncate">Hũ: Thiết Yếu</p>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- CỘT THU -->
+              <div class="flex-1 border-l border-slate-200 pl-3">
+                  <div class="flex justify-between items-center border-b border-emerald-200 pb-2 mb-2">
+                      <h3 class="text-xs font-bold text-emerald-600">📈 THU</h3>
+                      <button onclick="openAddTx('THU')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-2 py-1 rounded shadow-sm font-bold text-xs transition cursor-pointer">➕ Thêm</button>
+                  </div>
+                  <div class="space-y-2">
+                      <div onclick="openEditTx('Lương tháng 8', 250000, 'Thẻ Ufj', 'Tiết Kiệm', '2026-09-01', 'THU', true, false)" class="p-2 bg-white border border-slate-200 rounded-xl shadow-sm cursor-pointer hover:border-emerald-400 transition">
+                          <p class="text-xs font-bold text-slate-800 truncate">Lương tháng 8 <span class="text-[8px] bg-amber-100 text-amber-600 px-1 rounded ml-1">Cố định</span></p>
+                          <p class="text-xs font-bold text-emerald-600 mt-1">+250,000 ¥</p>
+                          <p class="text-[9px] text-slate-400 mt-1 truncate">Nguồn: Thẻ Ufj</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <div id="t2-hu" class="space-y-4 hidden">
+          <div class="flex gap-2 mb-2">
+              <button onclick="openModal('modal-config-jar'); updateConfigPreview();" class="flex-1 py-3 bg-pink-50 text-pink-700 hover:bg-pink-100 transition rounded-xl text-xs font-bold border border-pink-200 shadow-sm cursor-pointer">⚙️ Cấu Hình Tỷ Lệ %</button>
+              <button onclick="openModal('modal-transfer-jar')" class="flex-1 py-3 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition rounded-xl text-xs font-bold border border-indigo-200 shadow-sm cursor-pointer">🔄 Chuyển Tiền Hũ</button>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-3 mb-3 bg-white shadow-sm hover:border-emerald-300 transition">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="font-bold text-slate-800 text-sm">Thiết yếu</h4>
+                <div class="flex gap-1 text-[9px] font-bold">
+                    <span class="bg-slate-100 text-slate-600 px-1.5 py-1 rounded">Hũ: 70%</span>
+                    <span class="bg-rose-50 text-rose-500 px-1.5 py-1 rounded">Đã dùng: 20%</span>
+                    <span class="bg-emerald-50 text-emerald-600 px-1.5 py-1 rounded">Còn lại: 80%</span>
+                </div>
+            </div>
+            <div class="w-full bg-slate-100 h-1.5 rounded-full mb-3 overflow-hidden">
+                <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 20%"></div>
+            </div>
+            <div class="bg-slate-50 border border-slate-100 rounded-lg p-2 grid grid-cols-2 gap-y-2 text-[10px]">
+                <div><span class="text-pink-500 mr-1 text-xs">🎯</span>Ngân sách: <span class="font-bold">1,709,047 ¥</span></div>
+                <div><span class="text-emerald-500 mr-1 text-xs">💸</span>Đã chi: <span class="font-bold text-rose-500">341,800 ¥</span></div>
+                <div><span class="text-emerald-500 mr-1 text-xs">✅</span>Số dư: <span class="font-bold text-emerald-600">1,367,247 ¥</span></div>
+                <div><span class="text-purple-500 mr-1 text-xs">📊</span>Lũy kế: <span class="font-bold text-blue-600">18,927.84 ¥</span></div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: THÊM GIAO DỊCH MỚI (TÍCH HỢP CUSTOM SUGGESTION) -->
+  <!-- ========================================================================= -->
+  <div id="modal-add-tx" class="modal-overlay">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-slate-800 !p-5">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">➕ Giao Dịch Mới</h3>
+        <button onclick="closeModal('modal-add-tx')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
+            <button id="add-btn-chi" onclick="toggleAddType('CHI')" class="flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition">Khoản Chi</button>
+            <button id="add-btn-thu" onclick="toggleAddType('THU')" class="flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition">Khoản Thu</button>
+        </div>
+        
+        <div class="relative z-10"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1. Ngày giao dịch</label>
+        <input type="date" value="2026-09-04" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-pink-300"></div>
+
+        <!-- Custom Suggest Nội dung -->
+        <div class="relative z-50">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">2. Nội dung (Gõ để chọn Mẫu)</label>
+            <input type="text" id="add-desc" autocomplete="off" placeholder="Ví dụ: Đổ xăng..." 
+                   oninput="renderSuggest('add-desc', 'desc')" onfocus="renderSuggest('add-desc', 'desc')" onblur="hideSuggest('add-desc')"
+                   class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 shadow-inner">
+            <div id="box-add-desc" class="suggest-box absolute left-0 right-0 top-[65px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-40 overflow-y-auto z-50"></div>
+            <p class="text-[9px] font-bold text-emerald-600 mt-1 italic hidden transition-all absolute top-full left-0" id="add-autofill-msg">✨ Đã tự động điền thẻ & hũ phù hợp!</p>
+        </div>
+
+        <div class="relative z-10 mt-5"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">3. Số tiền (¥)</label>
+        <input type="number" id="add-money" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-pink-300"></div>
+
+        <div class="grid grid-cols-2 gap-3 relative z-40">
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">4. Nguồn tiền</label>
+                <input type="text" id="add-source" autocomplete="off" placeholder="Chọn nguồn..." 
+                       oninput="renderSuggest('add-source', 'source')" onfocus="renderSuggest('add-source', 'source')" onblur="hideSuggest('add-source')"
+                       class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-pink-400">
+                <div id="box-add-source" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+            </div>
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">5. Thuộc Hũ</label>
+                <input type="text" id="add-jar" autocomplete="off" placeholder="Chọn hũ..." 
+                       oninput="renderSuggest('add-jar', 'jar')" onfocus="renderSuggest('add-jar', 'jar')" onblur="hideSuggest('add-jar')"
+                       class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-pink-400">
+                <div id="box-add-jar" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+            </div>
+        </div>
+        
+        <div class="space-y-1.5 pt-2 mt-2 border-t border-slate-100 relative z-10">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="add-chk-template" class="accent-indigo-500 w-4 h-4 cursor-pointer">
+                <label for="add-chk-template" class="text-xs font-bold text-slate-600 cursor-pointer">Lưu làm mẫu nhập nhanh (Gợi ý lần sau)</label>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="add-chk-fixed" class="accent-rose-500 w-4 h-4 cursor-pointer">
+                <label for="add-chk-fixed" class="text-xs font-bold text-slate-600 cursor-pointer">Là khoản cố định hàng tháng (Sẽ nhắc đóng)</label>
+            </div>
+        </div>
+
+        <button onclick="closeModal('modal-add-tx')" class="w-full py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-sm font-bold cursor-pointer transition shadow-md mt-1 relative z-10">Lưu Giao Dịch</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SỬA GIAO DỊCH (TÍCH HỢP CUSTOM SUGGESTION) -->
+  <!-- ========================================================================= -->
+  <div id="modal-edit-tx" class="modal-overlay" style="z-index: 200;">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-amber-500 !p-5">
+      <div class="flex justify-between items-center mb-3 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">✏️ Sửa Giao Dịch</h3>
+        <button onclick="closeModal('modal-edit-tx')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      
+      <div class="space-y-4">
+        <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
+            <button id="edit-btn-chi" onclick="toggleEditType('CHI')" class="flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition">Khoản Chi</button>
+            <button id="edit-btn-thu" onclick="toggleEditType('THU')" class="flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition">Khoản Thu</button>
+        </div>
+        
+        <div class="relative z-10"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">1. Ngày giao dịch</label>
+        <input type="date" id="edit-date" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-300"></div>
+
+        <div class="relative z-50">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">2. Nội dung</label>
+            <input type="text" id="edit-desc" autocomplete="off" 
+                   oninput="renderSuggest('edit-desc', 'desc')" onfocus="renderSuggest('edit-desc', 'desc')" onblur="hideSuggest('edit-desc')"
+                   class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-amber-400">
+            <div id="box-edit-desc" class="suggest-box absolute left-0 right-0 top-[65px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-40 overflow-y-auto z-50"></div>
+            <p class="text-[9px] font-bold text-emerald-600 mt-1 italic hidden transition-all absolute top-full left-0" id="edit-autofill-msg">✨ Đã tự động điền thẻ & hũ phù hợp!</p>
+        </div>
+
+        <div class="relative z-10 mt-5"><label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">3. Số tiền (¥)</label>
+        <input type="number" id="edit-money" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold outline-none focus:ring-2 focus:ring-amber-300"></div>
+
+        <div class="grid grid-cols-2 gap-3 relative z-40">
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">4. Nguồn tiền</label>
+                <input type="text" id="edit-source" autocomplete="off" 
+                       oninput="renderSuggest('edit-source', 'source')" onfocus="renderSuggest('edit-source', 'source')" onblur="hideSuggest('edit-source')"
+                       class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-amber-400">
+                <div id="box-edit-source" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+            </div>
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">5. Thuộc Hũ</label>
+                <input type="text" id="edit-jar" autocomplete="off" 
+                       oninput="renderSuggest('edit-jar', 'jar')" onfocus="renderSuggest('edit-jar', 'jar')" onblur="hideSuggest('edit-jar')"
+                       class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 focus:outline-none focus:border-amber-400">
+                <div id="box-edit-jar" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+            </div>
+        </div>
+
+        <div class="space-y-1.5 pt-2 mt-2 border-t border-slate-100 relative z-10">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="edit-chk-template" class="accent-indigo-500 w-4 h-4 cursor-pointer">
+                <label for="edit-chk-template" class="text-xs font-bold text-slate-600 cursor-pointer">Lưu làm mẫu nhập nhanh (Gợi ý lần sau)</label>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="edit-chk-fixed" class="accent-amber-500 w-4 h-4 cursor-pointer">
+                <label for="edit-chk-fixed" class="text-xs font-bold text-slate-600 cursor-pointer">Là khoản cố định (Bỏ tích để hủy nhắc nhở)</label>
+            </div>
+        </div>
+
+        <div class="flex gap-2 pt-2 mt-1 border-t border-slate-100 relative z-10">
+            <button onclick="deleteTransaction()" class="w-1/3 py-3.5 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-xl text-xs font-bold cursor-pointer transition">🗑️ Xóa</button>
+            <button onclick="closeModal('modal-edit-tx')" class="w-2/3 py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer transition shadow-md">Lưu Cập Nhật</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: KHOẢN CỐ ĐỊNH NHANH -->
+  <!-- ========================================================================= -->
+  <div id="modal-quick-fixed" class="modal-overlay">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-amber-500 !p-4">
+      <div class="flex justify-between items-center mb-2 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">⚡ Đóng Khoản Cố Định</h3>
+        <button onclick="closeModal('modal-quick-fixed')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <p class="text-xs text-slate-500 mb-4">Mỗi khoản đều có ngày và nguồn lấy từ Database, nhưng bạn vẫn có thể sửa tay nếu thực tế có biến động.</p>
+      <div class="space-y-3">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-sm">
+              <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
+                  <span class="text-sm font-bold text-slate-700">🏠 Tiền nhà Leo</span>
+                  <div class="flex items-center gap-1">
+                      <span class="text-[9px] font-bold text-slate-400 uppercase">Ngày quét:</span>
+                      <input type="date" value="2026-09-27" class="bg-white border border-slate-200 rounded px-1.5 py-1 text-[10px] text-slate-700 outline-none focus:border-amber-400">
+                  </div>
+              </div>
+              <div class="flex gap-2">
+                  <div class="flex-1 relative">
+                      <label class="block text-[9px] font-bold text-slate-400 mb-0.5 uppercase">Nguồn trừ tiền</label>
+                      <input type="text" id="qf-source-1" autocomplete="off" value="Thẻ Rakuten" oninput="renderSuggest('qf-source-1', 'source')" onfocus="renderSuggest('qf-source-1', 'source')" onblur="hideSuggest('qf-source-1')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-amber-400">
+                      <div id="box-qf-source-1" class="suggest-box absolute left-0 right-0 top-[45px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+                  </div>
+                  <div class="flex-1">
+                      <label class="block text-[9px] font-bold text-slate-400 mb-0.5 uppercase">Số tiền đóng</label>
+                      <input type="number" placeholder="¥..." class="w-full bg-white border border-pink-300 rounded-lg px-2 py-1.5 text-sm font-bold text-rose-500 outline-none focus:ring-1 focus:ring-amber-400">
+                  </div>
+              </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-sm">
+              <div class="flex justify-between items-center mb-2 border-b border-slate-200 pb-2">
+                  <span class="text-sm font-bold text-slate-700">📱 Mạng Y!Mobile</span>
+                  <div class="flex items-center gap-1">
+                      <span class="text-[9px] font-bold text-slate-400 uppercase">Ngày quét:</span>
+                      <input type="date" value="2026-09-10" class="bg-white border border-slate-200 rounded px-1.5 py-1 text-[10px] text-slate-700 outline-none focus:border-amber-400">
+                  </div>
+              </div>
+              <div class="flex gap-2">
+                  <div class="flex-1 relative">
+                      <label class="block text-[9px] font-bold text-slate-400 mb-0.5 uppercase">Nguồn trừ tiền</label>
+                      <input type="text" id="qf-source-2" autocomplete="off" value="Thẻ Ufj" oninput="renderSuggest('qf-source-2', 'source')" onfocus="renderSuggest('qf-source-2', 'source')" onblur="hideSuggest('qf-source-2')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-amber-400">
+                      <div id="box-qf-source-2" class="suggest-box absolute left-0 right-0 top-[45px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+                  </div>
+                  <div class="flex-1">
+                      <label class="block text-[9px] font-bold text-slate-400 mb-0.5 uppercase">Số tiền đóng</label>
+                      <input type="number" placeholder="¥..." class="w-full bg-white border border-pink-300 rounded-lg px-2 py-1.5 text-sm font-bold text-rose-500 outline-none focus:ring-1 focus:ring-amber-400">
+                  </div>
+              </div>
+          </div>
+      </div>
+      <button onclick="submitQuickFixed()" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-bold shadow-md cursor-pointer transition mt-4">Lưu Đóng Tiền</button>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CHUYỂN HŨ -->
+  <!-- ========================================================================= -->
+  <div id="modal-transfer-jar" class="modal-overlay">
+    <div class="modal-content mb-4 rounded-b-2xl border-t-4 border-indigo-500 !p-5">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 class="text-lg font-bold text-slate-900">🔄 Chuyển Tiền Giữa Các Hũ</h3>
+        <button onclick="closeModal('modal-transfer-jar')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3 relative z-40">
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Từ Hũ (Cắt bớt)</label>
+                <input type="text" id="tf-jar-1" autocomplete="off" value="Giải Trí" oninput="renderSuggest('tf-jar-1', 'jar')" onfocus="renderSuggest('tf-jar-1', 'jar')" onblur="hideSuggest('tf-jar-1')" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-400">
+                <div id="box-tf-jar-1" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+            </div>
+            <div class="relative">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Đến Hũ (Bơm thêm)</label>
+                <input type="text" id="tf-jar-2" autocomplete="off" value="Thiết Yếu" oninput="renderSuggest('tf-jar-2', 'jar')" onfocus="renderSuggest('tf-jar-2', 'jar')" onblur="hideSuggest('tf-jar-2')" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-400">
+                <div id="box-tf-jar-2" class="suggest-box absolute left-0 right-0 top-[60px] bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+            </div>
+        </div>
+        <div class="relative z-10">
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số tiền điều chỉnh (¥)</label>
+            <input type="number" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-lg font-bold text-indigo-600 focus:outline-none focus:ring-1 focus:ring-indigo-400">
+        </div>
+        <button onclick="submitTransferJar()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold cursor-pointer transition shadow-md relative z-10">Xác Nhận Chuyển</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: CẤU HÌNH TỶ LỆ HŨ -->
+  <!-- ========================================================================= -->
+  <div id="modal-config-jar" class="modal-overlay">
+    <div class="modal-content !p-0 !h-[85vh] flex flex-col mb-0 rounded-b-none border-t-4 border-pink-500">
+      <div class="p-4 border-b flex justify-between items-center bg-white rounded-t-2xl">
+        <div>
+            <h3 class="text-lg font-bold text-slate-800">Cấu hình tỷ lệ % các Hũ</h3>
+            <p class="text-[10px] text-slate-500 mt-1">Căn cứ thu tháng trước: 2,501,497 ¥</p>
+        </div>
+        <button onclick="closeModal('modal-config-jar')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-700">&times;</button>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3">
+          <div class="flex justify-between text-[9px] font-bold text-slate-400 uppercase px-1">
+              <span>Hũ chi tiêu</span>
+              <span>Tỷ lệ (%) & Tiền quy đổi</span>
+          </div>
+
+          <div class="bg-pink-50 border border-pink-200 rounded-xl p-3 flex justify-between items-center">
+              <div>
+                  <h4 class="text-sm font-bold text-pink-700">Đầu tư (NISA)</h4>
+                  <p class="text-[9px] text-pink-500 mt-0.5">Cố định (Trừ trước khi chia %)</p>
+              </div>
+              <div class="flex items-center gap-1">
+                  <input type="number" id="cfg-invest" value="60000" oninput="updateConfigPreview()" class="w-24 text-right bg-white border border-pink-300 rounded p-1.5 text-sm font-bold text-pink-700 outline-none focus:ring-1 focus:ring-pink-500">
+                  <span class="text-xs font-bold text-pink-700">¥</span>
+              </div>
+          </div>
+
+          <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center">
+              <h4 class="text-sm font-bold text-slate-800">Thiết yếu</h4>
+              <div class="flex items-center gap-2">
+                  <span id="prev-thietyeu" class="text-[10px] text-slate-500 font-bold">1,709,047 ¥</span>
+                  <input type="number" id="pct-thietyeu" value="70" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none">
+                  <span class="text-xs text-slate-500">%</span>
+              </div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center">
+              <h4 class="text-sm font-bold text-slate-800">Tiết kiệm</h4>
+              <div class="flex items-center gap-2">
+                  <span id="prev-tietkiem" class="text-[10px] text-slate-500 font-bold">268,564 ¥</span>
+                  <input type="number" id="pct-tietkiem" value="11" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none">
+                  <span class="text-xs text-slate-500">%</span>
+              </div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-3 flex justify-between items-center">
+              <h4 class="text-sm font-bold text-slate-800">Giáo dục</h4>
+              <div class="flex items-center gap-2">
+                  <span id="prev-giaoduc" class="text-[10px] text-slate-500 font-bold">244,149 ¥</span>
+                  <input type="number" id="pct-giaoduc" value="10" oninput="updateConfigPreview()" class="cfg-pct w-14 text-center bg-white border border-slate-300 rounded p-1.5 text-sm font-bold text-pink-600 outline-none">
+                  <span class="text-xs text-slate-500">%</span>
+              </div>
+          </div>
+      </div>
+
+      <div class="p-4 bg-white border-t flex justify-between items-center relative z-10">
+          <div class="text-sm font-bold">Tổng %: <span id="total-pct-lbl" class="text-emerald-600">91%</span></div>
+          <div class="flex gap-2">
+              <button onclick="closeModal('modal-config-jar')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 transition text-slate-700 rounded-lg text-xs font-bold cursor-pointer">Hủy</button>
+              <button onclick="closeModal('modal-config-jar')" class="px-4 py-2 bg-pink-600 hover:bg-pink-700 transition text-white rounded-lg text-xs font-bold shadow-sm cursor-pointer">Lưu cấu hình</button>
+          </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SCRIPT LOGIC MỚI CHO CUSTOM SUGGEST -->
+  <script>
+    // 1. DATA GỢI Ý MẪU
+    const suggestData = {
+        desc: ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"],
+        source: ["Ví Tiền Mặt", "Thẻ Rakuten", "Thẻ Ufj", "Thẻ SMBC", "PayPay"],
+        jar: ["Thiết Yếu", "Tiết Kiệm", "Giáo Dục", "Giải Trí", "Đầu Tư (NISA)"]
+    };
+
+    // 2. HÀM HIỂN THỊ DROPDOWN TỰ CODE
+    function renderSuggest(inputId, type) {
+        const input = document.getElementById(inputId);
+        const box = document.getElementById('box-' + inputId);
+        if(!box) return;
+        
+        const val = input.value.toLowerCase();
+        box.innerHTML = ''; // Clear old
+        
+        // Lọc kết quả
+        const matches = suggestData[type].filter(item => item.toLowerCase().includes(val));
+        if(matches.length === 0) {
+            box.classList.add('hidden');
+            return;
+        }
+
+        // Tạo item
+        matches.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "px-3 py-2.5 hover:bg-pink-50 cursor-pointer text-sm font-medium text-slate-700 border-b border-slate-100 last:border-0";
+            div.innerText = item;
+            
+            // Dùng onmousedown thay vì onclick để ưu tiên chạy trước sự kiện onblur của input
+            div.onmousedown = function(e) {
+                e.preventDefault(); 
+                input.value = item;
+                box.classList.add('hidden');
+                
+                // Kích hoạt Autofill nếu đang chọn Nội dung (Desc)
+                if(type === 'desc') {
+                    let mode = inputId.split('-')[0]; // 'add' hoặc 'edit'
+                    checkAutoFill(item, mode);
+                }
+            };
+            box.appendChild(div);
+        });
+        
+        box.classList.remove('hidden');
+    }
+
+    // 3. HÀM ẨN DROPDOWN KHI CLICK CHỖ KHÁC
+    function hideSuggest(inputId) {
+        setTimeout(() => {
+            const box = document.getElementById('box-' + inputId);
+            if(box) box.classList.add('hidden');
+        }, 150);
+    }
+
+    // 4. AUTO-FILL THÔNG MINH
+    function checkAutoFill(val, mode) {
+        const inputMoney = document.getElementById(mode + '-money');
+        const selSource = document.getElementById(mode + '-source');
+        const selJar = document.getElementById(mode + '-jar');
+        const msg = document.getElementById(mode + '-autofill-msg');
+        let filled = false;
+        
+        if (val === 'Đổ xăng Eneos') { 
+            selSource.value = 'Thẻ Rakuten'; selJar.value = 'Thiết Yếu'; filled = true; 
+        }
+        else if (val === 'Đi siêu thị Aeon') { 
+            selSource.value = 'Ví Tiền Mặt'; selJar.value = 'Thiết Yếu'; filled = true; 
+        }
+        else if (val === 'Tiền nhà Leo') { 
+            if(inputMoney) inputMoney.value = '50000'; 
+            selSource.value = 'Thẻ Ufj'; 
+            selJar.value = 'Thiết Yếu'; 
+            filled = true; 
+        }
+
+        if (msg) { 
+            if(filled) {
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000); // Tự ẩn báo cáo sau 3s
+            } else {
+                msg.classList.add('hidden'); 
+            }
+        }
+    }
+
+    // TÍNH NĂNG UX THÔNG THƯỜNG
+    function openAddTx(type) {
+        toggleAddType(type);
+        openModal('modal-add-tx');
+    }
+
+    function toggleAddType(type) {
+        const btnChi = document.getElementById('add-btn-chi');
+        const btnThu = document.getElementById('add-btn-thu');
+        const iptMoney = document.getElementById('add-money');
+        if(type === 'CHI') {
+            btnChi.className = "flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm transition";
+            btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+            iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-pink-300";
+        } else {
+            btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm transition";
+            btnChi.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+            iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-pink-300";
+        }
+    }
+
+    function toggleEditType(type) {
+        const btnChi = document.getElementById('edit-btn-chi');
+        const btnThu = document.getElementById('edit-btn-thu');
+        const iptMoney = document.getElementById('edit-money');
+        if(type === 'CHI') {
+            btnChi.className = "flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm transition";
+            btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+            iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-amber-300";
+        } else {
+            btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm transition";
+            btnChi.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
+            iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-amber-300";
+        }
+    }
+
+    function openEditTx(desc, money, source, jar, date, type, isFixed, isTemplate) {
+        toggleEditType(type);
+        document.getElementById('edit-date').value = date;
+        document.getElementById('edit-desc').value = desc;
+        document.getElementById('edit-money').value = money;
+        document.getElementById('edit-source').value = source;
+        document.getElementById('edit-jar').value = jar;
+        document.getElementById('edit-chk-fixed').checked = isFixed; 
+        document.getElementById('edit-chk-template').checked = isTemplate; 
+        openModal('modal-edit-tx');
+    }
+
+    function deleteTransaction() { if(confirm("Bạn có chắc chắn muốn xóa giao dịch này?")) { alert("Đã xóa giao dịch thành công!"); closeModal('modal-edit-tx'); } }
+    function submitTransferJar() { alert("Thành công! Đã chuyển ngân sách giữa 2 hũ."); closeModal('modal-transfer-jar'); }
+    function submitQuickFixed() { alert("Thành công! Đã ghi nhận các khoản đóng tiền cố định vào lịch sử."); closeModal('modal-quick-fixed'); }
+
+    // TÍNH TOÁN % HŨ
+    const TOTAL_INCOME = 2501497;
+    function formatMoney(n) { return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " ¥"; }
+    function updateConfigPreview() {
+        let fixedInvest = parseInt(document.getElementById('cfg-invest').value) || 0;
+        let remainingToSplit = TOTAL_INCOME - fixedInvest;
+        
+        let pTy = parseInt(document.getElementById('pct-thietyeu').value) || 0;
+        let pTk = parseInt(document.getElementById('pct-tietkiem').value) || 0;
+        let pGd = parseInt(document.getElementById('pct-giaoduc').value) || 0;
+
+        document.getElementById('prev-thietyeu').innerText = formatMoney(remainingToSplit * pTy / 100);
+        document.getElementById('prev-tietkiem').innerText = formatMoney(remainingToSplit * pTk / 100);
+        document.getElementById('prev-giaoduc').innerText = formatMoney(remainingToSplit * pGd / 100);
+
+        let totalPct = pTy + pTk + pGd;
+        let lbl = document.getElementById('total-pct-lbl');
+        lbl.innerText = totalPct + "%";
+        if (totalPct > 100) lbl.className = "text-rose-600";
+        else if (totalPct < 100) lbl.className = "text-amber-500";
+        else lbl.className = "text-emerald-600";
+    }
+
+    function switchTab2(tab) {
+        document.getElementById('t2-giaodich').classList.add('hidden');
+        document.getElementById('t2-hu').classList.add('hidden');
+        document.getElementById('btn-t2-giaodich').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+        document.getElementById('btn-t2-hu').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer";
+        document.getElementById('t2-' + tab).classList.remove('hidden');
+        document.getElementById('btn-t2-' + tab).className = "flex-1 py-2 text-xs font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer";
+    }
+
+    window.onload = function() {
+        const monthSelect = document.getElementById('filter-month');
+        const yearSelect = document.getElementById('filter-year');
+        if(monthSelect) {
+            const d = new Date();
+            let monthHTML = '<option value="ALL">Cả năm</option>';
+            for (let i = 1; i <= 12; i++) { monthHTML += `<option value="${i}" ${i === d.getMonth() + 1 ? 'selected' : ''}>Tháng ${i}</option>`; }
+            monthSelect.innerHTML = monthHTML;
+            let yearHTML = '';
+            for (let y = 2024; y <= d.getFullYear() + 1; y++) { yearHTML += `<option value="${y}" ${y === d.getFullYear() ? 'selected' : ''}>Năm ${y}</option>`; }
+            yearSelect.innerHTML = yearHTML;
+        }
+        updateConfigPreview();
+    };
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+  </script>
+

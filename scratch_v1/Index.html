@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 font-sans p-4 flex justify-center">
+
+  <!-- KHUNG APP MOBILE -->
+  <div class="w-full max-w-md bg-white min-h-[800px] rounded-3xl shadow-xl relative overflow-hidden flex flex-col border border-slate-200">
+    
+    <!-- HEADER -->
+    <div class="pt-8 pb-4 px-5 text-white bg-indigo-600 shadow-md z-10 shrink-0">
+      <h1 class="text-xl font-bold">Thu Chi Gia Đình</h1>
+    </div>
+
+    <!-- BODY: TAB 2 -->
+    <div class="flex-1 p-5 overflow-y-auto pb-20 space-y-4">
+      
+      <!-- Box Loại Giao Dịch -->
+      <div class="flex p-1 bg-slate-100 rounded-xl">
+          <button id="btn-chi" onclick="setLoai('Chi')" class="flex-1 py-2 text-sm font-bold bg-white text-rose-500 rounded-lg shadow-sm">Khoản Chi</button>
+          <button id="btn-thu" onclick="setLoai('Thu')" class="flex-1 py-2 text-sm font-bold text-slate-500 rounded-lg">Khoản Thu</button>
+      </div>
+
+      <!-- Form Nhập Liệu -->
+      <form id="familyForm" class="space-y-4" onsubmit="submitForm(event)">
+        <!-- Ẩn loại giao dịch -->
+        <input type="hidden" id="loai" value="Chi">
+
+        <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Ngày giao dịch</label>
+            <input type="date" id="ngay" required class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Số tiền (¥)</label>
+            <input type="number" id="sotien" required placeholder="0" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-3 text-xl font-bold text-slate-800 outline-none focus:border-indigo-500">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Nội dung</label>
+            <input type="text" id="noidung" required placeholder="Siêu thị, Tiền điện..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="flex gap-3">
+            <div class="flex-1">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tên Hũ</label>
+                <input type="text" id="hu" required placeholder="Thiết yếu..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex-1">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Từ Ví/Thẻ</label>
+                <input type="text" id="nguontien" required placeholder="Tiền mặt..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500">
+            </div>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Ghi chú thêm</label>
+            <input type="text" id="ghichu" placeholder="..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-500">
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer mt-2 p-2 bg-slate-50 rounded-lg">
+            <input type="checkbox" id="codinh" class="w-5 h-5 accent-indigo-600 cursor-pointer">
+            <span class="text-sm font-medium text-slate-700">Đây là khoản chi cố định hàng tháng</span>
+        </label>
+
+        <!-- Nút Lưu -->
+        <button type="submit" id="btn-submit" class="w-full py-4 mt-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-base font-bold shadow-lg transition transform active:scale-95">
+          💾 LƯU GIAO DỊCH
+        </button>
+      </form>
+      
+      <!-- Vùng thông báo -->
+      <div id="status-message" class="text-center font-bold text-sm mt-2 hidden"></div>
+
+    </div>
+  </div>
+
+  <script>
+    // Tự điền ngày hôm nay
+    document.getElementById('ngay').valueAsDate = new Date();
+
+    // Đổi màu nút Thu/Chi
+    function setLoai(loai) {
+        document.getElementById('loai').value = loai;
+        const btnChi = document.getElementById('btn-chi');
+        const btnThu = document.getElementById('btn-thu');
+        
+        if (loai === 'Chi') {
+            btnChi.className = "flex-1 py-2 text-sm font-bold bg-white text-rose-500 rounded-lg shadow-sm";
+            btnThu.className = "flex-1 py-2 text-sm font-bold text-slate-500 rounded-lg bg-slate-100";
+        } else {
+            btnThu.className = "flex-1 py-2 text-sm font-bold bg-white text-emerald-500 rounded-lg shadow-sm";
+            btnChi.className = "flex-1 py-2 text-sm font-bold text-slate-500 rounded-lg bg-slate-100";
+        }
+    }
+
+    // Xử lý gửi Form lên Google Sheets
+    function submitForm(e) {
+      e.preventDefault(); // Ngăn load lại trang
+      
+      const btnSubmit = document.getElementById('btn-submit');
+      const statusMsg = document.getElementById('status-message');
+      
+      // Đổi trạng thái UI
+      btnSubmit.innerText = "⏳ ĐANG LƯU...";
+      btnSubmit.classList.add("opacity-70", "cursor-not-allowed");
+      statusMsg.className = "text-center font-bold text-sm mt-2 hidden";
+
+      // Gom dữ liệu
+      const formData = {
+        ngay: document.getElementById('ngay').value,
+        loai: document.getElementById('loai').value,
+        sotien: document.getElementById('sotien').value,
+        noidung: document.getElementById('noidung').value,
+        hu: document.getElementById('hu').value,
+        nguontien: document.getElementById('nguontien').value,
+        ghichu: document.getElementById('ghichu').value,
+        codinh: document.getElementById('codinh').checked
+      };
+
+      // GỌI API BACKEND: saveFamilyTransaction
+      google.script.run
+        .withSuccessHandler(function(response) {
+            btnSubmit.innerText = "💾 LƯU GIAO DỊCH";
+            btnSubmit.classList.remove("opacity-70", "cursor-not-allowed");
+            statusMsg.classList.remove("hidden");
+            
+            if (response.success) {
+                statusMsg.className = "text-center font-bold text-sm mt-2 text-emerald-600";
+                statusMsg.innerText = response.message;
+                // Reset form sau khi lưu thành công (giữ nguyên ngày và loại)
+                document.getElementById('sotien').value = '';
+                document.getElementById('noidung').value = '';
+                document.getElementById('hu').value = '';
+                document.getElementById('nguontien').value = '';
+                document.getElementById('ghichu').value = '';
+                document.getElementById('codinh').checked = false;
+            } else {
+                statusMsg.className = "text-center font-bold text-sm mt-2 text-rose-600";
+                statusMsg.innerText = response.message;
+            }
+        })
+        .saveFamilyTransaction(formData);
+    }
+  </script>
+</body>
+</html>

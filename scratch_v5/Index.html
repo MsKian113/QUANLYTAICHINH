@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <base target="_top" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #f8fafc; font-family: sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+    ::-webkit-scrollbar { display: none; }
+    
+    /* BỘ KHUNG ĐIỆN THOẠI FIX CỐ ĐỊNH CHIỀU CAO THEO MÀN HÌNH */
+    .app-container { 
+      width: 100%; 
+      max-width: 420px; 
+      height: 760px; 
+      max-height: 92vh;
+      background: white; 
+      border-radius: 40px; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); 
+      border: 8px solid #1e293b; 
+      position: relative; 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      margin: 5px auto;
+    }
+    
+    @media (max-width: 480px) {
+      body { padding: 0; background-color: white; }
+      .app-container { 
+        width: 100vw; 
+        height: 100vh; 
+        max-height: 100vh; 
+        border-radius: 0; 
+        border: none; 
+        margin: 0; 
+        box-shadow: none;
+      }
+      .notch { display: none; }
+    }
+    
+    .notch { 
+      position: absolute; 
+      top: 0; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      width: 140px; 
+      height: 25px; 
+      background: #1e293b; 
+      border-bottom-left-radius: 16px; 
+      border-bottom-right-radius: 16px; 
+      z-index: 50; 
+    }
+    
+    .modal-overlay { 
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5); 
+      z-index: 100; 
+      display: none; 
+      justify-content: center; 
+      align-items: flex-end; 
+      backdrop-filter: blur(2px); 
+    }
+    .modal-overlay.active { display: flex !important; }
+    
+    .modal-content { 
+      background: white; 
+      width: 100%; 
+      max-width: 420px; 
+      border-top-left-radius: 24px; 
+      border-top-right-radius: 24px; 
+      padding: 24px; 
+      max-height: 90vh; 
+      overflow-y: auto; 
+      animation: slideUp 0.3s ease-out; 
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    
+    .suggest-box::-webkit-scrollbar { display: block; width: 4px; }
+    .suggest-box::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* NGUYÊN TẮC FLEXBOX CHUẨN: BẮT BUỘC KHÔNG CHO NỘI DUNG ĐẨY MENU BOTTOM XUỐNG DƯỚI */
+    .app-tab-view { 
+      display: none; 
+      flex-direction: column; 
+      flex: 1 1 0%; 
+      min-height: 0 !important; 
+      overflow: hidden; 
+      position: relative; 
+    }
+    .app-tab-view.active-tab { display: flex !important; }
+  </style>
+</head>
+<body>
+  
+  <div class="app-container">
+    <div class="notch"></div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: VÍ & THẺ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab1" class="app-tab-view active-tab bg-slate-50">
+        <?!= include('Tab1'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: THU / CHI & QUẢN LÝ HŨ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab2" class="app-tab-view bg-white">
+        <?!= include('Tab2'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: KINH DOANH -->
+    <!-- ========================================================================= -->
+    <div id="view-tab3" class="app-tab-view bg-slate-50">
+        <?!= include('Tab3'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: CÔNG NỢ -->
+    <!-- ========================================================================= -->
+    <div id="view-tab4" class="app-tab-view bg-slate-50">
+        <?!= include('Tab4'); ?>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- BOTTOM NAV (THANH ĐIỀU HƯỚNG CỐ ĐỊNH Ở ĐÁY ĐIỆN THOẠI) -->
+    <!-- ========================================================================= -->
+    <div class="bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-50 shrink-0 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div onclick="switchAppTab('tab1', 'text-blue-600')" class="nav-item tab1 flex flex-col items-center cursor-pointer text-blue-600 scale-110 transition">
+            <span class="text-2xl mb-1">💳</span><span class="text-[10px] font-bold">Ví & Thẻ</span>
+        </div>
+        <div onclick="switchAppTab('tab2', 'text-pink-600')" class="nav-item tab2 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-2xl mb-1">🏠</span><span class="text-[10px] font-bold text-slate-600">Thu / Chi</span>
+        </div>
+        <div onclick="switchAppTab('tab3', 'text-amber-500')" class="nav-item tab3 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-2xl mb-1">🛒</span><span class="text-[10px] font-bold text-slate-600">Kinh Doanh</span>
+        </div>
+        <div onclick="switchAppTab('tab4', 'text-indigo-600')" class="nav-item tab4 flex flex-col items-center cursor-pointer opacity-50 hover:opacity-100 transition">
+            <span class="text-2xl mb-1">🤝</span><span class="text-[10px] font-bold text-slate-600">Công Nợ</span>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    function switchAppTab(tabId, activeColorClass) {
+        ['tab1', 'tab2', 'tab3', 'tab4'].forEach(id => {
+            const el = document.getElementById('view-' + id);
+            if (el) el.classList.remove('active-tab');
+        });
+        
+        const activeView = document.getElementById('view-' + tabId);
+        if (activeView) activeView.classList.add('active-tab');
+
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.className = item.className.replace(/text-(blue|pink|amber|indigo)-\d+/g, '');
+            item.classList.remove('scale-110', 'opacity-100');
+            item.classList.add('opacity-50');
+            const label = item.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-[10px] font-bold text-slate-600";
+        });
+
+        const activeNav = document.querySelector('.nav-item.' + tabId);
+        if (activeNav) {
+            activeNav.classList.remove('opacity-50');
+            activeNav.classList.add('scale-110', 'opacity-100');
+            if (activeColorClass) activeNav.classList.add(activeColorClass);
+            const label = activeNav.querySelector('span:nth-child(2)');
+            if (label) label.className = "text-[10px] font-bold";
+        }
+
+        if (tabId === 'tab2' && typeof renderFamilyFinancials === 'function') {
+            renderFamilyFinancials();
+        }
+    }
+  </script>
+</body>
+</html>
