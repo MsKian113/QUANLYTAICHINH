@@ -272,6 +272,7 @@ test('standardizeSplitFamiliesSheet standardizes 8 columns and ensures 1 rep per
   sheet.appendRow(['FAM-10002', '2F', 'MEB-10003', 'Member 3', 'ADULT', 1, true, true]);
   sheet.appendRow(['FAM-10002', '2F', 'MEB-10004', 'Member 4', 'ADULT', 1, false, false]);
 
+  Server_Tab7.standardizeSplitFamiliesSheet(ss);
   const res = Server_Tab7.getSplitFamilies(ss);
   assert.equal(res.success, true);
 

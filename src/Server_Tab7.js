@@ -278,7 +278,6 @@ function standardizeSplitFamiliesSheet(ssTarget) {
  */
 function getSplitFamilies(ssTarget) {
   try {
-    standardizeSplitFamiliesSheet(ssTarget);
     var sheet = getSplitFamiliesSheetHelper(ssTarget);
     if (!sheet || sheet.getLastRow() < 2) {
       return { success: true, families: [], rawMembers: [] };
@@ -2347,6 +2346,7 @@ if (typeof module !== 'undefined' && module.exports) {
     finalizeTripAndExportDebts: finalizeTripAndExportDebts,
     reopenSplitGroup: reopenSplitGroup,
     getSplitFamilies: getSplitFamilies,
+    standardizeSplitFamiliesSheet: standardizeSplitFamiliesSheet,
     saveSplitFamilyMember: saveSplitFamilyMember,
     saveSplitFamilyBatch: saveSplitFamilyBatch,
     deleteSplitFamilyMember: deleteSplitFamilyMember,

@@ -58,8 +58,25 @@ function createMockSpreadsheetDB() {
   global.CacheService = {
     getScriptCache: () => ({
       get: (key) => cacheStore[key] || null,
-      put: (key, value) => { cacheStore[key] = value; },
-      remove: (key) => { delete cacheStore[key]; }
+      put: (key, value) => { cacheStore[key] = String(value); },
+      putAll: (obj) => {
+        if (obj) {
+          Object.keys(obj).forEach(k => { cacheStore[k] = String(obj[k]); });
+        }
+      },
+      getAll: (keys) => {
+        const res = {};
+        if (Array.isArray(keys)) {
+          keys.forEach(k => { if (cacheStore[k] !== undefined) res[k] = cacheStore[k]; });
+        }
+        return res;
+      },
+      remove: (key) => { delete cacheStore[key]; },
+      removeAll: (keys) => {
+        if (Array.isArray(keys)) {
+          keys.forEach(k => delete cacheStore[k]);
+        }
+      }
     }),
     getCacheStore: () => cacheStore
   };

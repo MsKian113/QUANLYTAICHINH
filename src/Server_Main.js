@@ -14,9 +14,8 @@ function doGet(e) {
     let initialDataStr = null;
 
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
-      const cache = CacheService.getScriptCache();
       const cacheKey = "APP_DATA_V18_" + m + "_" + y;
-      initialDataStr = cache.get(cacheKey) || cache.get("APP_DATA_GLOBAL_LATEST_V18");
+      initialDataStr = getCachedAppDataStr(cacheKey) || getCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18");
     }
 
     if (!initialDataStr && typeof getAppData === 'function') {
@@ -209,13 +208,89 @@ function doPost(e) {
 // Dummy functions removed to avoid scope conflict with Server_Tab3.js and Server_Tab4.js
 
 /**
+ * HIGH-PERFORMANCE CHUNKED CACHE ENGINE
+ * Supports unlimited JSON payload sizes via 80KB multi-key chunking
+ */
+function setCachedAppDataStr(cacheKey, jsonStr, ttlSeconds) {
+  if (!jsonStr || typeof CacheService === 'undefined' || !CacheService.getScriptCache) return false;
+  try {
+    const cache = CacheService.getScriptCache();
+    const ttl = ttlSeconds || 600; // 10 minutes TTL
+    const chunkSize = 80000; // 80KB per chunk (under 100KB GAS limit)
+
+    if (jsonStr.length <= chunkSize) {
+      const putObj = {};
+      putObj[cacheKey] = jsonStr;
+      putObj[cacheKey + "_cnt"] = "1";
+      putObj[cacheKey + "_c0"] = jsonStr;
+      cache.putAll(putObj, ttl);
+      return true;
+    }
+
+    const chunksCount = Math.ceil(jsonStr.length / chunkSize);
+    const putObj = {};
+    putObj[cacheKey + "_cnt"] = String(chunksCount);
+
+    for (let i = 0; i < chunksCount; i++) {
+      const chunkStr = jsonStr.substring(i * chunkSize, (i + 1) * chunkSize);
+      putObj[cacheKey + "_c" + i] = chunkStr;
+    }
+
+    cache.putAll(putObj, ttl);
+    return true;
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Error in setCachedAppDataStr: " + err.toString());
+    return false;
+  }
+}
+
+function getCachedAppDataStr(cacheKey) {
+  if (!cacheKey || typeof CacheService === 'undefined' || !CacheService.getScriptCache) return null;
+  try {
+    const cache = CacheService.getScriptCache();
+    const cntStr = cache.get(cacheKey + "_cnt");
+
+    if (!cntStr) {
+      const single = cache.get(cacheKey);
+      return single || null;
+    }
+
+    const cnt = parseInt(cntStr, 10);
+    if (isNaN(cnt) || cnt <= 0) return null;
+
+    if (cnt === 1) {
+      const single = cache.get(cacheKey) || cache.get(cacheKey + "_c0");
+      return single || null;
+    }
+
+    const keysToFetch = [];
+    for (let i = 0; i < cnt; i++) {
+      keysToFetch.push(cacheKey + "_c" + i);
+    }
+
+    const map = cache.getAll(keysToFetch);
+    const parts = [];
+    for (let i = 0; i < cnt; i++) {
+      const part = map[cacheKey + "_c" + i];
+      if (!part) return null; // Incomplete chunk -> cache miss
+      parts.push(part);
+    }
+
+    return parts.join("");
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Error in getCachedAppDataStr: " + err.toString());
+    return null;
+  }
+}
+
+/**
  * XOÁ CACHE KHI CÓ THAY ĐỔI DỮ LIỆU (MUTATION)
  */
 function clearAppDataCache(month, year) {
   try {
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
       const cache = CacheService.getScriptCache();
-      const keys = [];
+      const baseKeys = [];
       const appVersions = ["", "V6_", "V11_", "V15_", "V16_", "V17_", "V18_"];
       const bizVersions = ["", "v5_", "v15_", "v16_", "v17_"];
       const months = ["ALL", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
@@ -224,25 +299,34 @@ function clearAppDataCache(month, year) {
       appVersions.forEach(v => {
         months.forEach(m => {
           years.forEach(y => {
-            keys.push("APP_DATA_" + v + m + "_" + y);
+            baseKeys.push("APP_DATA_" + v + m + "_" + y);
           });
         });
       });
       bizVersions.forEach(v => {
         months.forEach(m => {
           years.forEach(y => {
-            keys.push("biz_data_" + v + m + "_" + y);
+            baseKeys.push("biz_data_" + v + m + "_" + y);
           });
         });
       });
-      keys.push("APP_DATA_GLOBAL_LATEST", "APP_DATA_GLOBAL_LATEST_V16", "APP_DATA_GLOBAL_LATEST_V17", "tab5_data_v1");
+      baseKeys.push("APP_DATA_GLOBAL_LATEST", "APP_DATA_GLOBAL_LATEST_V16", "APP_DATA_GLOBAL_LATEST_V17", "APP_DATA_GLOBAL_LATEST_V18", "tab5_data_v1");
+
+      const allKeys = [];
+      baseKeys.forEach(k => {
+        allKeys.push(k);
+        allKeys.push(k + "_cnt");
+        for (let c = 0; c < 6; c++) {
+          allKeys.push(k + "_c" + c);
+        }
+      });
 
       if (typeof cache.removeAll === 'function') {
-        for (let i = 0; i < keys.length; i += 100) {
-          cache.removeAll(keys.slice(i, i + 100));
+        for (let i = 0; i < allKeys.length; i += 100) {
+          cache.removeAll(allKeys.slice(i, i + 100));
         }
       } else {
-        keys.forEach(k => cache.remove(k));
+        allKeys.forEach(k => cache.remove(k));
       }
     }
   } catch(e) {}
@@ -264,10 +348,9 @@ function getAppData(month, year, ssTarget, forceRefresh) {
 
   try {
     if (!forceRefresh && typeof CacheService !== 'undefined' && CacheService.getScriptCache && !ssTarget) {
-      const cache = CacheService.getScriptCache();
-      const cached = cache.get(cacheKey);
-      if (cached && cached.length < 90000) {
-        return JSON.parse(cached);
+      const cachedStr = getCachedAppDataStr(cacheKey) || getCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18");
+      if (cachedStr) {
+        return JSON.parse(cachedStr);
       }
     }
   } catch(e) {}
@@ -380,12 +463,9 @@ function getAppData(month, year, ssTarget, forceRefresh) {
 
     try {
       if (typeof CacheService !== 'undefined' && CacheService.getScriptCache && !ssTarget) {
-        const cache = CacheService.getScriptCache();
         const jsonStr = JSON.stringify(result);
-        if (jsonStr.length < 90000) {
-          cache.put(cacheKey, jsonStr, 600); // 600 Seconds (10 minutes) TTL
-          cache.put("APP_DATA_GLOBAL_LATEST_V18", jsonStr, 600);
-        }
+        setCachedAppDataStr(cacheKey, jsonStr, 600);
+        setCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18", jsonStr, 600);
       }
     } catch(e) {}
 
