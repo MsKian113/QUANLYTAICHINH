@@ -15,7 +15,7 @@ function doGet(e) {
 
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
       const cacheKey = "APP_DATA_V18_" + m + "_" + y;
-      initialDataStr = getCachedAppDataStr(cacheKey) || getCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18");
+      initialDataStr = getCachedAppDataStr(cacheKey);
     }
 
     // On cache miss, do NOT block HTTP response with 60s synchronous getAppData.
@@ -343,7 +343,7 @@ function getAppData(month, year, ssTarget, forceRefresh) {
 
   try {
     if (!forceRefresh && typeof CacheService !== 'undefined' && CacheService.getScriptCache && !ssTarget) {
-      const cachedStr = getCachedAppDataStr(cacheKey) || getCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18");
+      const cachedStr = getCachedAppDataStr(cacheKey);
       if (cachedStr) {
         return JSON.parse(cachedStr);
       }
@@ -353,12 +353,12 @@ function getAppData(month, year, ssTarget, forceRefresh) {
   try {
     const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
 
-    // 1. Wallets & Pending Pre-orders
+    // 1. Wallets & Pending Pre-orders (Always ALL for global cumulative balance & pending counts)
     let wallets = [];
     let pendingPreOrders = [];
     let orderCounts = null;
     if (typeof getWalletsFromSheet === 'function') {
-      const wRes = getWalletsFromSheet(m, y, ss);
+      const wRes = getWalletsFromSheet("ALL", "ALL", ss);
       if (wRes) {
         if (wRes.wallets) wallets = wRes.wallets;
         if (wRes.pendingPreOrders) pendingPreOrders = wRes.pendingPreOrders;
@@ -375,39 +375,39 @@ function getAppData(month, year, ssTarget, forceRefresh) {
       if (catRes && catRes.accounts) accounts = catRes.accounts;
     }
 
-    // 3. Tab 2 Data
+    // 3. Tab 2 Data (ONLY module filtered by month/year)
     let tab2 = { summary: { net: 0, income: 0, expense: 0 }, transactions: [], jars: [] };
     if (typeof getTab2Data === 'function') {
       const t2Res = getTab2Data(m, y, ss);
       if (t2Res) tab2 = t2Res;
     }
 
-    // 4. Quick Fixed Items
+    // 4. Quick Fixed Items (Always ALL)
     let quickFixed = [];
     if (typeof getQuickFixedItems === 'function') {
-      const qRes = getQuickFixedItems(m, y, ss);
+      const qRes = getQuickFixedItems("ALL", "ALL", ss);
       if (qRes && qRes.items) quickFixed = qRes.items;
     }
 
-    // 5. Tab 3 Business Data
+    // 5. Tab 3 Business Data (Always ALL for global inventory, sales, purchases)
     let tab3 = null;
     if (typeof getBusinessData === 'function') {
-      const t3Res = getBusinessData(m, y, ss, forceRefresh);
+      const t3Res = getBusinessData("ALL", "ALL", ss, forceRefresh);
       if (t3Res && t3Res.success) tab3 = t3Res;
     }
 
-    // 6. Tab 5 Cooldown Data
+    // 6. Tab 5 Cooldown Data (Always ALL)
     let tab5 = null;
     if (typeof getTab5Data === 'function') {
       const t5Res = getTab5Data(ss);
       if (t5Res && t5Res.success) tab5 = t5Res;
     }
 
-    // 7. Tab 4 Debt Data
+    // 7. Tab 4 Debt Data (Always ALL for cumulative receivables & payables)
     let tab4 = null;
     try {
       if (typeof getTab4Data === 'function') {
-        tab4 = getTab4Data(m, y, ss, forceRefresh);
+        tab4 = getTab4Data("ALL", "ALL", ss, forceRefresh);
       }
     } catch (e) {
       Logger.log("Error loading tab4: " + e.toString());
