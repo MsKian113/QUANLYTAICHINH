@@ -9299,13 +9299,13 @@
       }
   }
 
-  function reloadTab4Data(forceRefresh) {
+  function reloadTab4Data(forceRefresh = true) {
       const monthSelect = document.getElementById('t4-filter-month');
       const yearSelect = document.getElementById('t4-filter-year');
       const month = monthSelect ? monthSelect.value : 'ALL';
       const year = yearSelect ? yearSelect.value : 'ALL';
 
-      if (!forceRefresh && window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
+      if (forceRefresh === false && window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
           renderDebtCardsList(window.TAB4_DEBTS);
           return;
       }

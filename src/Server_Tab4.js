@@ -208,8 +208,9 @@ function getTab4Data(month, year, ssTarget) {
 
         const matchMonth = isAllMonth || !m || m === targetMonth;
         const matchYear = isAllYear || !y || y === targetYear;
+        const isActiveUnpaid = (duNo > 0 && trangThaiDuNo !== "DA_TRA" && trangThaiDuNo !== "HOAN_TAT");
 
-        if (matchMonth && matchYear) {
+        if (isActiveUnpaid || (matchMonth && matchYear)) {
           debts.push(debtObj);
         }
       });
