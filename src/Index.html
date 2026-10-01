@@ -615,6 +615,9 @@
 
         // 3. Background RPC sync for guaranteed fresh data across all tabs
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            const now = new Date();
+            const curM = (now.getMonth() + 1).toString();
+            const curY = now.getFullYear().toString();
             google.script.run.withSuccessHandler(function(res) {
                 if (res && res.success) {
                     applyAppData(res);
@@ -622,7 +625,7 @@
                 }
             }).withFailureHandler(function(err) {
                 console.error("Error fetching app data:", err);
-            }).getAppData("ALL", "ALL");
+            }).getAppData(curM, curY);
         } else {
             fetchCategories();
         }

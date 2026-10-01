@@ -4311,26 +4311,37 @@
               if (k.startsWith('T2_CACHE_DATA')) localStorage.removeItem(k);
             }
           } catch(e) {}
-          t7_loadAllData();
-          t7_loadActiveGroupData(gId);
-          // Reload Tab 4 & Tab 2 data if functions exist
-          if (typeof reloadTab4Data === 'function') reloadTab4Data();
-          if (typeof reloadTab1Data === 'function') reloadTab1Data();
-          if (typeof reloadTab2Data === 'function') reloadTab2Data();
-          if (typeof fetchTab2Transactions === 'function') fetchTab2Transactions(true);
-          if (typeof loadTab2Data === 'function') loadTab2Data(true);
 
-          setTimeout(function() {
-            if (typeof switchAppTab === 'function') {
-              switchAppTab('tab2', 'text-pink-600');
-            } else {
-              const tab2Nav = document.querySelector('.nav-item.tab2');
-              if (tab2Nav) tab2Nav.click();
-            }
-          }, 350);
+          const now = new Date();
+          const curM = (now.getMonth() + 1).toString();
+          const curY = now.getFullYear().toString();
+
+          if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            google.script.run
+              .withSuccessHandler(function(appRes) {
+                if (appRes && appRes.success) {
+                  if (typeof applyAppData === 'function') applyAppData(appRes);
+                  try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(appRes)); } catch(e) {}
+                  t7_renderUI();
+                  t7_loadActiveGroupData(gId);
+                  if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+                }
+              })
+              .withFailureHandler(function(err) {
+                t7_loadAllData();
+                if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+              })
+              .getAppData(curM, curY, null, true);
+          } else {
+            t7_loadAllData();
+            if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+          }
         } else {
           showToast(res ? res.message : "❌ Lỗi chốt nợ", true);
         }
+      })
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi kết nối khi chốt nợ: " + err, true);
       })
       .finalizeTripAndExportDebts(gId, { consolidateByFamily: true });
   }

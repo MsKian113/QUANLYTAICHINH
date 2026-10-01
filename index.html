@@ -695,6 +695,9 @@
 
         // 3. Background RPC sync for guaranteed fresh data across all tabs
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            const now = new Date();
+            const curM = (now.getMonth() + 1).toString();
+            const curY = now.getFullYear().toString();
             google.script.run.withSuccessHandler(function(res) {
                 if (res && res.success) {
                     applyAppData(res);
@@ -702,7 +705,7 @@
                 }
             }).withFailureHandler(function(err) {
                 console.error("Error fetching app data:", err);
-            }).getAppData("ALL", "ALL");
+            }).getAppData(curM, curY);
         } else {
             fetchCategories();
         }
@@ -9143,8 +9146,8 @@
     </div>
 
     <div>
-        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Số tiền (¥)</label>
-        <input type="number" id="add-debt-amount" placeholder="¥..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600 outline-none focus:border-indigo-400" />
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Số tiền (¥) <span class="text-indigo-500 lowercase font-normal">(hỗ trợ nhập tính toán ví dụ: (3+3)/2 hoặc 50k)</span></label>
+        <input type="text" id="add-debt-amount" placeholder="¥... ví dụ (3+3)/2 hoặc 50k" onblur="t4_onAmountBlur(this)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600 outline-none focus:border-indigo-400" />
     </div>
 
     <div class="relative z-40">
@@ -9190,8 +9193,8 @@
     </div>
 
     <div class="relative z-10">
-        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Số tiền thanh toán (¥)</label>
-        <input type="number" id="pay-debt-amount" placeholder="0" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-400" />
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Số tiền thanh toán (¥) <span class="text-emerald-600 lowercase font-normal">(hỗ trợ nhập tính toán ví dụ: (3+3)/2 hoặc 50k)</span></label>
+        <input type="text" id="pay-debt-amount" placeholder="0... ví dụ (3+3)/2 hoặc 50k" onblur="t4_onAmountBlur(this)" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-400" />
     </div>
 
     <div class="relative z-40">
@@ -9211,6 +9214,40 @@
   window.TAB4_DEBTS = window.TAB4_DEBTS || [];
   window.CURRENT_DEBT_TAB = 'all';
   let currentPayContext = { ids: [], name: '', amount: 0, type: 'THU' };
+
+  function t4_parseMathAmount(inputVal) {
+      if (inputVal === null || inputVal === undefined) return 0;
+      let str = String(inputVal).trim();
+      if (!str) return 0;
+
+      // Clean commas (e.g. 1,000,000)
+      str = str.replace(/,/g, '');
+
+      // Support 'k' / 'K' (e.g. 50k -> (50*1000)) & 'm' / 'M' (e.g. 1m -> (1*1000000))
+      str = str.replace(/(\d+(?:\.\d+)?)\s*[kK]/g, '($1*1000)');
+      str = str.replace(/(\d+(?:\.\d+)?)\s*[mM]/g, '($1*1000000)');
+
+      // Validate that string contains only digits, +, -, *, /, (, ), ., and spaces
+      if (/^[0-9\s\+\-\*\/\(\)\.]+$/.test(str)) {
+          try {
+              const res = new Function('return (' + str + ')')();
+              if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
+                  return Math.round(res);
+              }
+          } catch(e) {}
+      }
+
+      const num = parseFloat(str);
+      return isNaN(num) ? 0 : Math.round(num);
+  }
+
+  function t4_onAmountBlur(inputEl) {
+      if (!inputEl || !inputEl.value) return;
+      const val = t4_parseMathAmount(inputEl.value);
+      if (val > 0) {
+          inputEl.value = val;
+      }
+  }
 
   function t4_initDateFilters() {
       const monthSelect = document.getElementById('t4-filter-month');
@@ -9605,7 +9642,8 @@
       const loai = document.getElementById('add-debt-loai').value;
       const ngay = document.getElementById('add-debt-date').value;
       const ten = document.getElementById('add-debt-name').value.trim();
-      const sotien = Number(document.getElementById('add-debt-amount').value) || 0;
+      const rawAmountStr = document.getElementById('add-debt-amount').value;
+      const sotien = t4_parseMathAmount(rawAmountStr);
       const nguon = document.getElementById('add-debt-source').value.trim();
       const noidung = document.getElementById('add-debt-note').value.trim();
 
@@ -9614,7 +9652,7 @@
           return;
       }
       if(sotien <= 0) {
-          showToast("⚠️ Vui lòng nhập số tiền lớn hơn 0!", true);
+          showToast("⚠️ Vui lòng nhập số tiền hợp lệ lớn hơn 0!", true);
           return;
       }
 
@@ -9727,14 +9765,15 @@
 
       const source = document.getElementById('pay-debt-source').value.trim();
       const dateStr = document.getElementById('pay-debt-date').value;
-      const amtVal = Number(document.getElementById('pay-debt-amount').value) || 0;
+      const rawAmountStr = document.getElementById('pay-debt-amount').value;
+      const amtVal = t4_parseMathAmount(rawAmountStr);
 
       if(!source) {
           showToast("⚠️ Vui lòng chọn Ví/Thẻ để ghi nhận dòng tiền!", true);
           return;
       }
       if(amtVal <= 0) {
-          showToast("⚠️ Số tiền thanh toán phải lớn hơn 0!", true);
+          showToast("⚠️ Số tiền thanh toán hợp lệ phải lớn hơn 0!", true);
           return;
       }
 
@@ -14291,26 +14330,37 @@
               if (k.startsWith('T2_CACHE_DATA')) localStorage.removeItem(k);
             }
           } catch(e) {}
-          t7_loadAllData();
-          t7_loadActiveGroupData(gId);
-          // Reload Tab 4 & Tab 2 data if functions exist
-          if (typeof reloadTab4Data === 'function') reloadTab4Data();
-          if (typeof reloadTab1Data === 'function') reloadTab1Data();
-          if (typeof reloadTab2Data === 'function') reloadTab2Data();
-          if (typeof fetchTab2Transactions === 'function') fetchTab2Transactions(true);
-          if (typeof loadTab2Data === 'function') loadTab2Data(true);
 
-          setTimeout(function() {
-            if (typeof switchAppTab === 'function') {
-              switchAppTab('tab2', 'text-pink-600');
-            } else {
-              const tab2Nav = document.querySelector('.nav-item.tab2');
-              if (tab2Nav) tab2Nav.click();
-            }
-          }, 350);
+          const now = new Date();
+          const curM = (now.getMonth() + 1).toString();
+          const curY = now.getFullYear().toString();
+
+          if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
+            google.script.run
+              .withSuccessHandler(function(appRes) {
+                if (appRes && appRes.success) {
+                  if (typeof applyAppData === 'function') applyAppData(appRes);
+                  try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(appRes)); } catch(e) {}
+                  t7_renderUI();
+                  t7_loadActiveGroupData(gId);
+                  if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+                }
+              })
+              .withFailureHandler(function(err) {
+                t7_loadAllData();
+                if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+              })
+              .getAppData(curM, curY, null, true);
+          } else {
+            t7_loadAllData();
+            if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+          }
         } else {
           showToast(res ? res.message : "❌ Lỗi chốt nợ", true);
         }
+      })
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi kết nối khi chốt nợ: " + err, true);
       })
       .finalizeTripAndExportDebts(gId, { consolidateByFamily: true });
   }
