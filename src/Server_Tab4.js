@@ -144,9 +144,12 @@ function getTab4Data(month, year, ssTarget) {
         }
 
         const daTra = parseDebtMoney(r[7]);
-        let duNo = r[9] !== "" && r[9] !== null && r[9] !== undefined ? parseDebtMoney(r[9]) : Math.max(0, tongNo - daTra);
+        let expectedDuNo = tongNo > 0 ? Math.max(0, tongNo - daTra) : 0;
+        let sheetDuNo = parseDebtMoney(r[9]);
+        let duNo = (sheetDuNo > 0) ? sheetDuNo : expectedDuNo;
+
         let trangThaiDuNo = String(r[10] || "").trim().toUpperCase();
-        if (!trangThaiDuNo || trangThaiDuNo === "CHO_THANH_TOAN" || trangThaiDuNo === "HOAN_TAT" || trangThaiDuNo === "DANG_NO") {
+        if (!trangThaiDuNo || trangThaiDuNo === "CHO_THANH_TOAN" || trangThaiDuNo === "DANG_NO" || trangThaiDuNo === "HOAN_TAT" || trangThaiDuNo === "DA_TRA") {
           trangThaiDuNo = duNo <= 0 ? "DA_TRA" : "DANG_NO";
         }
         let trangThaiThe = String(r[11] || "").trim().toUpperCase();
