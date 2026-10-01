@@ -18,13 +18,8 @@ function doGet(e) {
       initialDataStr = getCachedAppDataStr(cacheKey) || getCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18");
     }
 
-    if (!initialDataStr && typeof getAppData === 'function') {
-      const freshData = getAppData(m, y);
-      if (freshData && freshData.success) {
-        initialDataStr = JSON.stringify(freshData);
-      }
-    }
-
+    // On cache miss, do NOT block HTTP response with 60s synchronous getAppData.
+    // Return HTML immediately (<0.3s) and let client JS fetch fresh data asynchronously.
     tmp.initialDataJson = initialDataStr ? initialDataStr : JSON.stringify("null");
   } catch (err) {
     tmp.initialDataJson = JSON.stringify("null");
