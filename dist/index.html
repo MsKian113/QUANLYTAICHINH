@@ -7929,7 +7929,7 @@
       let year = yearSelect ? yearSelect.value : 'ALL';
       const cacheKey = 'T3_CACHE_BUSINESS_DATA_' + month + '_' + year;
 
-      const shouldForce = (forceRefresh === true || forceRefresh === undefined);
+      const shouldForce = (forceRefresh === true);
 
       if (shouldForce) {
           if (typeof showToast === 'function') showToast("🔄 Đang làm mới dữ liệu từ Google Sheets...");
@@ -7973,7 +7973,11 @@
       setTimeout(() => {
           if(document.getElementById('mua-items-container') && typeof addMuaItem === 'function') addMuaItem();
           if(document.getElementById('ban-items-container') && typeof addBanItem === 'function') addBanItem();
-          reloadTab3Data();
+          if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3) {
+              applyTab3Data(window.SERVER_INITIAL_DATA.tab3);
+          } else {
+              reloadTab3Data(false);
+          }
       }, 100);
   });
 
@@ -9466,7 +9470,11 @@
 
   document.addEventListener("DOMContentLoaded", function() {
       t4_initDateFilters();
-      reloadTab4Data();
+      if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4) {
+          applyTab4Data(window.SERVER_INITIAL_DATA.tab4);
+      } else {
+          reloadTab4Data();
+      }
   });
 
   function filterDebtCards() {

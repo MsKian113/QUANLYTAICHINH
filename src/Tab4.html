@@ -560,7 +560,11 @@
 
   document.addEventListener("DOMContentLoaded", function() {
       t4_initDateFilters();
-      reloadTab4Data();
+      if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4) {
+          applyTab4Data(window.SERVER_INITIAL_DATA.tab4);
+      } else {
+          reloadTab4Data();
+      }
   });
 
   function filterDebtCards() {

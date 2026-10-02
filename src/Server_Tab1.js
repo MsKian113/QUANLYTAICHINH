@@ -224,16 +224,6 @@ function getWalletsFromSheet(month, year, ssTarget) {
     });
 
     let tab3Summary = null;
-    try {
-      if (typeof getBusinessData === 'function') {
-        const t3Res = getBusinessData(month, year, ss, false);
-        if (t3Res && t3Res.success) {
-          tab3Summary = t3Res.summary;
-        }
-      }
-    } catch (e) {
-      Logger.log("Lỗi getBusinessData in getWalletsFromSheet: " + e);
-    }
     let pendingPreOrders = [];
     try {
       // Direct fast scan of Purchase sheet for PRE-ORDER items
