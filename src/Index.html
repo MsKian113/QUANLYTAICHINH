@@ -513,12 +513,19 @@
         if (res.orderCounts) {
             window.t1_orderCounts = res.orderCounts;
         }
+        if (res.pendingPreOrders) {
+            window.t1_pendingPreOrders = res.pendingPreOrders;
+        }
         if (res.wallets && res.wallets.length > 0) {
             window.NGUON_LIST = res.wallets;
             if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;
             if (window.debtSuggestData) window.debtSuggestData.nguon = res.wallets;
             window.t1_walletsData = res.wallets;
-            if (typeof renderTab1Wallets === 'function') renderTab1Wallets();
+        }
+        if (typeof window.renderTab1Wallets === 'function') {
+            window.renderTab1Wallets();
+        } else if (typeof renderTab1Wallets === 'function') {
+            renderTab1Wallets();
         }
         
         if (res.quickFixed && res.quickFixed.length > 0) {
