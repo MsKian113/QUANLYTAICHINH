@@ -5,8 +5,8 @@
   "main": "src/Code.js",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "push": "cd src && npx @google/clasp push -f",
-    "build:gh-pages": "node scripts/bundle_github_pages.js"
+    "push": "npx @google/clasp push",
+    "deploy": "npx @google/clasp push && npx @google/clasp deploy"
   },
   "keywords": [
     "apps-script",
