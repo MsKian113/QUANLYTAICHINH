@@ -148,10 +148,22 @@ function getTab4Data(month, year, ssTarget) {
         let sheetDuNo = parseDebtMoney(r[9]);
         let duNo = (sheetDuNo > 0) ? sheetDuNo : expectedDuNo;
 
-        let trangThaiDuNo = String(r[10] || "").trim().toUpperCase();
-        if (!trangThaiDuNo || trangThaiDuNo === "CHO_THANH_TOAN" || trangThaiDuNo === "DANG_NO" || trangThaiDuNo === "HOAN_TAT" || trangThaiDuNo === "DA_TRA") {
-          trangThaiDuNo = duNo <= 0 ? "DA_TRA" : "DANG_NO";
+        let rawStatusStr = String(r[10] || "").trim().toUpperCase();
+        const isExplicitDone = (rawStatusStr === "HOAN_TAT" || rawStatusStr === "DA_TRA" || rawStatusStr === "DONE" || 
+          rawStatusStr.includes("HOÀN TẤT") || rawStatusStr.includes("ĐÃ TRẢ") || rawStatusStr.includes("ĐÃ THANH TOÁN") || rawStatusStr.includes("ĐÃ TT") ||
+          rawStatusStr.includes("DA TRA") || rawStatusStr.includes("HOAN TAT") || rawStatusStr.includes("DA THANH TOAN"));
+        
+        let trangThaiDuNo = "DANG_NO";
+        if (isExplicitDone || (tongNo > 0 && daTra >= tongNo) || (tongNo > 0 && sheetDuNo === 0 && daTra > 0)) {
+          trangThaiDuNo = "HOAN_TAT";
+          duNo = 0;
+        } else {
+          trangThaiDuNo = "DANG_NO";
+          if (duNo <= 0 && tongNo > 0) {
+            duNo = expectedDuNo > 0 ? expectedDuNo : tongNo;
+          }
         }
+
         let trangThaiThe = String(r[11] || "").trim().toUpperCase();
         if (!trangThaiThe) {
           const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(r[6], ss) : false;
@@ -211,7 +223,7 @@ function getTab4Data(month, year, ssTarget) {
 
         const matchMonth = isAllMonth || !m || m === targetMonth;
         const matchYear = isAllYear || !y || y === targetYear;
-        const isActiveUnpaid = (duNo > 0 && trangThaiDuNo !== "DA_TRA" && trangThaiDuNo !== "HOAN_TAT");
+        const isActiveUnpaid = (trangThaiDuNo !== "HOAN_TAT" && trangThaiDuNo !== "DA_TRA");
 
         if (isActiveUnpaid || (matchMonth && matchYear)) {
           debts.push(debtObj);
@@ -302,9 +314,20 @@ function getTab4Data(month, year, ssTarget) {
 /**
  * 2. LƯU THÊM MỚI HOẶC SỬA BẢN GHI CÔNG NỢ
  */
-function saveDebtTransaction(payload) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+function saveDebtTransaction(payload, ssTarget) {
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (payload && payload.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const requestId = payload ? (payload.requestId || payload.clientRequestId) : null;
+
+    // 1. Idempotency Check
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
     let sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
 
     if (!sheet && ss) {
@@ -316,9 +339,9 @@ function saveDebtTransaction(payload) {
       ]);
     }
 
-    const tenRaw = String(payload.ten || "").trim();
-    const tongNo = Number(payload.sotien) || 0;
-    let nguon = String(payload.nguon || "").trim();
+    const tenRaw = String(payload.ten || payload.doituong || payload.tenDoiTuong || "").trim();
+    const tongNo = Number(payload.sotien || payload.amount || payload.tongNo) || 0;
+    let nguon = String(payload.nguon || payload.nguontien || payload.viNguon || "").trim();
     let loai = String(payload.loai || "").toUpperCase();
 
     if (nguon === "CHO_VAY" || nguon === "VAY" || nguon === "Chốt nợ Chuyến đi") {
@@ -331,7 +354,7 @@ function saveDebtTransaction(payload) {
       return { success: false, message: "❌ Vui lòng nhập đầy đủ tên đối tượng và số tiền nợ (> 0)!" };
     }
 
-    const lastRow = sheet.getLastRow();
+    const lastRow = sheet ? sheet.getLastRow() : 0;
     let rowIndex = -1;
     if (payload.id && lastRow >= 2) {
       const ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
@@ -352,6 +375,8 @@ function saveDebtTransaction(payload) {
     const trangThaiThe = payload.trangThaiThe || (isCredit ? "PRE-ORDER" : "HOAN_TAT");
     const ngaySaoKe = payload.ngaySaoKe || (trangThaiThe === "HOAN_TAT" ? ngay : "");
 
+    const updatedWallets = [];
+
     // Cập nhật bản ghi đơn lẻ khi đang chỉnh sửa (có ID khớp trong Sheet)
     if (rowIndex !== -1) {
       const id = payload.id;
@@ -362,8 +387,60 @@ function saveDebtTransaction(payload) {
       ];
       sheet.getRange(rowIndex, 1, 1, 13).setValues([rowData]);
 
+      // Đồng bộ WalletLedger khi sửa công nợ
+      if (typeof replaceFinancialEvents === 'function' && id) {
+        const ledgerEvents = [];
+        const isThu = (loai === "THU" || loai === "CHO_VAY");
+        if (isThu) {
+          if (payload.nguon) {
+            const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(payload.nguon, ss) : false;
+            ledgerEvents.push({
+              walletName: payload.nguon,
+              date: ngay,
+              amount: tongNo,
+              direction: isCredit ? "INCREASE" : "OUT",
+              effectType: isCredit ? "CARD_DEBT" : "CASH",
+              sourceModule: "Debt",
+              sourceId: id,
+              eventType: "LEND_MONEY",
+              note: `Cho vay: ${tenRaw}`
+            });
+          }
+        } else {
+          if (payload.nguon) {
+            ledgerEvents.push({
+              walletName: payload.nguon,
+              date: ngay,
+              amount: tongNo,
+              direction: "IN",
+              effectType: "CASH",
+              sourceModule: "Debt",
+              sourceId: id,
+              eventType: "BORROW_MONEY",
+              note: `Đi vay: ${tenRaw}`
+            });
+          }
+        }
+        if (ledgerEvents.length > 0) {
+          replaceFinancialEvents(id, ledgerEvents, "Sửa bản ghi nợ", ss);
+        } else {
+          reverseFinancialEvents(id, "Sửa bản ghi nợ không qua ví", ss);
+        }
+      }
+
       if (typeof clearAppDataCache === 'function') clearAppDataCache();
-      return { success: true, message: "✅ Đã cập nhật công nợ thành công!" };
+      const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+      const res = {
+        success: true,
+        message: "✅ Đã cập nhật công nợ thành công!",
+        savedItem: { id: id, ngay: ngay, ten: tenRaw, loai: loai, sotien: tongNo, duNo: duNo },
+        updatedWallets: updatedWallets,
+        dataVersion: nextVersion
+      };
+      if (requestId && typeof recordProcessedRequest === 'function') {
+        recordProcessedRequest(requestId, "DONE", res, ss);
+      }
+      return res;
     }
 
     // Trường hợp truyền ID cụ thể khi tạo mới (ví dụ từ API/Test)
@@ -373,12 +450,28 @@ function saveDebtTransaction(payload) {
         tongNo, payload.nguon || "", daTra, ngayTra,
         duNo, trangThaiDuNo, trangThaiThe, ngaySaoKe
       ];
-      sheet.appendRow(rowData);
+      if (sheet) sheet.appendRow(rowData);
+      if (nguon && typeof updateWalletBalanceHelper === 'function') {
+        const delta = (loai === "THU") ? -tongNo : tongNo;
+        const wInfo = updateWalletBalanceHelper(nguon, delta, ss);
+        if (wInfo) updatedWallets.push(wInfo);
+      }
       if (typeof clearAppDataCache === 'function') clearAppDataCache();
-      return { success: true, message: "✅ Đã lưu khoản công nợ thành công!" };
+      const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+      const res = {
+        success: true,
+        message: "✅ Đã lưu khoản công nợ thành công!",
+        savedItem: { id: payload.id, ngay: ngay, ten: tenRaw, loai: loai, sotien: tongNo, duNo: duNo },
+        updatedWallets: updatedWallets,
+        dataVersion: nextVersion
+      };
+      if (requestId && typeof recordProcessedRequest === 'function') {
+        recordProcessedRequest(requestId, "DONE", res, ss);
+      }
+      return res;
     }
 
-    // Tách danh sách nhiều tên đối tượng (cách nhau dấu phẩy, chấm phẩy, hoặc xuống dòng)
+    // Tách danh sách nhiều tên đối tượng
     const names = tenRaw.split(/[,;\n]+/).map(n => n.trim()).filter(n => n.length > 0);
     if (names.length === 0) {
       return { success: false, message: "❌ Vui lòng nhập tên đối tượng hợp lệ!" };
@@ -394,37 +487,114 @@ function saveDebtTransaction(payload) {
       ]);
     });
 
-    const startRow = sheet.getLastRow() + 1;
-    sheet.getRange(startRow, 1, rowsToAppend.length, 13).setValues(rowsToAppend);
+    if (sheet) {
+      const startRow = sheet.getLastRow() + 1;
+      sheet.getRange(startRow, 1, rowsToAppend.length, 13).setValues(rowsToAppend);
+    }
+
+    if (nguon && typeof updateWalletBalanceHelper === 'function') {
+      const delta = (loai === "THU") ? -(tongNo * names.length) : (tongNo * names.length);
+      const wInfo = updateWalletBalanceHelper(nguon, delta, ss);
+      if (wInfo) updatedWallets.push(wInfo);
+    }
+
+    // Ghi nhận sự kiện vào WalletLedger
+    if (typeof postFinancialEvents === 'function') {
+      const isInherited = String(payload.noidung || "").includes("TRIP_") || String(payload.noidung || "").includes("GRP_") || String(payload.id || "").startsWith("TRIP_") || payload.isInherited === true || Boolean(payload.groupId) || Boolean(payload.batchId) || payload.expenseSource === "TAB7_TRICOUNT";
+      const ledgerEvents = [];
+
+      names.forEach((name, idx) => {
+        const rowId = rowsToAppend[idx][0];
+        if (loai === "THU") {
+          // Cho vay
+          if (!isInherited && nguon) {
+            ledgerEvents.push({
+              walletName: nguon,
+              date: ngay,
+              amount: tongNo,
+              direction: "OUT",
+              effectType: "CASH",
+              sourceModule: "Debt",
+              sourceId: rowId,
+              eventType: "LEND_MONEY",
+              note: `Cho vay: ${name}`
+            });
+          }
+        } else {
+          // Đi vay
+          if (!isInherited && nguon) {
+            ledgerEvents.push({
+              walletName: nguon,
+              date: ngay,
+              amount: tongNo,
+              direction: "IN",
+              effectType: "CASH",
+              sourceModule: "Debt",
+              sourceId: rowId,
+              eventType: "BORROW_MONEY",
+              note: `Đi vay: ${name}`
+            });
+          }
+        }
+      });
+
+      if (ledgerEvents.length > 0) {
+        postFinancialEvents(ledgerEvents, ss);
+      }
+    }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
 
-    if (names.length === 1) {
-      return { success: true, message: "✅ Đã ghi nhận khoản công nợ cho: " + names[0] };
-    } else {
-      return { success: true, message: "✅ Đã tạo thành công " + names.length + " khoản nợ riêng biệt cho: " + names.join(", ") };
+    const msg = (names.length === 1)
+      ? "✅ Đã ghi nhận khoản công nợ cho: " + names[0]
+      : "✅ Đã tạo thành công " + names.length + " khoản nợ riêng biệt cho: " + names.join(", ");
+
+    const res = {
+      success: true,
+      message: msg,
+      savedItem: { id: rowsToAppend[0][0], ngay: ngay, names: names, totalAmount: tongNo * names.length },
+      updatedWallets: updatedWallets,
+      dataVersion: nextVersion
+    };
+
+    if (requestId && typeof recordProcessedRequest === 'function') {
+      recordProcessedRequest(requestId, "DONE", res, ss);
     }
-  } catch (err) {
-    return { success: false, message: "❌ Lỗi saveDebtTransaction: " + err.toString() };
-  }
+
+    return res;
+  });
 }
 
 /**
  * 3. THU HỒI / THANH TOÁN CÔNG NỢ (THU LẺ / TRẢ LẺ HOẶC HÀNG LOẠT)
  */
-function settleDebtPayment(payload) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
+/**
+ * 3. THU HỒI / THANH TOÁN CÔNG NỢ (THU LẺ / TRẢ LẺ HOẶC HÀNG LOẠT)
+ */
+function settleDebtPayment(payload, ssTarget) {
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (payload && payload.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const requestId = payload ? (payload.requestId || payload.clientRequestId) : null;
 
+    // 1. Idempotency Check
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
+    const sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
     if (!sheet || sheet.getLastRow() < 2) {
       return { success: false, message: "❌ Không tìm thấy dữ liệu Sheet Debt." };
     }
 
-    const ids = Array.isArray(payload.ids) ? payload.ids : [payload.id];
-    const amountToPayTotal = Number(payload.amount) || 0;
-    const dateToPay = formatDebtDateServer(payload.date);
-    const sourceWallet = payload.sourceWallet || "";
+    const ids = Array.isArray(payload.ids) ? payload.ids : [payload.id || payload.debtId];
+    const amountToPayTotal = Number(payload.amount || payload.amountPaid) || 0;
+    const dateToPay = formatDebtDateServer(payload.date || payload.settleDate);
+    const sourceWallet = payload.sourceWallet || payload.settleWallet || "";
 
     if (ids.length === 0 || amountToPayTotal <= 0) {
       return { success: false, message: "❌ Vui lòng chọn khoản nợ và nhập số tiền thanh toán!" };
@@ -467,10 +637,13 @@ function settleDebtPayment(payload) {
       }
     }
 
+    const updatedWallets = [];
+
     // Cập nhật ví tiền và ghi log vào Sheet Family
     if (sourceWallet && typeof updateWalletBalanceHelper === 'function') {
       const walletChange = targetType === "THU" ? amountToPayTotal : -amountToPayTotal;
-      updateWalletBalanceHelper(sourceWallet, walletChange);
+      const wInfo = updateWalletBalanceHelper(sourceWallet, walletChange, ss);
+      if (wInfo) updatedWallets.push(wInfo);
     }
 
     const familySheet = ss ? (ss.getSheetByName("Family") || ss.getSheetByName("ThuChi")) : null;
@@ -478,38 +651,93 @@ function settleDebtPayment(payload) {
       const maGD = "CN" + Date.now().toString().slice(-6);
       const isThu = targetType === "THU";
       const loaiStr = isThu ? "Thu" : "Chi";
-      const huStr = isThu ? "----Thu nhập" : "Thiết yếu";
+      const huStr = "CÔNG NỢ";
       const partnerStr = targetNames.length > 0 ? targetNames.join(", ") : (payload.name || "Đối tác");
       const debtIdStr = targetIds.join(", ");
-      const noiDungStr = "[Tất toán công nợ] " + (isThu ? "Thu nợ: " : "Thanh toán nợ: ") + partnerStr + " [" + debtIdStr + "]";
-      const ghiChuStr = "[Tất toán công nợ] Mã công nợ liên kết: " + debtIdStr;
+      const noiDungStr = (isThu ? "[Thu nợ] " : "[Trả nợ] ") + partnerStr + " [" + debtIdStr + "]";
+      const ghiChuStr = (isThu ? "[Thu nợ] " : "[Trả nợ] ") + "Mã công nợ liên kết: " + debtIdStr;
       familySheet.appendRow([maGD, dateToPay, loaiStr, huStr, noiDungStr, amountToPayTotal, sourceWallet, "", ghiChuStr, "HOAN_TAT"]);
     }
 
-    return {
+    // Ghi nhận sự kiện vào WalletLedger
+    if (typeof postFinancialEvents === 'function' && sourceWallet && amountToPayTotal > 0) {
+      const partnerStr = targetNames.length > 0 ? targetNames[0] : (payload.name || "Đối tác");
+      const isThu = targetType === "THU";
+      const paymentEvents = [];
+
+      if (isThu) {
+        paymentEvents.push({
+          walletName: sourceWallet,
+          date: dateToPay,
+          amount: amountToPayTotal,
+          direction: "IN",
+          effectType: "CASH",
+          sourceModule: "Debt",
+          sourceId: targetIds.join("_"),
+          paymentId: "SETTLE_" + Date.now(),
+          eventType: "COLLECT_LOAN",
+          note: `Thu hồi nợ: ${partnerStr}`
+        });
+      } else {
+        paymentEvents.push({
+          walletName: sourceWallet,
+          date: dateToPay,
+          amount: amountToPayTotal,
+          direction: "OUT",
+          effectType: "CASH",
+          sourceModule: "Debt",
+          sourceId: targetIds.join("_"),
+          paymentId: "SETTLE_" + Date.now(),
+          eventType: "REPAY_LOAN",
+          note: `Trả nợ: ${partnerStr}`
+        });
+      }
+
+      postFinancialEvents(paymentEvents, ss);
+    }
+
+    if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+
+    const res = {
       success: true,
-      message: `✅ Đã ghi nhận ${targetType === 'THU' ? 'thu nợ' : 'trả nợ'} thành công ${amountToPayTotal.toLocaleString()} ¥!`
+      message: `✅ Đã ghi nhận ${targetType === 'THU' ? 'thu nợ' : 'trả nợ'} thành công ${amountToPayTotal.toLocaleString()} ¥!`,
+      updatedWallets: updatedWallets,
+      dataVersion: nextVersion
     };
-  } catch (err) {
-    return { success: false, message: "❌ Lỗi settleDebtPayment: " + err.toString() };
-  }
+
+    if (requestId && typeof recordProcessedRequest === 'function') {
+      recordProcessedRequest(requestId, "DONE", res, ss);
+    }
+
+    return res;
+  });
 }
 
 /**
  * 3b. TẤT TOÁN BÙ TRỪ CÔNG NỢ (TÙY CHỌN CÁC ĐƠN THU VÀ TRẢ)
  */
-function settleSelectedNetDebtPayment(payload) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
+function settleSelectedNetDebtPayment(payload, ssTarget) {
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (payload && payload.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const requestId = payload ? (payload.requestId || payload.clientRequestId) : null;
 
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
+    const sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
     if (!sheet || sheet.getLastRow() < 2) {
       return { success: false, message: "❌ Không tìm thấy dữ liệu Sheet Debt." };
     }
 
     const thuIds = Array.isArray(payload.thuIds) ? payload.thuIds : [];
     const traIds = Array.isArray(payload.traIds) ? payload.traIds : [];
-    const dateToPay = formatDebtDateServer(payload.date);
+    const dateToPay = formatDebtDateServer(payload.date || payload.settleDate);
     const sourceWallet = payload.sourceWallet || "";
     const partnerName = (payload.partnerName || "Đối tác").trim();
 
@@ -551,9 +779,11 @@ function settleSelectedNetDebtPayment(payload) {
     }
 
     const netAmount = sumThu - sumTra;
+    const updatedWallets = [];
 
     if (netAmount !== 0 && sourceWallet && typeof updateWalletBalanceHelper === 'function') {
-      updateWalletBalanceHelper(sourceWallet, netAmount);
+      const wInfo = updateWalletBalanceHelper(sourceWallet, netAmount, ss);
+      if (wInfo) updatedWallets.push(wInfo);
     }
 
     if (netAmount !== 0 && sourceWallet) {
@@ -563,15 +793,54 @@ function settleSelectedNetDebtPayment(payload) {
         const isNetThu = netAmount > 0;
         const absAmount = Math.abs(netAmount);
         const loaiStr = isNetThu ? "Thu" : "Chi";
-        const huStr = isNetThu ? "----Thu nhập" : "Thiết yếu";
+        const huStr = "CÔNG NỢ";
         const allDebtIds = [...thuIds, ...traIds].join(", ");
-        const noiDungStr = "[Tất toán công nợ] " + (isNetThu ? "Thu nợ bù trừ: " : "Trả nợ bù trừ: ") + partnerName + " [" + allDebtIds + "]";
-        const ghiChuStr = "[Tất toán công nợ] Tất toán bù trừ " + updatedThuCount + " đơn thu, " + updatedTraCount + " đơn trả";
-        familySheet.appendRow([maGD, dateToPay, loaiStr, huStr, noiDungStr, absAmount, sourceWallet, "", ghiChuStr]);
+        const noiDungStr = (isNetThu ? "[Thu nợ] Bù trừ: " : "[Trả nợ] Bù trừ: ") + partnerName + " [" + allDebtIds + "]";
+        const ghiChuStr = (isNetThu ? "[Thu nợ] " : "[Trả nợ] ") + "Tất toán bù trừ " + updatedThuCount + " đơn thu, " + updatedTraCount + " đơn trả";
+        familySheet.appendRow([maGD, dateToPay, loaiStr, huStr, noiDungStr, absAmount, sourceWallet, "", ghiChuStr, "HOAN_TAT"]);
+      }
+
+      // Ghi nhận sự kiện vào WalletLedger
+      if (typeof postFinancialEvents === 'function') {
+        const isNetThu = netAmount > 0;
+        const absAmount = Math.abs(netAmount);
+        const allDebtIds = [...thuIds, ...traIds].join("_");
+        const paymentEvents = [];
+
+        if (isNetThu) {
+          paymentEvents.push({
+            walletName: sourceWallet,
+            date: dateToPay,
+            amount: absAmount,
+            direction: "IN",
+            effectType: "CASH",
+            sourceModule: "Debt",
+            sourceId: allDebtIds,
+            paymentId: "SETTLE_NET_" + Date.now(),
+            eventType: "COLLECT_LOAN",
+            note: `Thu hồi nợ bù trừ: ${partnerName}`
+          });
+        } else {
+          paymentEvents.push({
+            walletName: sourceWallet,
+            date: dateToPay,
+            amount: absAmount,
+            direction: "OUT",
+            effectType: "CASH",
+            sourceModule: "Debt",
+            sourceId: allDebtIds,
+            paymentId: "SETTLE_NET_" + Date.now(),
+            eventType: "REPAY_LOAN",
+            note: `Trả nợ bù trừ: ${partnerName}`
+          });
+        }
+
+        postFinancialEvents(paymentEvents, ss);
       }
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
 
     let msg = `✅ Đã tất toán bù trừ thành công! (${updatedThuCount} đơn thu, ${updatedTraCount} đơn trả).`;
     if (netAmount > 0) {
@@ -582,24 +851,40 @@ function settleSelectedNetDebtPayment(payload) {
       msg += ` Bù trừ vừa đủ 0 ¥, không phát sinh dòng tiền.`;
     }
 
-    return {
+    const res = {
       success: true,
       message: msg,
-      netAmount: netAmount
+      netAmount: netAmount,
+      updatedWallets: updatedWallets,
+      dataVersion: nextVersion
     };
-  } catch (err) {
-    return { success: false, message: "❌ Lỗi settleSelectedNetDebtPayment: " + err.toString() };
-  }
+
+    if (requestId && typeof recordProcessedRequest === 'function') {
+      recordProcessedRequest(requestId, "DONE", res, ss);
+    }
+
+    return res;
+  });
 }
 
 /**
  * 4. XÓA BẢN GHI CÔNG NỢ
  */
-function deleteDebtRecord(id) {
-  try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
+function deleteDebtRecord(idOrPayload, ssTarget) {
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const id = (typeof idOrPayload === 'object' && idOrPayload !== null) ? String(idOrPayload.id || "").trim() : String(idOrPayload || "").trim();
+    const requestId = (typeof idOrPayload === 'object' && idOrPayload !== null) ? (idOrPayload.requestId || idOrPayload.clientRequestId) : null;
 
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
+    const sheet = ss ? (ss.getSheetByName(SHEET_DEBT) || ss.getSheetByName("CongNo")) : null;
     if (!sheet || sheet.getLastRow() < 2) {
       return { success: false, message: "❌ Không tìm thấy Sheet Debt." };
     }
@@ -609,13 +894,44 @@ function deleteDebtRecord(id) {
 
     for (let i = 0; i < ids.length; i++) {
       if (String(ids[i][0]).trim() === String(id).trim()) {
+        // Đảo sự kiện trong WalletLedger
+        if (typeof reverseFinancialEvents === 'function' && id) {
+          reverseFinancialEvents(id, "Xóa bản ghi nợ", ss);
+        }
+
         sheet.deleteRow(i + 2);
-        return { success: true, message: "✅ Đã xóa bản ghi công nợ thành công!" };
+        if (typeof clearAppDataCache === 'function') clearAppDataCache();
+        const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+
+        const res = {
+          success: true,
+          message: "✅ Đã xóa bản ghi công nợ thành công!",
+          deletedId: id,
+          dataVersion: nextVersion
+        };
+
+        if (requestId && typeof recordProcessedRequest === 'function') {
+          recordProcessedRequest(requestId, "DONE", res, ss);
+        }
+
+        return res;
       }
     }
 
     return { success: false, message: "❌ Không tìm thấy ID công nợ để xóa!" };
-  } catch (err) {
-    return { success: false, message: "❌ Lỗi deleteDebtRecord: " + err.toString() };
-  }
+  });
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getDebtSheet,
+    formatDebtDateServer,
+    parseDebtMoney,
+    getTab4Data,
+    saveDebtTransaction,
+    settleDebtPayment,
+    settleSelectedNetDebtPayment,
+    deleteDebtRecord
+  };
+}
+

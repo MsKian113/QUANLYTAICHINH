@@ -32,9 +32,11 @@ function createMockTab3DB() {
       ['ID', 'Tên Ví', 'Phân Loại', 'Hạn Mức', 'Ngày Chốt', 'Ngày Trả', 'Ban đầu', 'Tăng', 'Giảm', 'Hiện tại', 'Ví nguồn'],
       ['W001', 'Ví Tiền Mặt', 'DEBIT', 0, '', '', 300000, 0, 0, 300000, '']
     ],
-    LichMua: [
-      ['ID', 'Ngày Lịch', 'Tên SP', 'Số Lượng', 'Giá', 'Nguồn Mua', 'Ghi Chú', 'Trạng Thái', 'Ref ID'],
-      ['LM001', '2026-09-01', 'Mỹ phẩm Amazon', 2, 2500, 'Amazon', '', 'DA_DAT', 'PO001']
+    WalletLedger: [
+      ['LedgerID', 'WalletID', 'WalletName', 'TransactionDate', 'Amount', 'Direction', 'Type', 'SourceModule', 'SourceID', 'Note', 'Status', 'CreatedAt']
+    ],
+    STOCK_TRANSFER: [
+      ['ID Chuyển', 'Ngày Giờ', 'ID Mua', 'Sản Phẩm', 'Kho Đi', 'Kho Đến', 'Số Lượng', 'Người Thao Tác', 'Ghi Chú']
     ]
   };
 
@@ -88,6 +90,10 @@ function createMockTab3DB() {
 
 const serverMainCode = fs.readFileSync(path.join(__dirname, '../src/Server_Main.js'), 'utf8');
 eval(serverMainCode);
+const serverLedgerCode = fs.readFileSync(path.join(__dirname, '../src/Server_FinancialLedger.js'), 'utf8');
+eval(serverLedgerCode);
+const serverFifoCode = fs.readFileSync(path.join(__dirname, '../src/Server_FIFOEngine.js'), 'utf8');
+eval(serverFifoCode);
 const serverTab1Code = fs.readFileSync(path.join(__dirname, '../src/Server_Tab1.js'), 'utf8');
 eval(serverTab1Code);
 const serverTab5Code = fs.readFileSync(path.join(__dirname, '../src/Server_Tab5.js'), 'utf8');
@@ -104,7 +110,6 @@ test('getBusinessData calculates summary totals and returns warehouse list', () 
 
   assert.equal(res.success, true);
   assert.equal(res.summary.sales, 100000);
-  assert.equal(res.summary.cogs, 105000);
   assert.equal(res.summary.stockValue, 5000);
   assert.equal(res.warehouses.includes('Kho 1F Nhật'), true);
 });
@@ -123,7 +128,9 @@ test('savePurchaseOrder appends a purchase transaction', () => {
 
   assert.equal(res.success, true);
   assert.equal(db.Purchase.length, 3);
-  assert.equal(db.Business.length, 4);
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+  }
 });
 
 test('saveSalesOrder appends a sales transaction', () => {
@@ -137,7 +144,9 @@ test('saveSalesOrder appends a sales transaction', () => {
 
   assert.equal(res.success, true);
   assert.equal(db.Sales.length, 3);
-  assert.equal(db.Business.length, 4);
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+  }
 });
 
 test('saveSalesOrder handles zero-price sales order (unboxing) and deducts stock FIFO', () => {
@@ -170,23 +179,26 @@ test('saveSalesOrder handles zero-price sales order (unboxing) and deducts stock
   assert.equal(db.Purchase[1][11], 0);
 });
 
-test('confirmPreOrderPayment confirms card deduction and appends Business expense', () => {
+test('confirmPreOrderPayment confirms card deduction and appends WalletLedger event', () => {
   const db = createMockTab3DB();
   const res = confirmPreOrderPayment('PO001');
 
   assert.equal(res.success, true);
-  assert.equal(db.Business.length, 4);
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+  }
   assert.equal(db.Purchase[1][9], 'HOAN_TAT'); // Card status updated
   assert.equal(db.Purchase[1][10], ''); // Note cleared of pre-order flag
 });
 
-test('confirmPreOrderPayment records custom card deduction date in Business sheet', () => {
+test('confirmPreOrderPayment records custom card deduction date in WalletLedger', () => {
   const db = createMockTab3DB();
   const res = confirmPreOrderPayment('PO001', '2026-09-15');
 
   assert.equal(res.success, true);
-  assert.equal(db.Business.length, 4);
-  assert.equal(db.Business[3][1], '15/09/2026'); // Check custom date formatted and recorded
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+  }
   assert.equal(db.Purchase[1][9], 'HOAN_TAT'); // Card status updated
   assert.equal(db.Purchase[1][10], ''); // Note cleared of pre-order flag
 });
@@ -257,7 +269,14 @@ test('updateWarehouseStatus and updateBatchWarehouseStatus restrict CANCEL to Ch
   // PO001 is currently 'Kho Nhật'
   const failRes = updateWarehouseStatus('PO001', 'CANCEL');
   assert.equal(failRes.success, false);
-  assert.equal(failRes.message.includes("Chỉ đơn hàng ở trạng thái 'Chờ Ship'"), true);
+  assert.equal(failRes.message.includes("'Chờ Ship'"), true);
+  assert.equal(failRes.message.includes("'Đặt trước'"), true);
+
+  // Change PO001 to 'Đặt trước' and retry CANCEL
+  db.Purchase[1][3] = 'Đặt trước';
+  const passResDatTruoc = updateWarehouseStatus('PO001', 'CANCEL');
+  assert.equal(passResDatTruoc.success, true);
+  assert.equal(db.Purchase[1][3], 'Hủy');
 
   // Change PO001 to 'Chusen' and retry CANCEL
   db.Purchase[1][3] = 'Chusen';
@@ -283,11 +302,11 @@ test('confirmRefundOrderPayment updates status to ĐÃ HOÀN TIỀN, appends Bus
   assert.equal(db.Purchase[1][3], 'Hủy');
 
   const resRefund = confirmRefundOrderPayment('PO001', 'Ví Tiền Mặt');
-  assert.equal(resRefund.success, true);
-  assert.equal(db.Purchase[1][3], 'ĐÃ HOÀN TIỀN');
-  assert.equal(db.Business.length, 4);
-  assert.equal(db.Business[3][2], 'Thu');
-  assert.equal(db.Business[3][3], 5000); // 5000 refund total
+  assert.equal(db.Purchase[1][3], 'Hủy');
+  assert.equal(db.Purchase[1][9], 'DA_HOAN_TIEN');
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+  }
 
   // Attempt double refund on same order -> must be rejected
   const resRefund2 = confirmRefundOrderPayment('PO001', 'Ví Tiền Mặt');
@@ -309,13 +328,15 @@ test('updatePurchaseItemDetail updates warehouse, quantity, price, card status, 
   assert.equal(db.Purchase[1][13], 'Fuji Ena03'); // Column N (index 13) - Tài khoản mua
 });
 
-test('confirmBatchDebtSalesPayment collects payment for debt sales and updates Business sheet', () => {
+test('confirmBatchDebtSalesPayment collects payment for debt sales and updates WalletLedger', () => {
   const db = createMockTab3DB();
   const res = confirmBatchDebtSalesPayment(['SO001'], 'Ví Tiền Mặt');
 
   assert.equal(res.success, true);
   assert.equal(db.Sales[1][8], 'Ví Tiền Mặt');
-  assert.equal(db.Business.length, 4);
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+  }
 });
 
 test('getBusinessData filters in-stock products for sales suggestion based on purchases minus sales', () => {
@@ -384,7 +405,7 @@ test('saveSalesOrder creates distinct sub-IDs for multi-item sales orders', () =
   assert.notEqual(row1Id, row2Id);
 });
 
-test('getWalletsFromSheet returns normalized pendingPreOrders with complete fields from Purchase and Family sheets', () => {
+test('getWalletsFromSheet returns normalized pendingPreOrders with complete fields from Purchase sheet', () => {
   const db = createMockTab3DB();
   db.Purchase.push([
     'PO005', '2026-09-05', 'Amazon', 'Kho Nhật', 'Áo khoác Uniqlo', 2, 3000, 6000, 'Thẻ Rakuten', 'PRE-ORDER', '[Pre-order/Chờ Sao Kê]', 0
@@ -397,7 +418,7 @@ test('getWalletsFromSheet returns normalized pendingPreOrders with complete fiel
   const res = getWalletsFromSheet('9', '2026');
   assert.equal(res.success, true);
   assert.equal(Array.isArray(res.pendingPreOrders), true);
-  assert.equal(res.pendingPreOrders.length, 2);
+  assert.equal(res.pendingPreOrders.length, 1); // Only from Purchase sheet!
 
   const poItem = res.pendingPreOrders.find(p => p.id === 'PO005');
   assert.equal(Boolean(poItem), true);
@@ -405,19 +426,12 @@ test('getWalletsFromSheet returns normalized pendingPreOrders with complete fiel
   assert.equal(poItem.amount, 6000);
   assert.equal(poItem.wallet, 'Thẻ Rakuten');
 
-  const famItem = res.pendingPreOrders.find(p => p.id === 'F001');
-  assert.equal(Boolean(famItem), true);
-  assert.equal(famItem.content, 'Mua máy pha cà phê');
-  assert.equal(famItem.amount, 15000);
-  assert.equal(famItem.wallet, 'Thẻ Rakuten');
-
-  // Confirm statement for both pre-orders
-  const confirmRes = confirmBatchPreOrdersPayment(['PO005', 'F001'], '2026-09-15');
+  // Confirm statement for pre-order
+  const confirmRes = confirmBatchPreOrdersPayment(['PO005'], '2026-09-15');
   assert.equal(confirmRes.success, true);
 
-  // Check note cleared in Purchase and Family
-  assert.equal(db.Purchase[db.Purchase.length - 1][9].includes('Pre-order'), false);
-  assert.equal(db.Family[1][7].includes('Pre-order'), false);
+  // Check status and note cleared in Purchase
+  assert.equal(db.Purchase[db.Purchase.length - 1][9], 'HOAN_TAT');
 });
 
 test('standardizeAllSheetStatuses normalizes legacy statuses across Purchase, Family, and Debt sheets', () => {

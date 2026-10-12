@@ -52,31 +52,12 @@ function getSplitFamiliesSheetHelper(ssTarget) {
   var sheet = ss.getSheetByName(SHEET_SPLIT_FAMILIES);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_SPLIT_FAMILIES);
-    sheet.appendRow(["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]);
-  } else if (sheet.getLastColumn() > 8) {
-    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]]);
-    try { sheet.deleteColumns(9, sheet.getLastColumn() - 8); } catch (e) {}
-  } else if (sheet.getLastColumn() < 8) {
-    sheet.getRange(1, 1, 1, 8).setValues([["family_id", "family_name", "member_id", "member_name", "member_type", "default_weight", "isme", "is_rep"]]);
   }
-
-  // Auto-seed default sample families if sheet only has header row or is empty
-  if (sheet.getLastRow() < 2) {
-    var seedRows = [
-      ["FAM-10001", "2F", "MEB-10001", "Quậy", "ADULT", 1.0, true, true],
-      ["FAM-10001", "2F", "MEB-10002", "Chi", "ADULT", 1.0, true, false],
-      ["FAM-10001", "2F", "MEB-10003", "Chít", "CHILD", 0.5, true, false],
-      ["FAM-10002", "Gia đình Tuyết Anh", "MEB-10004", "Tuyết Anh", "ADULT", 1.0, false, true],
-      ["FAM-10002", "Gia đình Tuyết Anh", "MEB-10005", "A Huân", "ADULT", 1.0, false, false]
-    ];
-    sheet.getRange(2, 1, seedRows.length, 8).setValues(seedRows);
-  }
-
   return sheet;
 }
 
 /**
- * Ensures SplitGroups sheet exists with correct headers
+ * Ensures SplitGroups sheet exists
  */
 function getSplitGroupsSheetHelper(ssTarget) {
   var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
@@ -84,13 +65,12 @@ function getSplitGroupsSheetHelper(ssTarget) {
   var sheet = ss.getSheetByName(SHEET_SPLIT_GROUPS);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_SPLIT_GROUPS);
-    sheet.appendRow(["GroupID", "GroupType", "GroupName", "Currency", "Status", "CreatedAt", "GroupMemberID", "MemberID", "MemberName", "FamilyID", "FamilyName", "MemberType", "Weight", "SortOrder", "MemberStatus"]);
   }
   return sheet;
 }
 
 /**
- * Ensures SplitExpenses sheet exists with correct headers
+ * Ensures SplitExpenses sheet exists
  */
 function getSplitExpensesSheetHelper(ssTarget) {
   var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
@@ -98,7 +78,6 @@ function getSplitExpensesSheetHelper(ssTarget) {
   var sheet = ss.getSheetByName(SHEET_SPLIT_EXPENSES);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_SPLIT_EXPENSES);
-    sheet.appendRow(["ExpenseID", "GroupID", "ExpenseDate", "Description", "Amount", "PayerMemberID", "PayerName", "PaymentSource", "SplitMode", "RoundUnit", "SplitMemberID", "SplitMemberName", "InputValue", "CalculatedAmount", "CalculationNote", "Status"]);
   }
   return sheet;
 }
@@ -745,9 +724,11 @@ function deleteSplitFamilyEntirely(famNameOrId, ssTarget) {
 /**
  * Generates unique IDs with prefix
  */
+var _splitIdSeq = 0;
 function generateSplitId(prefix) {
   var p = prefix || "GRP";
-  return p + "_" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
+  _splitIdSeq = (_splitIdSeq + 1) % 10000;
+  return p + "_" + Date.now().toString(36).toUpperCase() + "_" + _splitIdSeq + "_" + Math.floor(1000 + Math.random() * 9000);
 }
 
 /**
@@ -1491,12 +1472,12 @@ function saveSplitExpense(expenseData, ssTarget) {
     if (!expenseData) return { success: false, message: "⚠️ Dữ liệu khoản chi trống!" };
     var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
     var groupId = String(expenseData.groupId || expenseData.group_id || "").trim();
-    var description = String(expenseData.description || "").trim();
-    var amount = Number(expenseData.amount) || 0;
-    var payerId = String(expenseData.payerId || expenseData.payer_id || "").trim();
-    var walletName = String(expenseData.walletName || expenseData.nguonTien || "").trim();
-    var splitType = String(expenseData.splitType || expenseData.split_type || "WEIGHT").trim().toUpperCase();
-    var rawParticipants = Array.isArray(expenseData.participants) ? expenseData.participants : [];
+    var description = String(expenseData.description || expenseData.noiDung || expenseData.noidung || expenseData.name || expenseData.expenseName || "Chi tiêu nhóm").trim();
+    var amount = Number(expenseData.amount || expenseData.totalAmount) || 0;
+    var payerId = String(expenseData.payerId || expenseData.payer_id || expenseData.paidBy || expenseData.payer || "").trim();
+    var walletName = String(expenseData.walletName || expenseData.paidWithWallet || expenseData.nguonTien || "").trim();
+    var splitType = String(expenseData.splitType || expenseData.split_type || expenseData.splitMode || "WEIGHT").trim().toUpperCase();
+    var rawParticipants = Array.isArray(expenseData.participants) ? expenseData.participants : (Array.isArray(expenseData.members) ? expenseData.members : []);
 
     if (!groupId) return { success: false, message: "⚠️ Khoản chi phải thuộc về 1 Nhóm!" };
     if (!description) return { success: false, message: "⚠️ Vui lòng nhập tên khoản chi!" };
@@ -1519,6 +1500,7 @@ function saveSplitExpense(expenseData, ssTarget) {
     if (!sheet) return { success: false, message: "❌ Không tìm thấy sheet SplitExpenses!" };
 
     var expenseId = String(expenseData.id || "").trim();
+    var isEditing = Boolean(expenseId);
     var oldWallet = "";
     var oldAmount = 0;
 
@@ -1541,14 +1523,10 @@ function saveSplitExpense(expenseData, ssTarget) {
     // Find payer name
     var payerName = String(expenseData.payerName || "").trim();
     if (!payerName && gRes.group && gRes.group.members) {
-      var pMbr = gRes.group.members.find(function(m) { return m.id === payerId; });
+      var pMbr = gRes.group.members.find(function(m) { return m.id === payerId || m.name === payerId; });
       if (pMbr) payerName = pMbr.name;
     }
     if (!payerName) payerName = payerId;
-
-    if (oldWallet && typeof updateWalletBalanceHelper === 'function') {
-      updateWalletBalanceHelper(oldWallet, oldAmount, ss);
-    }
 
     // Append 1 flat row per participant in single batch setValues call
     var expRows = [];
@@ -1580,25 +1558,64 @@ function saveSplitExpense(expenseData, ssTarget) {
     });
     appendRowsBatchHelper(sheet, expRows);
 
+    // Đồng bộ vào Family / ThuChi và WalletLedger
+    var existingFamilyId = "";
+    var fSheet = ss ? (ss.getSheetByName("Family") || ss.getSheetByName("ThuChi")) : null;
+    if (fSheet && fSheet.getLastRow() >= 2) {
+      var fData = fSheet.getRange(2, 1, fSheet.getLastRow() - 1, 10).getValues();
+      for (var f = 0; f < fData.length; f++) {
+        var fGhiChu = String(fData[f][8] || "");
+        var fNoiDung = String(fData[f][4] || "");
+        if (fGhiChu.includes("[" + expenseId + "]") || fNoiDung.includes("[" + expenseId + "]")) {
+          existingFamilyId = String(fData[f][0] || "");
+          break;
+        }
+      }
+    }
+
+    var groupObj = (gRes && gRes.success) ? gRes.group : null;
+    var groupTitle = groupObj ? groupObj.name : "";
+    var formattedNoiDung = "[Ứng hộ nhóm] " + description + (groupTitle ? " (" + groupTitle + ")" : "");
+    var formattedGhiChu = "[Ứng hộ nhóm] Khoản chi Tab 7 [" + expenseId + "]";
+
     if (walletName) {
-      if (typeof saveFamilyTransaction === 'function') {
-        var groupObj = (gRes && gRes.success) ? gRes.group : null;
-        var groupTitle = groupObj ? groupObj.name : "";
-        var jarCat = (groupObj && (groupObj.category === 'DINING' || groupTitle.toLowerCase().includes('ăn'))) ? "Ăn uống" : "Giải trí";
+      if (existingFamilyId && typeof updateFamilyTransaction === 'function') {
+        updateFamilyTransaction({
+          id: existingFamilyId,
+          ngay: dateStr,
+          loai: "Chi",
+          hu: "",
+          noidung: formattedNoiDung,
+          sotien: amount,
+          nguontien: walletName,
+          codinh: false,
+          ghichu: formattedGhiChu,
+          status: "HOAN_TAT"
+        }, ss);
+      } else if (typeof saveFamilyTransaction === 'function') {
         saveFamilyTransaction({
           ngay: dateStr,
           loai: "CHI",
           hu: "",
-          noidung: "[Ứng hộ nhóm] " + description + (groupTitle ? " (" + groupTitle + ")" : ""),
+          noidung: formattedNoiDung,
           sotien: amount,
           nguontien: walletName,
           codinh: false,
-          ghichu: "[Ứng hộ nhóm] Khoản chi Tab 7 [" + expenseId + "]",
+          ghichu: formattedGhiChu,
           status: "HOAN_TAT"
         }, ss);
-      } else if (typeof updateWalletBalanceHelper === 'function') {
-        updateWalletBalanceHelper(walletName, -amount, ss);
+      } else {
+        if (oldWallet && oldWallet !== walletName && typeof updateWalletBalanceHelper === 'function') {
+          updateWalletBalanceHelper(oldWallet, oldAmount, ss);
+        }
+        if (typeof updateWalletBalanceHelper === 'function') {
+          updateWalletBalanceHelper(walletName, -amount, ss);
+        }
       }
+    } else if (existingFamilyId && typeof deleteTransaction === 'function') {
+      deleteTransaction({ id: existingFamilyId }, ss);
+    } else if (oldWallet && oldAmount > 0 && typeof updateWalletBalanceHelper === 'function') {
+      updateWalletBalanceHelper(oldWallet, oldAmount, ss);
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -1671,9 +1688,36 @@ function deleteSplitExpense(expenseId, ssTarget) {
       }
     }
 
-    // Refund wallet balance if applicable
-    if (walletName && amount > 0 && typeof updateWalletBalanceHelper === 'function') {
+    // Xóa giao dịch Family liên kết và hoàn tiền ví / WalletLedger
+    var familyDeleted = false;
+    var fSheet = ss ? (ss.getSheetByName("Family") || ss.getSheetByName("ThuChi")) : null;
+    if (fSheet && fSheet.getLastRow() >= 2) {
+      var fData = fSheet.getRange(2, 1, fSheet.getLastRow() - 1, 10).getValues();
+      for (var f = 0; f < fData.length; f++) {
+        var fGhiChu = String(fData[f][8] || "");
+        var fNoiDung = String(fData[f][4] || "");
+        var fId = String(fData[f][0] || "");
+        if (fGhiChu.includes("[" + cleanId + "]") || fNoiDung.includes("[" + cleanId + "]")) {
+          if (typeof deleteTransaction === 'function' && fId) {
+            deleteTransaction({ id: fId }, ss);
+            familyDeleted = true;
+          } else {
+            fSheet.deleteRow(f + 2);
+            if (typeof reverseFinancialEvents === 'function' && fId) {
+              reverseFinancialEvents(fId, "Xóa khoản chi nhóm Tab 7", ss);
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // Refund wallet balance if applicable and not handled by deleteTransaction
+    if (!familyDeleted && walletName && amount > 0 && typeof updateWalletBalanceHelper === 'function') {
       updateWalletBalanceHelper(walletName, amount, ss);
+      if (typeof reverseFinancialEvents === 'function') {
+        reverseFinancialEvents(cleanId, "Xóa khoản chi nhóm Tab 7", ss);
+      }
     }
 
     // Delete all matching rows in batch
@@ -2040,7 +2084,7 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
         return { success: false, message: "❌ Không tìm thấy nhóm!" };
       }
 
-      if (currentStatus === "LOCKED") {
+      if (currentStatus === "LOCKED" || currentStatus === "CLOSED") {
         return { success: false, message: "⚠️ Chuyến đi này đã được chốt nợ trước đó (LOCKED)!" };
       }
 

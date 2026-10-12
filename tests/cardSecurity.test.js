@@ -128,7 +128,7 @@ test('setting custom pattern password overrides default sample gestures', () => 
   assert.equal(verifyCardPassword('25100311').success, true);
 });
 
-test('saveCardSecurityDetails updates cols L..R in sheet', () => {
+test('saveCardSecurityDetails encrypts sensitive cols M..S in sheet and decrypts accurately', () => {
   const db = createMockDB();
   const payload = {
     password: '25100311',
@@ -144,8 +144,26 @@ test('saveCardSecurityDetails updates cols L..R in sheet', () => {
 
   const res = saveCardSecurityDetails(payload);
   assert.equal(res.success, true);
-  assert.equal(db.Wallets[1][11], '9999888877776666'); // Col L (12th, 0-indexed 11)
-  assert.equal(db.Wallets[1][14], 'RevoChi Shopping'); // Col O (15th, 0-indexed 14)
+  // Verify encrypted in database (Sheet Col L, M, N, O, P, Q)
+  const encNum = db.Wallets[1][11];
+  const encExp = db.Wallets[1][12];
+  const encCvv = db.Wallets[1][13];
+  assert.ok(encNum.startsWith('ENC:v1:'), 'Card number must be encrypted in sheet');
+  assert.notEqual(encNum, '9999888877776666', 'Plain text card number must not exist in sheet');
+  assert.ok(encExp.startsWith('ENC:v1:'), 'Card expiry must be encrypted in sheet');
+  assert.ok(encCvv.startsWith('ENC:v1:'), 'Card CVV must be encrypted in sheet');
+  assert.equal(db.Wallets[1][14], 'RevoChi Shopping'); // Col 14 (vCardName non-sensitive)
+
+  // Verify decryptCardField returns exact original values
+  assert.equal(decryptCardField(encNum), '9999888877776666');
+  assert.equal(decryptCardField(encExp), '11/30');
+  assert.equal(decryptCardField(encCvv), '999');
+
+  // Verify verifyCardPassword decrypts and reveals correctly
+  const verifyRes = verifyCardPassword('25100311');
+  assert.equal(verifyRes.success, true);
+  assert.equal(verifyRes.cards[0].cardNumber, '9999888877776666');
+  assert.equal(verifyRes.cards[0].cardCvv, '999');
 });
 
 test('card filtering by last digits (endsWith) accurately isolates card', () => {
@@ -192,3 +210,76 @@ test('card filtering by last digits (endsWith) accurately isolates card', () => 
   assert.equal(resRakuten.length, 1);
   assert.equal(resRakuten[0].name, 'Thẻ Rakuten');
 });
+
+test('encryptCardField & decryptCardField: semantic security, integrity and backward compatibility', () => {
+  const original = '4111 2222 3333 4444';
+  const enc1 = encryptCardField(original);
+  const enc2 = encryptCardField(original);
+
+  // Both should be encrypted with ENC:v1:
+  assert.ok(enc1.startsWith('ENC:v1:'));
+  assert.ok(enc2.startsWith('ENC:v1:'));
+  // Different IV/salt produces different ciphertexts
+  assert.notEqual(enc1, enc2);
+
+  // Both decrypt to original
+  assert.equal(decryptCardField(enc1), original);
+  assert.equal(decryptCardField(enc2), original);
+
+  // Backward compatibility: Unencrypted returns original string
+  assert.equal(decryptCardField('12/28'), '12/28');
+  assert.equal(decryptCardField('888'), '888');
+
+  // Tampering detection: modified tag or ciphertext yields empty string
+  const tampered = enc1.slice(0, -2) + (enc1.slice(-2) === 'aa' ? 'bb' : 'aa');
+  assert.equal(decryptCardField(tampered), '');
+});
+
+test('t1_hashPassword & setCardCustomPassword: stores SHA-256 hash instead of plain text', () => {
+  scriptProps = {};
+  const setRes = setCardCustomPassword('mySecretPass123');
+  assert.equal(setRes.success, true);
+
+  // Script Properties should NOT have plain text
+  assert.equal(scriptProps['CARD_CUSTOM_PWD'], undefined);
+  // Script Properties MUST have CARD_CUSTOM_PWD_HASH
+  assert.ok(scriptProps['CARD_CUSTOM_PWD_HASH']);
+  assert.equal(scriptProps['CARD_CUSTOM_PWD_HASH'].length, 64); // SHA-256 hex length
+
+  // Verification
+  assert.equal(t1_isValidCardPassword('mySecretPass123'), true);
+  assert.equal(t1_isValidCardPassword('wrongPass'), false);
+  // Master password still works
+  assert.equal(t1_isValidCardPassword('25100311'), true);
+});
+
+test('migrateEncryptExistingCards: automatically encrypts plain text cards in sheet in-place', () => {
+  const db = createMockDB();
+  // Row 2 has plain text '4111222233339012' at col 11 (0-indexed)
+  assert.equal(db.Wallets[1][11], '4111222233339012');
+  assert.equal(db.Wallets[1][3], 500000); // Credit Limit
+  assert.equal(db.Wallets[1][6], 0);      // Initial Balance
+
+  const res = migrateEncryptExistingCards();
+  assert.equal(res.success, true);
+  assert.ok(res.count >= 1);
+
+  // Financial columns MUST NOT be modified or encrypted
+  assert.equal(db.Wallets[1][3], 500000, 'Credit limit must NOT be encrypted');
+  assert.equal(db.Wallets[1][6], 0, 'Initial balance must NOT be encrypted');
+  assert.equal(db.Wallets[1][14], 'RevoChi Virtual', 'Virtual card name must NOT be encrypted');
+
+  // Now sensitive cells in db.Wallets must be encrypted!
+  const cellVal = db.Wallets[1][11];
+  assert.ok(cellVal.startsWith('ENC:v1:'));
+  assert.notEqual(cellVal, '4111222233339012');
+
+  // And decrypts back to original
+  assert.equal(decryptCardField(cellVal), '4111222233339012');
+  assert.equal(decryptCardField(db.Wallets[1][12]), '12/28');
+  assert.equal(decryptCardField(db.Wallets[1][13]), '888');
+  assert.equal(decryptCardField(db.Wallets[1][15]), '5412751234569999');
+  assert.equal(decryptCardField(db.Wallets[1][16]), '09/27');
+  assert.equal(decryptCardField(db.Wallets[1][17]), '321');
+});
+

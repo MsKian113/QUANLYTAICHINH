@@ -18,10 +18,10 @@ global.Utilities = {
 
 function createMockTab5DB() {
   const tables = {
-    LichMua: [
-      ["ID", "NgayMua", "TaiKhoan", "CuaHang", "TenSanPham", "SoNgayCooldown", "NgayKhaDung", "TrangThai", "MaDonTab3", "GhiChu"],
-      ["LM0001", "2026-09-15", "Joshin KA", "Joshin", "Film Fuji Instax Mini 11", 30, "2026-10-15", "DANG_CHO", "", "Đang chờ cooldown"],
-      ["LM0002", "2026-09-05", "Yodo KA", "Yodobashi", "Film Mini Instax", 13, "2026-09-18", "KET_THUC", "", "Đơn bị hủy - đã kết thúc cooldown"]
+    Purchase: [
+      ["MÃ ĐƠN", "Ngày Mua", "Nơi mua", "Trạng Thái Kho", "Tên Sản Phẩm", "Số Lượng", "Giá Mua (1 cái)", "Tổng Tiền", "Nguồn Tiền Mua", "Tình trạng thẻ", "Note", "Tồn kho", "Ngày sao kê", "Tài khoản mua", "SoNgayCooldown", "NgayKhaDung", "Tình trạngCooldown"],
+      ["LM0001", "2026-09-15", "Joshin", "Chờ Ship", "Film Fuji Instax Mini 11", 1, 1000, 1000, "Ví Tiền Mặt", "HOAN_TAT", "Đang chờ cooldown", 0, "2026-09-15", "Joshin KA", 30, "2026-10-15", "THANH_CONG"],
+      ["LM0002", "2026-09-05", "Yodobashi", "Hủy", "Film Mini Instax", 1, 1000, 1000, "Ví Tiền Mặt", "CHO_HOAN_TIEN", "Đơn bị hủy - đã kết thúc cooldown", 0, "2026-09-05", "Yodo KA", 13, "2026-09-18", "DA_HUY"]
     ],
     Categories: [
       ["Mẫu", "Hũ", "Ví", "", "", "", "Danh sách Tài khoản"],
@@ -51,7 +51,7 @@ function createMockTab5DB() {
         const rows = tables[name];
         return {
           getLastRow: () => rows.length,
-          getLastColumn: () => rows[0] ? rows[0].length : 10,
+          getLastColumn: () => rows[0] ? rows[0].length : 17,
           getRange: (startRow, startCol, numRows, numCols) => ({
             getValues: () => {
               const sliced = rows.slice(startRow - 1, startRow - 1 + (numRows || 1));
@@ -138,19 +138,19 @@ test('savePurchaseLimitRecord applies 13-day cooldown for Yodo store', () => {
   const res = savePurchaseLimitRecord(formData);
   assert.equal(res.success, true);
 
-  const rows = tables.LichMua;
+  const rows = tables.Purchase;
   assert.equal(rows.length, 4);
   const newRow = rows[3];
-  assert.equal(newRow[2], "Yodo 602");
-  assert.equal(newRow[3], "Yodobashi Camera");
-  assert.equal(newRow[5], 13); // Tự động nhận diện 13 ngày cho Yodo
-  assert.equal(newRow[6], "2026-09-23"); // 10/09 + 13 ngày = 23/09
+  assert.equal(newRow[13], "Yodo 602");
+  assert.equal(newRow[2], "Yodobashi Camera");
+  assert.equal(newRow[14], 13); // Tự động nhận diện 13 ngày cho Yodo
+  assert.equal(newRow[15], "23/09/2026"); // 10/09 + 13 ngày = 23/09
 });
 
-test('updatePurchaseLimitStatus releases cooldown and updates status columns when set to KET_THUC or DANG_CHO', () => {
+test('updatePurchaseLimitStatus releases cooldown and updates status columns when set to DA_HUY or THANH_CONG', () => {
   const tables = createMockTab5DB();
 
-  const updateRes = updatePurchaseLimitStatus("LM0001", "KET_THUC");
+  const updateRes = updatePurchaseLimitStatus("LM0001", "DA_HUY");
   assert.equal(updateRes.success, true);
 
   const res = getTab5Data();
@@ -158,8 +158,8 @@ test('updatePurchaseLimitStatus releases cooldown and updates status columns whe
   const joshinKA = joshinStore.accountsStatus.find(a => a.account === "Joshin KA");
   assert.equal(joshinKA.isCooldown, false);
 
-  // Khôi phục lại trạng thái DANG_CHO
-  const restoreRes = updatePurchaseLimitStatus("LM0001", "DANG_CHO");
+  // Khôi phục lại trạng thái THANH_CONG
+  const restoreRes = updatePurchaseLimitStatus("LM0001", "THANH_CONG");
   assert.equal(restoreRes.success, true);
 
   const res2 = getTab5Data();
@@ -168,12 +168,12 @@ test('updatePurchaseLimitStatus releases cooldown and updates status columns whe
   assert.equal(joshinKA2.isCooldown, true);
 });
 
-test('deletePurchaseLimitRecord removes row from LichMua sheet', () => {
+test('deletePurchaseLimitRecord removes row from Purchase sheet', () => {
   const tables = createMockTab5DB();
 
   const delRes = deletePurchaseLimitRecord("LM0001");
   assert.equal(delRes.success, true);
-  assert.equal(tables.LichMua.length, 2);
+  assert.equal(tables.Purchase.length, 2);
 });
 
 test('addTab5Account appends new account string to next empty cell of Categories Column G without duplicate store prefix', () => {
@@ -212,8 +212,8 @@ test('getProductCategory maps Film MINI INSTAX to Trắng and other Film items t
   assert.equal(getProductCategory("Film MINI SOFT LAVENDER", "Fuji"), "Film MINI Màu");
 
   const tables = createMockTab5DB();
-  tables.LichMua.push([
-    "LM0099", "2026-09-18", "Yodo KA", "Yodo", "Film SQUARE STAR ILLUMINATION", 13, "2026-10-01", "THANH_CONG", "", ""
+  tables.Purchase.push([
+    "LM0099", "2026-09-18", "Yodo", "Chờ Ship", "Film SQUARE STAR ILLUMINATION", 1, 1000, 1000, "Ví Tiền Mặt", "HOAN_TAT", "", 0, "2026-09-18", "Yodo KA", 13, "2026-10-01", "THANH_CONG"
   ]);
 
   const res = getTab5Data();

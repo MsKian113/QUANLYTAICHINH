@@ -14,9 +14,48 @@ function getFamilySheetHelper(ssTarget) {
   let sheet = ss.getSheetByName(SHEET_FAMILY) || ss.getSheetByName("ThuChi") || ss.getSheetByName("FAMILY") || ss.getSheetByName("THUCHI");
   if (!sheet && ss) {
     sheet = ss.insertSheet(SHEET_FAMILY);
-    sheet.appendRow(["ID", "Timestamp", "Loại", "Hũ", "Nội dung", "Số tiền", "Ví/Thẻ Giao Dịch", "Là Khoản Cố Định?", "Ghi chú", "Trạng thái", "Ngày sao kê"]);
   }
   return sheet;
+}
+
+if (typeof validateWalletExists === 'undefined') {
+  var validateWalletExists = function(walletNameOrId, ssTarget) {
+    if (!walletNameOrId) return false;
+    const rawStr = String(walletNameOrId).trim();
+    if (!rawStr) return false;
+    try {
+      const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+      if (!ss) return true;
+      const wSheet = (typeof getSheetByNames === 'function') ? getSheetByNames("Wallets", "Ví", ss) : (ss.getSheetByName("Wallets") || ss.getSheetByName("Ví"));
+      if (!wSheet || wSheet.getLastRow() < 2) return false;
+      const lastRow = wSheet.getLastRow();
+      const lastCol = Math.max(wSheet.getLastColumn(), 3);
+      const data = wSheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+      const lower = rawStr.toLowerCase();
+      const cleanRaw = lower.replace(/^(?:c[\s\-_:]*|thẻ\s+|ví\s+)/i, '').replace(/\s+/g, '');
+      for (let i = 0; i < data.length; i++) {
+        const id = String(data[i][0] || "").trim().toLowerCase();
+        const name = String(data[i][1] || "").trim().toLowerCase();
+        if (id && (id === lower || id === cleanRaw)) return true;
+        if (name && (name === lower || name === cleanRaw)) return true;
+        const cleanName = name.replace(/^(?:c[\s\-_:]*|thẻ\s+|ví\s+)/i, '').replace(/\s+/g, '');
+        if (cleanName && cleanName === cleanRaw) return true;
+      }
+      if (typeof resolveWalletCanonicalName === 'function') {
+        const canonical = resolveWalletCanonicalName(rawStr, ss);
+        if (canonical) {
+          const cLower = canonical.toLowerCase();
+          for (let i = 0; i < data.length; i++) {
+            const name = String(data[i][1] || "").trim().toLowerCase();
+            if (name === cLower) return true;
+          }
+        }
+      }
+      return false;
+    } catch(e) {
+      return false;
+    }
+  };
 }
 
 function formatToDDMMYYYY(val) {
@@ -64,21 +103,12 @@ function formatToDDMMYYYY(val) {
 function getInitialData(ssTarget) {
   try {
     const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-    let categories = [
-      { name: "Đổ xăng Eneos", jar: "Thiết yếu", source: "Thẻ Rakuten" },
-      { name: "Đi siêu thị Aeon", jar: "Thiết yếu", source: "Ví Tiền Mặt" },
-      { name: "Tiền nhà Leo", jar: "Thiết yếu", source: "Thẻ Ufj" },
-      { name: "Đóng tiền mạng", jar: "Thiết yếu", source: "Thẻ Rakuten" },
-      { name: "Nhận lương tháng", jar: "Tiết kiệm", source: "Thẻ Ufj" },
-      { name: "Mua đồ Donki", jar: "Giải trí", source: "Ví Tiền Mặt" },
-      { name: "Ăn nhà hàng", jar: "Giải trí", source: "Thẻ Rakuten" },
-      { name: "Cà phê Starbucks", jar: "Giải trí", source: "PayPay" }
-    ];
+    let categories = [];
     let wRes = typeof getWalletsFromSheet === 'function' ? getWalletsFromSheet(null, null, ss) : null;
     let rawW = (wRes && Array.isArray(wRes.wallets)) ? wRes.wallets : (Array.isArray(wRes) ? wRes : []);
     let wallets = rawW.map(w => typeof w === 'object' ? (w.name || w.ten || '') : String(w));
 
-    let accounts = ["Joshin KA", "Joshin Chi", "Joshin Giao", "Edion Ka", "Edion Chi", "Yodo KA", "Yodo Chi", "Yodo Chít", "Yodo 602", "Yodo 303", "Yodo Trinh", "Yodo Giao"];
+    let accounts = [];
 
     if (ss) {
       // 1. Đọc sheet "Categories" (Cột B: Mẫu Nội Dung, Cột C: Map Hũ, Cột D: Map Nguồn, Cột K / Cột G: Danh sách Tài khoản)
@@ -156,22 +186,42 @@ function getInitialData(ssTarget) {
  * 2. LƯU GIAO DỊCH MỚI
  */
 function saveFamilyTransaction(formData, ssTarget) {
-  try {
-    const ss = ssTarget || (formData && formData.ssTarget) || SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = getFamilySheetHelper(ss);
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (formData && formData.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const requestId = formData ? (formData.requestId || formData.clientRequestId) : null;
 
+    // 1. Idempotency Check
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
+    let sheet = getFamilySheetHelper(ss);
     const timestamp = formatToDDMMYYYY(formData.ngay);
-    const newId = "TC" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
+    const newId = (typeof generateUniqueMaGD === 'function') ? generateUniqueMaGD("TC") : ("TC" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90));
+
+    const nguonTien = String(formData.nguontien || "").trim();
+    if (!nguonTien) {
+      return { success: false, message: "❌ Vui lòng chọn nguồn tiền (Ví/Thẻ) hợp lệ!" };
+    }
+    if (typeof validateWalletExists === 'function' && !validateWalletExists(nguonTien, ss)) {
+      return { success: false, message: `❌ Nguồn tiền '${nguonTien}' không tồn tại trong danh sách Ví/Thẻ (Wallets). Vui lòng chọn nguồn tiền hợp lệ!` };
+    }
 
     let loai = String(formData.loai || "CHI").toUpperCase() === "THU" ? "Thu" : "Chi";
     let hu = String(formData.hu || "").trim();
-    if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác")) {
-      hu = "----Thu nhập";
+    if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác" || hu === "----Thu nhập")) {
+      hu = "THU NHẬP";
     }
 
-    const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(formData.nguontien, ss) : false;
-    const statusVal = formData.status || (isCredit ? "PRE-ORDER" : "HOAN_TAT");
+    const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(nguonTien, ss) : false;
+    const isPreOrderReq = (formData.isPreOrder === true || formData.isPreOrder === "true" || formData.status === "PRE-ORDER" || isCredit);
+    const statusVal = formData.status || (isPreOrderReq ? "PRE-ORDER" : "HOAN_TAT");
     const ngaySaoKe = statusVal === "HOAN_TAT" ? timestamp : "";
+    const amt = Number(formData.sotien) || 0;
 
     const rowData = [
       newId,
@@ -179,8 +229,8 @@ function saveFamilyTransaction(formData, ssTarget) {
       loai,
       hu,
       formData.noidung || "",
-      Number(formData.sotien) || 0,
-      formData.nguontien || "",
+      amt,
+      nguonTien,
       formData.codinh ? "Có" : "",
       formData.ghichu || "",
       statusVal,
@@ -191,15 +241,40 @@ function saveFamilyTransaction(formData, ssTarget) {
       sheet.appendRow(rowData);
     }
 
-    // Direct update to Wallets sheet balance
-    const amt = Number(formData.sotien) || 0;
+    // Direct update to Wallets sheet balance & collect updated wallet info
+    const updatedWallets = [];
     const isThu = String(formData.loai || "CHI").toUpperCase() === "THU";
     const changeAmt = isThu ? amt : -amt;
-    if (typeof updateWalletBalanceHelper === 'function' && formData.nguontien) {
-      updateWalletBalanceHelper(formData.nguontien, changeAmt);
+    if (typeof updateWalletBalanceHelper === 'function' && nguonTien) {
+      const wInfo = updateWalletBalanceHelper(nguonTien, changeAmt, ss);
+      if (wInfo) updatedWallets.push(wInfo);
     }
 
-    // Nếu chọn Lưu Mẫu (formData.mau) -> ghi thông tin mẫu gợi ý sang Categories (Cột B: Mẫu Nội Dung, Cột C: Tự Động Map Hũ, Cột D: Tự Động Map Nguồn)
+    // Ghi nhận sự kiện tài chính vào WalletLedger
+    if (typeof postFinancialEvents === 'function' && nguonTien && amt > 0 && statusVal === "HOAN_TAT") {
+      const isFee = hu.toLowerCase().includes("phí") || String(formData.noidung || "").toLowerCase().includes("phí");
+      const isInterest = hu.toLowerCase().includes("lãi") || String(formData.noidung || "").toLowerCase().includes("tiền lãi");
+      let evType = isThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
+      if (isFee) evType = "FEE";
+      if (isInterest) evType = "INTEREST";
+
+      const effectType = isCredit ? "CARD_DEBT" : "CASH";
+      const dir = isCredit ? "INCREASE" : (isThu ? "IN" : "OUT");
+
+      postFinancialEvents([{
+        walletName: formData.nguontien,
+        date: formData.ngay || timestamp,
+        amount: amt,
+        direction: dir,
+        effectType: effectType,
+        sourceModule: "Family",
+        sourceId: newId,
+        eventType: evType,
+        note: formData.noidung || ""
+      }], ss);
+    }
+
+    // Nếu chọn Lưu Mẫu (formData.mau) -> ghi thông tin mẫu gợi ý sang Categories
     if (ss && formData.mau) {
       const catSheet = ss.getSheetByName(SHEET_CATEGORIES) || ss.getSheetByName("DanhMuc");
       if (catSheet) {
@@ -216,18 +291,56 @@ function saveFamilyTransaction(formData, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
-    return { success: true, message: "✅ Đã lưu giao dịch thành công!" };
-  } catch (error) {
-    return { success: false, message: "❌ Lỗi hệ thống: " + error.toString() };
-  }
+    const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+
+    const savedItem = {
+      id: newId,
+      ngay: formData.ngay || timestamp,
+      loai: loai,
+      hu: hu,
+      noidung: formData.noidung || "",
+      sotien: amt,
+      nguontien: formData.nguontien || "",
+      codinh: !!formData.codinh,
+      ghichu: formData.ghichu || "",
+      status: statusVal,
+      ngaySaoKe: ngaySaoKe,
+      rev: 1
+    };
+
+    const res = {
+      success: true,
+      message: "✅ Đã lưu giao dịch thành công!",
+      savedItem: savedItem,
+      updatedWallets: updatedWallets,
+      dataVersion: nextVersion
+    };
+
+    if (requestId && typeof recordProcessedRequest === 'function') {
+      recordProcessedRequest(requestId, "DONE", res, ss);
+    }
+
+    return res;
+  });
 }
 
 /**
  * 3. CẬP NHẬT GIAO DỊCH
  */
 function updateFamilyTransaction(formData, ssTarget) {
-  try {
-    const ss = ssTarget || (formData && formData.ssTarget) || SpreadsheetApp.getActiveSpreadsheet();
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (formData && formData.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const requestId = formData ? (formData.requestId || formData.clientRequestId) : null;
+
+    // 1. Idempotency Check
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
     const sheet = getFamilySheetHelper(ss);
     if (!sheet) return { success: false, message: "❌ Lỗi: Không tìm thấy sheet 'Family'." };
 
@@ -253,15 +366,18 @@ function updateFamilyTransaction(formData, ssTarget) {
         const oldSource = String(data[i][6] || "").trim();
         const oldChange = (oldLoai === "THU" || oldLoai === "KHOẢN THU") ? oldAmt : -oldAmt;
 
+        const updatedWalletsMap = {};
+
         // Revert old transaction balance
         if (typeof updateWalletBalanceHelper === 'function' && oldSource) {
-          updateWalletBalanceHelper(oldSource, -oldChange);
+          const wOld = updateWalletBalanceHelper(oldSource, -oldChange, ss);
+          if (wOld && wOld.name) updatedWalletsMap[wOld.name] = wOld;
         }
 
         let loai = String(formData.loai || "CHI").toUpperCase() === "THU" ? "Thu" : "Chi";
         let hu = String(formData.hu || "").trim();
-        if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác")) {
-          hu = "----Thu nhập";
+        if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác" || hu === "----Thu nhập")) {
+          hu = "THU NHẬP";
         }
 
         const curDate = data[i][1];
@@ -279,6 +395,16 @@ function updateFamilyTransaction(formData, ssTarget) {
         const newFixedVal = formData.codinh !== undefined ? (formData.codinh ? "Có" : "") : curFixed;
         const newNoteVal = formData.ghichu !== undefined ? formData.ghichu : curNote;
         const newStatusVal = formData.status !== undefined ? formData.status : curStatus;
+
+        if (formData.nguontien !== undefined) {
+          const sourceCheck = String(newSourceVal || "").trim();
+          if (!sourceCheck) {
+            return { success: false, message: "❌ Vui lòng chọn nguồn tiền (Ví/Thẻ) hợp lệ!" };
+          }
+          if (typeof validateWalletExists === 'function' && !validateWalletExists(sourceCheck, ss)) {
+            return { success: false, message: `❌ Nguồn tiền '${sourceCheck}' không tồn tại trong danh sách Ví/Thẻ (Wallets). Vui lòng chọn nguồn tiền hợp lệ!` };
+          }
+        }
 
         sheet.getRange(rowIndex, 2, 1, 9).setValues([[
           newDateVal,
@@ -300,30 +426,96 @@ function updateFamilyTransaction(formData, ssTarget) {
         const newChange = newIsThu ? newAmt : -newAmt;
 
         if (typeof updateWalletBalanceHelper === 'function' && newSource) {
-          updateWalletBalanceHelper(newSource, newChange);
+          const wNew = updateWalletBalanceHelper(newSource, newChange, ss);
+          if (wNew && wNew.name) updatedWalletsMap[wNew.name] = wNew;
+        }
+
+        const updatedWallets = Object.values(updatedWalletsMap);
+
+        // Cập nhật sự kiện trong WalletLedger
+        if (typeof replaceFinancialEvents === 'function' && newSourceVal && newAmtVal > 0 && newStatusVal === "HOAN_TAT") {
+          const isFee = hu.toLowerCase().includes("phí") || String(newDescVal || "").toLowerCase().includes("phí");
+          const isInterest = hu.toLowerCase().includes("lãi") || String(newDescVal || "").toLowerCase().includes("tiền lãi");
+          let evType = newIsThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
+          if (isFee) evType = "FEE";
+          if (isInterest) evType = "INTEREST";
+
+          const isCreditNew = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(newSourceVal, ss) : false;
+          const effectType = isCreditNew ? "CARD_DEBT" : "CASH";
+          const dir = isCreditNew ? "INCREASE" : (newIsThu ? "IN" : "OUT");
+
+          replaceFinancialEvents(rowId, [{
+            walletName: newSourceVal,
+            date: newDateVal,
+            amount: newAmtVal,
+            direction: dir,
+            effectType: effectType,
+            sourceModule: "Family",
+            sourceId: rowId,
+            eventType: evType,
+            rev: 1,
+            note: newDescVal || ""
+          }], "Sửa giao dịch Family", ss);
         }
 
         if (typeof clearAppDataCache === 'function') clearAppDataCache();
-        return { success: true, message: "✅ Đã cập nhật giao dịch thành công!" };
+        const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+
+        const savedItem = {
+          id: rowId,
+          ngay: newDateVal,
+          loai: loai,
+          hu: hu,
+          noidung: newDescVal,
+          sotien: newAmtVal,
+          nguontien: newSourceVal,
+          codinh: newFixedVal === "Có" || newFixedVal === true,
+          ghichu: newNoteVal,
+          status: newStatusVal,
+          rev: (formData.rev || 1) + 1
+        };
+
+        const res = {
+          success: true,
+          message: "✅ Đã cập nhật giao dịch thành công!",
+          savedItem: savedItem,
+          updatedWallets: updatedWallets,
+          dataVersion: nextVersion
+        };
+
+        if (requestId && typeof recordProcessedRequest === 'function') {
+          recordProcessedRequest(requestId, "DONE", res, ss);
+        }
+
+        return res;
       }
     }
 
     return { success: false, message: "❌ Không tìm thấy giao dịch ID: " + targetId };
-  } catch (error) {
-    return { success: false, message: "❌ Lỗi: " + error.toString() };
-  }
+  });
 }
 
 /**
  * 4. XOÁ GIAO DỊCH
  */
-function deleteTransaction(rowId, ssTarget) {
-  try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+function deleteTransaction(rowIdOrData, ssTarget) {
+  const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
+  return runner(15000, function() {
+    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const targetId = (typeof rowIdOrData === 'object' && rowIdOrData !== null) ? String(rowIdOrData.id || rowIdOrData.rowId || "").trim() : String(rowIdOrData || "").trim();
+    const requestId = (typeof rowIdOrData === 'object' && rowIdOrData !== null) ? (rowIdOrData.requestId || rowIdOrData.clientRequestId) : null;
+
+    // 1. Idempotency Check
+    if (requestId && typeof getProcessedRequest === 'function') {
+      const processed = getProcessedRequest(requestId, ss);
+      if (processed && processed.status === "DONE" && processed.result) {
+        return Object.assign({}, processed.result, { duplicate: true });
+      }
+    }
+
     const sheet = getFamilySheetHelper(ss);
     if (!sheet) return { success: false, message: "❌ Lỗi: Không tìm thấy sheet 'Family'." };
 
-    const targetId = String(rowId || "").trim();
     if (!targetId) return { success: false, message: "❌ Mã giao dịch không hợp lệ!" };
 
     const lastRow = sheet.getLastRow();
@@ -331,10 +523,10 @@ function deleteTransaction(rowId, ssTarget) {
 
     const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
     for (let i = 0; i < data.length; i++) {
-      const id = String(data[i][0] || "").trim();
+      const curRowId = String(data[i][0] || "").trim();
       const rowIndex = i + 2;
 
-      const isMatch = (id === targetId) || 
+      const isMatch = (curRowId === targetId) || 
                       (targetId === String(rowIndex)) || 
                       (targetId.toUpperCase() === ("ROW_" + rowIndex)) ||
                       (targetId.replace(/^ROW_/i, '') === String(rowIndex));
@@ -345,21 +537,41 @@ function deleteTransaction(rowId, ssTarget) {
         const oldSource = String(data[i][6] || "").trim();
         const oldChange = (oldLoai === "THU" || oldLoai === "KHOẢN THU") ? oldAmt : -oldAmt;
 
+        const updatedWallets = [];
+
         // Revert transaction balance from wallet
         if (typeof updateWalletBalanceHelper === 'function' && oldSource) {
-          updateWalletBalanceHelper(oldSource, -oldChange);
+          const w = updateWalletBalanceHelper(oldSource, -oldChange, ss);
+          if (w) updatedWallets.push(w);
+        }
+
+        // Đảo sự kiện trong WalletLedger
+        if (typeof reverseFinancialEvents === 'function' && curRowId) {
+          reverseFinancialEvents(curRowId, "Xóa giao dịch Family", ss);
         }
 
         sheet.deleteRow(rowIndex);
         if (typeof clearAppDataCache === 'function') clearAppDataCache();
-        return { success: true, message: "✅ Đã xóa giao dịch thành công!" };
+        const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+
+        const res = {
+          success: true,
+          message: "✅ Đã xóa giao dịch thành công!",
+          deletedId: targetId,
+          updatedWallets: updatedWallets,
+          dataVersion: nextVersion
+        };
+
+        if (requestId && typeof recordProcessedRequest === 'function') {
+          recordProcessedRequest(requestId, "DONE", res, ss);
+        }
+
+        return res;
       }
     }
 
     return { success: false, message: "❌ Không tìm thấy giao dịch để xóa!" };
-  } catch (err) {
-    return { success: false, message: "❌ Lỗi: " + err.toString() };
-  }
+  });
 }
 
 /**
@@ -403,8 +615,10 @@ function getTab2Data(month, year, ssTarget) {
       return isNaN(d.getTime()) ? null : d;
     };
 
+    const preordersList = [];
     if (sheet && sheet.getLastRow() >= 2) {
-      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+      const lastCol = Math.max(sheet.getLastColumn(), 11);
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
 
       for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -414,9 +628,37 @@ function getTab2Data(month, year, ssTarget) {
         const loai = String(row[2] || "").trim();
         const sotien = Number(row[5]) || 0;
         const hu = String(row[3] || "").trim();
+        const statusVal = String(row[9] || "").trim().toUpperCase();
 
         const m = d ? (d.getMonth() + 1) : null;
         const y = d ? d.getFullYear() : null;
+
+        let dateStr = rowDate;
+        if (d && !isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          dateStr = `${yyyy}-${mm}-${dd}`;
+        }
+
+        const isPreOrder = (statusVal === "PRE-ORDER" || statusVal.includes("PRE") ||
+                            String(row[4] || "").toLowerCase().includes("pre-order") ||
+                            String(row[8] || "").toLowerCase().includes("pre-order"));
+
+        if (isPreOrder) {
+          preordersList.push({
+            id: row[0] || ("ROW_" + (i + 2)),
+            ngay: dateStr,
+            loai: loai,
+            hu: hu,
+            noidung: row[4] || "",
+            sotien: sotien,
+            nguontien: row[6] || "",
+            codinh: row[7] === "Có" || row[7] === true,
+            ghichu: row[8] || "",
+            status: "PRE-ORDER"
+          });
+        }
 
         // Tính thu nhập tháng trước để chia hũ
         const prevM = targetMonth === 1 ? 12 : (targetMonth ? targetMonth - 1 : null);
@@ -431,10 +673,13 @@ function getTab2Data(month, year, ssTarget) {
 
         if (matchYear && matchMonth) {
           const loaiLower = loai.toLowerCase();
+          const huLower = hu.toLowerCase();
           const noidungStr = String(row[4] || "").trim();
           const ghichuStr = String(row[8] || "").trim();
-          const isTagExcluded = noidungStr.includes("[Ứng hộ nhóm]") || noidungStr.includes("[Tất toán công nợ]") ||
-                                ghichuStr.includes("[Ứng hộ nhóm]") || ghichuStr.includes("[Tất toán công nợ]");
+          const isTagExcluded = noidungStr.includes("[Ứng hộ nhóm]") || noidungStr.includes("[Tất toán công nợ]") || noidungStr.includes("[Thu nợ]") || noidungStr.includes("[Trả nợ]") ||
+                                ghichuStr.includes("[Ứng hộ nhóm]") || ghichuStr.includes("[Tất toán công nợ]") || ghichuStr.includes("[Thu nợ]") || ghichuStr.includes("[Trả nợ]") ||
+                                huLower.includes("ck nội bộ") || huLower.includes("công nợ") || huLower.includes("tất toán thẻ") ||
+                                noidungStr.includes("Chuyển tiền:") || noidungStr.includes("Tất toán thẻ:");
 
           const isThu = (loaiLower === "thu" || loaiLower === "khoản thu" || loaiLower === "thu nhập");
 
@@ -453,14 +698,6 @@ function getTab2Data(month, year, ssTarget) {
             }
           }
 
-          let dateStr = rowDate;
-          if (d && !isNaN(d.getTime())) {
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            dateStr = `${yyyy}-${mm}-${dd}`;
-          }
-
           filteredTx.push({
             id: row[0] || ("ROW_" + (i + 2)),
             ngay: dateStr,
@@ -471,7 +708,8 @@ function getTab2Data(month, year, ssTarget) {
             nguontien: row[6],
             codinh: row[7] === "Có" || row[7] === true,
             mau: false,
-            ghichu: row[8] || ""
+            ghichu: row[8] || "",
+            status: isPreOrder ? "PRE-ORDER" : "HOAN_TAT"
           });
         }
       }
@@ -549,6 +787,7 @@ function getTab2Data(month, year, ssTarget) {
         totalExpense: totalExpense
       },
       transactions: filteredTx,
+      preorders: preordersList,
       jars: jars
     };
   } catch (err) {
@@ -683,21 +922,10 @@ function saveJarConfig(configData) {
     let sheet = ss.getSheetByName("JAR") || ss.getSheetByName("Jar") || ss.getSheetByName("jar");
     if (!sheet) {
       sheet = ss.insertSheet("JAR");
-      sheet.appendRow(["HŨ CHI TIÊU", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-      sheet.appendRow(["Tháng", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-      sheet.appendRow(["Thiết yếu"]);
-      sheet.appendRow(["Tỷ lệ %"]);
-      sheet.appendRow(["Tiết kiệm"]);
-      sheet.appendRow(["Tỷ lệ %"]);
-      sheet.appendRow(["Giáo dục"]);
-      sheet.appendRow(["Tỷ lệ %"]);
-      sheet.appendRow(["Giải trí"]);
-      sheet.appendRow(["Tỷ lệ %"]);
-      sheet.appendRow(["Cho đi"]);
-      sheet.appendRow(["Tỷ lệ %"]);
-      sheet.appendRow(["Đầu tư"]);
-      sheet.appendRow(["Tỷ lệ %"]);
-      sheet.appendRow(["Ngân sách"]);
+    }
+
+    if (sheet.getLastRow() < 2) {
+      return { success: true, message: "Sheet JAR chưa có dữ liệu mẫu!" };
     }
 
     const targetMonth = parseInt(configData.month, 10) || (new Date().getMonth() + 1);
@@ -770,9 +998,10 @@ function getJarDataForWeb() {
 function getQuickFixedItems(month, year, ssTarget) {
   try {
     const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-    const isAllMonth = (!month || month === "ALL" || String(month).toUpperCase() === "ALL");
+    const isAllMonth = (!month || month === "ALL" || String(month).toUpperCase() === "ALL" || month === "All");
     const targetMonth = isAllMonth ? (new Date().getMonth() + 1) : parseInt(month, 10);
-    const targetYear = year ? parseInt(year, 10) : new Date().getFullYear();
+    const isAllYear = (!year || year === "ALL" || String(year).toUpperCase() === "ALL" || year === "All");
+    const targetYear = isAllYear ? new Date().getFullYear() : parseInt(year, 10);
 
     // Tính tháng trước và năm trước
     let prevMonth = targetMonth - 1;
@@ -883,7 +1112,8 @@ function getQuickFixedItems(month, year, ssTarget) {
     }
 
     // Lọc ra các khoản chưa được đóng trong tháng này
-    const quickFixedItems = candidateItems.filter(it => !paidCurrentMonthSet.has(it.noidung.toLowerCase())).map(it => ({ ...it, sotien: 0 }));
+    const todayIso = typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd") : new Date().toISOString().split('T')[0];
+    const quickFixedItems = candidateItems.filter(it => !paidCurrentMonthSet.has(it.noidung.toLowerCase())).map(it => ({ ...it, sotien: 0, ngay: todayIso }));
 
     return {
       success: true,
@@ -898,41 +1128,117 @@ function getQuickFixedItems(month, year, ssTarget) {
  * 9. ĐÓNG TIỀN NHANH HÀNG LOẠT DÀNH CHO KHOẢN CỐ ĐỊNH
  */
 function saveBatchQuickFixedAmounts(items, ssTarget) {
-  try {
-    if (!Array.isArray(items) || items.length === 0) {
-      return { success: false, message: "❌ Dữ liệu không hợp lệ." };
-    }
-
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = getFamilySheetHelper(ss);
-
-    items.forEach(it => {
-      const amt = Number(it.newAmount || it.sotien);
-      if (amt && amt > 0) {
-        const timestamp = formatToDDMMYYYY(it.newDate || it.ngay);
-        const newId = "TC" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90);
-        const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(it.newSource || it.nguontien, ss) : false;
-        const statusVal = isCredit ? "PRE-ORDER" : "HOAN_TAT";
-        const rowData = [
-          newId,
-          timestamp,
-          it.loai || "Chi",
-          it.hu || "Thiết yếu",
-          it.noiDung || it.noidung || "Khoản cố định",
-          amt,
-          it.newSource || it.nguontien || "",
-          "Có",
-          "Khoản cố định hàng tháng",
-          statusVal
-        ];
-        if (sheet) sheet.appendRow(rowData);
+  const runner = (typeof executeWithLock === 'function') ? executeWithLock : function(t, fn) { return fn(); };
+  return runner(15000, function() {
+    try {
+      if (!Array.isArray(items) || items.length === 0) {
+        return { success: false, message: "❌ Dữ liệu không hợp lệ." };
       }
-    });
 
-    return { success: true, message: "✅ Đã lưu đóng tiền khoản cố định thành công!" };
-  } catch (err) {
-    return { success: false, message: "❌ Lỗi: " + err.toString() };
-  }
+      const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+      let sheet = getFamilySheetHelper(ss);
+
+      // Pre-validate all item sources against Wallets
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const amt = Number(it.newAmount || it.sotien);
+        if (amt && amt > 0) {
+          const src = String(it.newSource || it.nguontien || it.nguon || "").trim();
+          if (!src) {
+            return { success: false, message: `❌ Khoản '${it.noiDung || it.noidung || "Cố định"}' thiếu nguồn tiền thanh toán!` };
+          }
+          if (typeof validateWalletExists === 'function' && !validateWalletExists(src, ss)) {
+            return { success: false, message: `❌ Nguồn tiền '${src}' của khoản '${it.noiDung || it.noidung || ""}' không tồn tại trong danh sách Ví/Thẻ (Wallets)!` };
+          }
+        }
+      }
+
+      const eventsToPost = [];
+      const updatedWalletsMap = {};
+      let savedCount = 0;
+
+      items.forEach(it => {
+        const amt = Number(it.newAmount || it.sotien);
+        if (amt && amt > 0) {
+          const rawDate = it.newDate || it.ngay;
+          const timestamp = formatToDDMMYYYY(rawDate);
+          const newId = (typeof generateUniqueMaGD === 'function') ? generateUniqueMaGD("TC") : ("TC" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90));
+          const loai = String(it.loai || "Chi").toUpperCase() === "THU" ? "Thu" : "Chi";
+          const hu = String(it.hu || "Thiết yếu").trim();
+          const noiDung = String(it.noiDung || it.noidung || "Khoản cố định").trim();
+          const src = String(it.newSource || it.nguontien || it.nguon || "").trim();
+          const statusVal = "HOAN_TAT";
+          const ngaySaoKe = timestamp;
+
+          const rowData = [
+            newId,
+            timestamp,
+            loai,
+            hu,
+            noiDung,
+            amt,
+            src,
+            "Có",
+            "Khoản cố định hàng tháng",
+            statusVal,
+            ngaySaoKe
+          ];
+          if (sheet) sheet.appendRow(rowData);
+          savedCount++;
+
+          // 1. Cập nhật số dư bảng Wallets
+          const isThu = loai === "Thu";
+          const changeAmt = isThu ? amt : -amt;
+          if (src && typeof updateWalletBalanceHelper === 'function') {
+            const wInfo = updateWalletBalanceHelper(src, changeAmt, ss);
+            if (wInfo) updatedWalletsMap[src] = wInfo;
+          }
+
+          // 2. Ghi nhận sự kiện tài chính vào WalletLedger
+          if (src) {
+            const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(src, ss) : false;
+            const isFee = hu.toLowerCase().includes("phí") || noiDung.toLowerCase().includes("phí");
+            const isInterest = hu.toLowerCase().includes("lãi") || noiDung.toLowerCase().includes("tiền lãi");
+            let evType = isThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
+            if (isFee) evType = "FEE";
+            if (isInterest) evType = "INTEREST";
+
+            const effectType = isCredit ? "CARD_DEBT" : "CASH";
+            const dir = isCredit ? "INCREASE" : (isThu ? "IN" : "OUT");
+
+            eventsToPost.push({
+              walletName: src,
+              date: rawDate || timestamp,
+              amount: amt,
+              direction: dir,
+              effectType: effectType,
+              sourceModule: "Family",
+              sourceId: newId,
+              eventType: evType,
+              note: noiDung
+            });
+          }
+        }
+      });
+
+      // Post batch events to WalletLedger
+      if (eventsToPost.length > 0 && typeof postFinancialEvents === 'function') {
+        postFinancialEvents(eventsToPost, ss);
+      }
+
+      if (typeof clearAppDataCache === 'function') clearAppDataCache();
+      const nextVersion = (typeof incrementDataVersion === 'function') ? incrementDataVersion() : 1;
+
+      return {
+        success: true,
+        message: `✅ Đã lưu đóng tiền thành công ${savedCount} khoản cố định và cập nhật Sổ cái (WalletLedger)!`,
+        updatedWallets: Object.values(updatedWalletsMap),
+        dataVersion: nextVersion
+      };
+    } catch (err) {
+      return { success: false, message: "❌ Lỗi: " + err.toString() };
+    }
+  });
 }
 
 /**
@@ -969,6 +1275,8 @@ function processJarTransfer(data, ssTarget) {
       sheet.appendRow(rowChi);
       sheet.appendRow(rowThu);
     }
+
+    if (typeof clearAppDataCache === 'function') clearAppDataCache();
 
     return {
       success: true,
@@ -1062,3 +1370,24 @@ function setupJarSheetFormulas() {
     return { success: false, message: "❌ Lỗi khi nạp công thức: " + err.toString() };
   }
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    getFamilySheetHelper,
+    formatToDDMMYYYY,
+    getInitialData,
+    saveFamilyTransaction,
+    updateFamilyTransaction,
+    deleteTransaction,
+    getTab2Data,
+    getSavedJarConfig,
+    saveJarConfig,
+    getJarDataForWeb,
+    getQuickFixedItems,
+    saveBatchQuickFixedAmounts,
+    processJarTransfer,
+    transferJarAmount,
+    setupJarSheetFormulas
+  };
+}
+

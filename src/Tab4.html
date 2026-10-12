@@ -26,11 +26,10 @@
     </div>
   </div>
 
-  <!-- 3 SUBTABS CHÍNH CỦA TAB 4 -->
+  <!-- 2 SUBTABS CHÍNH CỦA TAB 4 -->
   <div class="flex p-1 bg-slate-200 rounded-xl mb-2.5 shrink-0 overflow-x-auto gap-1">
       <button onclick="switchTab4Subtab('congno')" id="btn-t4-subtab-congno" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold bg-white text-indigo-600 rounded-lg shadow-2xs cursor-pointer transition text-center whitespace-nowrap">1. Công nợ</button>
-      <button onclick="switchTab4Subtab('choxuly')" id="btn-t4-subtab-choxuly" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">2. Chờ xử lý</button>
-      <button onclick="switchTab4Subtab('datt')" id="btn-t4-subtab-datt" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">3. Đã TT</button>
+      <button onclick="switchTab4Subtab('datt')" id="btn-t4-subtab-datt" class="flex-1 min-w-[85px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">2. Đã TT</button>
   </div>
 
   <!-- SUBTAB 1: 1. CÔNG NỢ -->
@@ -66,87 +65,14 @@
     <div id="debt-all-cards" class="space-y-1"></div>
   </div>
 
-  <!-- SUBTAB 2: 2. CHỜ XỬ LÝ (Gom 3 mục từ Tab 3: Pre-order, Chờ hoàn tiền, Chờ thu tiền) -->
-  <div id="t4-section-choxuly" class="space-y-3 shrink-0 hidden">
-    <!-- 1. PRE-ORDER / GOM ĐƠN CHỜ TRỪ THẺ -->
-    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
-        <div class="flex justify-between items-center border-b pb-1">
-            <h4 class="text-[11px] font-bold text-blue-600 uppercase flex items-center gap-1">💳 Pre-order (Chờ Trừ Thẻ)</h4>
-            <div class="flex items-center gap-1">
-                <span id="pre-order-checked-sum" class="text-[9px] font-bold bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200/80">Tổng: 0 ¥</span>
-                <span id="pre-order-count" class="text-[9px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200/60">0 Đơn</span>
-            </div>
-        </div>
-
-        <!-- Hàng Thao Tác Nhanh Pre-Order: Checkbox Tất cả + Tìm kiếm -->
-        <div class="flex items-center gap-1.5">
-            <label class="flex items-center gap-1.5 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
-                <input type="checkbox" id="chk-select-all-pre-orders" onchange="toggleSelectAllPreOrders(this)" class="accent-blue-600 w-3.5 h-3.5 cursor-pointer" />
-                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
-                <span id="pre-order-checked-count" class="text-[9px] font-bold bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded-md">0 Mục</span>
-            </label>
-            <div class="relative flex-1">
-                <input type="text" id="search-pre-orders" onkeyup="filterPreOrderList()" placeholder="🔍 Tìm pre-order..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-blue-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
-            </div>
-        </div>
-
-        <div id="pre-order-container" class="space-y-1"></div>
-    </div>
-
-    <!-- 2. ĐƠN HỦY CHỜ HOÀN TIỀN -->
-    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
-        <div class="flex justify-between items-center border-b pb-1">
-            <h4 class="text-[11px] font-bold text-amber-600 uppercase flex items-center gap-1">🔄 Đơn Hủy Chờ Hoàn Tiền</h4>
-            <div class="flex items-center gap-1">
-                <span id="cancelled-refund-count" class="text-[9px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200/80">0 Đơn</span>
-            </div>
-        </div>
-
-        <!-- Hàng Thao Tác Nhanh Hoàn Tiền: Checkbox Tất cả + Tìm kiếm -->
-        <div class="flex items-center gap-1.5">
-            <label class="flex items-center gap-1 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
-                <input type="checkbox" id="chk-select-all-cancelled-refunds" onchange="toggleSelectAllCancelledRefunds(this)" class="accent-amber-600 w-3.5 h-3.5 cursor-pointer" />
-                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
-                <span id="cancelled-refund-checked-count" class="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-md">0 Mục</span>
-            </label>
-            <div class="relative flex-1">
-                <input type="text" id="search-cancelled-refunds" onkeyup="filterCancelledRefundsList()" placeholder="🔍 Tìm đơn hoàn tiền..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-amber-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
-            </div>
-        </div>
-
-        <div id="cancelled-refund-container" class="space-y-1">
-            <div class="text-center py-2 text-[11px] text-slate-400">Không có đơn hủy chờ hoàn tiền.</div>
-        </div>
-    </div>
-
-    <!-- 3. KHÁCH NỢ TIỀN (CHỜ THU) -->
-    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
-        <div class="flex justify-between items-center border-b pb-1">
-            <h4 class="text-xs font-bold text-rose-600 uppercase flex items-center gap-1">💸 Khách Nợ Tiền (Chờ Thu)</h4>
-            <div class="flex items-center gap-1">
-                <span id="debt-sales-count" class="text-[9px] font-bold bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md border border-rose-200/60">0 Đơn</span>
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <label class="flex items-center gap-1.5 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
-                <input type="checkbox" id="chk-select-all-debt-sales" onchange="toggleSelectAllDebtSales(this)" class="accent-rose-600 w-3.5 h-3.5 cursor-pointer" />
-                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
-                <span id="t3-debt-sales-checked-count" class="text-[9px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded-md">0 Mục</span>
-            </label>
-            <div class="relative flex-1">
-                <input type="text" id="search-debt-sales" onkeyup="filterDebtSalesList()" placeholder="🔍 Gõ tìm tên mặt hàng hoặc tên khách..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-rose-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
-            </div>
-        </div>
-
-        <div id="debt-sales-container" class="space-y-1 mt-1"></div>
-    </div>
-  </div>
-
-  <!-- SUBTAB 3: 3. ĐÃ TT (Công Nợ Đã Thanh Toán Hoàn Tất) -->
+  <!-- SUBTAB 2: 2. ĐÃ TT (Công Nợ Đã Thanh Toán Hoàn Tất) -->
   <div id="t4-section-datt" class="space-y-2 shrink-0 hidden">
-    <div class="bg-white p-2 px-3 rounded-xl border border-slate-200/80 shadow-2xs flex justify-between items-center">
-        <span class="text-[11px] font-bold text-slate-700">✓ DANH SÁCH CÔNG NỢ ĐÃ THANH TOÁN HOÀN TẤT</span>
+    <div class="bg-white p-1.5 px-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex justify-between items-center">
+        <span class="text-[11px] font-bold text-slate-800">✓ CÔNG NỢ ĐÃ THANH TOÁN HOÀN TẤT</span>
+        <span id="debt-done-count" class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-1.5 py-0.2 rounded-full">0 Mục</span>
+    </div>
+    <div class="relative">
+        <input type="text" id="search-list-done" onkeyup="filterDoneDebtCards()" placeholder="🔍 Gõ tìm tên đối tác hoặc nội dung đã thanh toán..." class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-indigo-500 shadow-inner font-medium text-slate-800" />
     </div>
     <div id="debt-done-cards" class="space-y-1"></div>
   </div>
@@ -169,60 +95,6 @@
         <button onclick="resetDebtSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
             ✕
         </button>
-    </div>
-</div>
-
-<!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN ĐƠN KHÁCH NỢ TAB 4 SUBTAB 2 -->
-<div id="t3-debt-sales-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-indigo-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-indigo-700/50 gap-2">
-    <!-- DÒNG 1: Đơn hàng đã chọn: xx mục - số tiền -->
-    <div class="flex items-center justify-between text-xs font-bold border-b border-indigo-800/60 pb-1.5 px-0.5">
-        <span class="text-slate-200">Đơn hàng đã chọn: <span id="t3-bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="t3-bulk-total" class="text-emerald-400 font-black text-xs">0 ¥</span></span>
-    </div>
-    <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Xuất BC - Thanh Toán - X) -->
-    <div class="flex items-center justify-between gap-1.5">
-        <button onclick="openT3ExportDebtReportModal()" class="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-1 shadow-xs">
-            📸 Xuất BC
-        </button>
-        <button onclick="saveBatchDebtSalesPayment()" class="flex-[1.5] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1">
-            💰 Thanh Toán
-        </button>
-        <button onclick="resetDebtSalesSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
-            ✕
-        </button>
-    </div>
-</div>
-
-<!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN PRE-ORDER TAB 4 SUBTAB 2 -->
-<div id="pre-order-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-blue-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-blue-700/50 gap-2">
-    <!-- DÒNG 1: Pre order: xxx mục - số tiền -->
-    <div class="flex items-center justify-between text-xs font-bold border-b border-blue-800/60 pb-1.5 px-0.5">
-        <span class="text-slate-200">Pre order: <span id="pre-order-bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="pre-order-bulk-total" class="text-blue-300 font-black text-xs">0 ¥</span></span>
-    </div>
-    <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Hủy đơn - Đã trừ thẻ - X) -->
-    <div class="flex items-center justify-between gap-1.5">
-        <button onclick="saveBatchCancelPreOrders(this)" class="flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-0.5">
-            ❌ Hủy Đơn
-        </button>
-        <button onclick="saveBatchConfirmPreOrders(this)" class="flex-[1.5] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-0.5">
-            ✅ Đã Trừ Thẻ
-        </button>
-        <button onclick="resetPreOrderSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
-            ✕
-        </button>
-    </div>
-</div>
-
-<!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN ĐƠN HỦY CHỜ HOÀN TIỀN TAB 4 SUBTAB 2 -->
-<div id="cancelled-refund-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-amber-950/95 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl shadow-2xl hidden items-center z-[90] w-[92%] max-w-[390px] justify-between transition-all border border-amber-700/50">
-    <div>
-        <p class="text-[9px] font-bold opacity-80 uppercase tracking-wider mb-0.5">Hoàn tiền đã chọn <span id="cancelled-refund-bulk-count" class="text-white text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-bold">0</span> mục</p>
-        <p class="text-sm font-extrabold text-amber-300" id="cancelled-refund-bulk-total">0 ¥</p>
-    </div>
-    <div class="flex items-center gap-1.5">
-        <button onclick="openBatchRefundModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-3 py-1.5 rounded-xl text-[11px] font-extrabold shadow-md transition cursor-pointer flex items-center gap-1">
-            💰 Hoàn Tiền
-        </button>
-        <button onclick="resetCancelledRefundSelection()" class="text-slate-400 hover:text-white font-bold text-lg leading-none cursor-pointer px-1 transition active:scale-90 ml-0.5" title="Đóng & Hủy Chọn">&times;</button>
     </div>
 </div>
 
@@ -362,14 +234,14 @@
       const currYear = d.getFullYear();
 
       // MẶC ĐỊNH MỞ MÀN HÌNH LUÔN LÀ CẢ NĂM
-      let monthHTML = '<option value="ALL" selected>All</option>';
+      let monthHTML = '<option value="All" selected>All</option>';
       for (let i = 1; i <= 12; i++) {
           monthHTML += `<option value="${i}">Tháng ${i}</option>`;
       }
       monthSelect.innerHTML = monthHTML;
 
-      let yearHTML = '<option value="ALL" selected>All</option>';
-      for (let y = 2024; y <= 2030; y++) {
+      let yearHTML = '<option value="All" selected>All</option>';
+      for (let y = 2024; y <= Math.max(2031, currYear + 5); y++) {
           yearHTML += `<option value="${y}">Năm ${y}</option>`;
       }
       yearSelect.innerHTML = yearHTML;
@@ -383,8 +255,46 @@
       return `${yyyy}-${mm}-${dd}`;
   }
 
+  function t4_formatIsoDate(val) {
+      if (!val) return getTodayString();
+      if (val instanceof Date) {
+          if (isNaN(val.getTime())) return getTodayString();
+          const yyyy = val.getFullYear();
+          const mm = String(val.getMonth() + 1).padStart(2, '0');
+          const dd = String(val.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      const str = String(val).trim();
+      if (!str) return getTodayString();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+          const parts = str.split(' ')[0].split('-');
+          const yyyy = parts[0];
+          const mm = parts[1].padStart(2, '0');
+          const dd = parts[2].padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
+          const parts = str.split(' ')[0].split('/');
+          const dd = parts[0].padStart(2, '0');
+          const mm = parts[1].padStart(2, '0');
+          let yyyy = parts[2];
+          if (yyyy.length === 2) yyyy = "20" + yyyy;
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      return getTodayString();
+  }
+
   function applyTab4Data(res) {
       if (!res || !res.success) return;
+      window.t1_tab4Data = res;
       if (res.summary) {
           const net = res.summary.net || 0;
           const netEl = document.getElementById('debt-dashboard-net');
@@ -398,16 +308,46 @@
           window.PARTNER_LIST = res.partners;
       }
       window.TAB4_DEBTS = res.debts || [];
+      window.TAB4_ALL_DEBTS = res.allDebts || res.debts || [];
+
+      // Cập nhật số lượng hoàn tất trên huy hiệu Subtab 2
+      const doneList = window.TAB4_ALL_DEBTS.filter(item => isDebtDone(item));
+      const doneBadge = document.getElementById('debt-done-count');
+      if (doneBadge) doneBadge.innerText = doneList.length + ' Mục';
+
       if (typeof renderDebtCardsList === 'function') {
-          renderDebtCardsList(window.TAB4_DEBTS);
+          if (window.CURRENT_TAB4_SUBTAB === 'datt') {
+              renderDebtCardsList(window.TAB4_ALL_DEBTS);
+          } else {
+              renderDebtCardsList(window.TAB4_DEBTS);
+          }
       }
+      if (typeof renderTab1Wallets === 'function') {
+          renderTab1Wallets();
+      }
+  }
+
+  function isDebtDone(item) {
+      if (!item) return false;
+      const st = String(item.trangThai || item.trangThaiDuNo || '').trim().toUpperCase();
+      if (st === 'HOAN_TAT' || st === 'DA_TRA' || st === 'DONE' || 
+          st.includes('HOÀN TẤT') || st.includes('ĐÃ TRẢ') || st.includes('ĐÃ THANH TOÁN') || st.includes('ĐÃ TT') ||
+          st.includes('DA TRA') || st.includes('HOAN TAT') || st.includes('DA THANH TOAN')) {
+          return true;
+      }
+      const tongNo = Number(item.tongNo) || 0;
+      const daTra = Number(item.daTra) || 0;
+      const duNo = Number(item.duNo) || 0;
+      if (tongNo > 0 && duNo <= 0) return true;
+      if (daTra > 0 && daTra >= tongNo) return true;
+      return false;
   }
 
   function reloadTab4Data(forceRefresh = true) {
       const monthSelect = document.getElementById('t4-filter-month');
       const yearSelect = document.getElementById('t4-filter-year');
-      const month = monthSelect ? monthSelect.value : 'ALL';
-      const year = yearSelect ? yearSelect.value : 'ALL';
+      const month = monthSelect ? monthSelect.value : 'All';
+      const year = yearSelect ? yearSelect.value : 'All';
 
       if (forceRefresh === false && window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
           renderDebtCardsList(window.TAB4_DEBTS);
@@ -462,7 +402,7 @@
           renderDebtCardsList(window.TAB4_DEBTS);
       } else if (subtab === 'datt') {
           window.CURRENT_DEBT_TAB = 'done';
-          renderDebtCardsList(window.TAB4_DEBTS);
+          renderDebtCardsList(window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0 ? window.TAB4_ALL_DEBTS : window.TAB4_DEBTS);
       } else if (subtab === 'choxuly') {
           if (typeof reloadTab3Data === 'function') {
               reloadTab3Data();
@@ -480,16 +420,19 @@
       const isDoneTab = (activeTab === 'done');
       const container = isDoneTab ? (document.getElementById('debt-done-cards') || document.getElementById('debt-all-cards')) : document.getElementById('debt-all-cards');
       const countEl = document.getElementById('debt-list-count');
+      const doneCountEl = document.getElementById('debt-done-count');
       const chkSelectAll = document.getElementById('chk-select-all-debts');
       if (!container) return;
 
       if (chkSelectAll) chkSelectAll.checked = false;
 
-      let filtered = (debts || []).filter(item => {
+      const sourceList = (isDoneTab && window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0) ? window.TAB4_ALL_DEBTS : (debts || window.TAB4_DEBTS || []);
+
+      let filtered = (sourceList || []).filter(item => {
           const lUp = String(item.loai || '').toUpperCase();
           const tUp = (String(item.ten || '') + ' ' + String(item.noidung || '')).toUpperCase();
           const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
-          const isDone = (item.trangThai === 'HOAN_TAT' || item.duNo <= 0);
+          const isDone = isDebtDone(item);
 
           if (activeTab === 'done') return isDone;
           if (activeTab === 'thu') return isThu && !isDone;
@@ -497,7 +440,11 @@
           return !isDone; // 'all' in Subtab 1 shows active unpaid debts
       });
 
-      if (countEl) countEl.innerText = `${filtered.length} Mục`;
+      if (isDoneTab) {
+          if (doneCountEl) doneCountEl.innerText = `${filtered.length} Mục`;
+      } else {
+          if (countEl) countEl.innerText = `${filtered.length} Mục`;
+      }
 
       if (filtered.length === 0) {
           container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">${isDoneTab ? 'Chưa có khoản công nợ nào hoàn tất.' : 'Không có khoản công nợ nào đang hoạt động.'}</div>`;
@@ -505,50 +452,46 @@
           return;
       }
 
-      // VẼ DANH SÁCH THẺ TÔ MÀU TRỰC TIẾP
+      // VẼ DANH SÁCH THẺ (Nền trắng sạch, chỉ tô màu giá tiền: Xanh thu / Đỏ trả)
       container.innerHTML = filtered.map(item => {
           const lUp = String(item.loai || '').toUpperCase();
           const tUp = (String(item.ten || '') + ' ' + String(item.noidung || '')).toUpperCase();
           const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
-          const isDone = (item.trangThai === 'HOAN_TAT' || item.duNo <= 0);
+          const isDone = isDebtDone(item);
 
-          let cardStyle = isDone 
-              ? 'bg-slate-50 border-slate-200/80 opacity-60 text-slate-600'
-              : (isThu 
-                  ? 'bg-emerald-50/70 border-emerald-200/90 hover:border-emerald-400 text-emerald-950'
-                  : 'bg-rose-50/70 border-rose-200/90 hover:border-rose-400 text-rose-950');
-
-          const amtColor = isDone 
-              ? 'text-slate-400 line-through' 
-              : (isThu ? 'text-emerald-700 font-extrabold' : 'text-rose-700 font-extrabold');
-
+          const cardStyle = 'bg-white border-slate-200 hover:border-slate-300 text-slate-800';
+          const amtColor = isThu ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
           const amtSign = isThu ? '+' : '-';
+          const displayAmt = isDone ? (item.daTra || item.tongNo || item.duNo || 0) : (item.duNo || 0);
           const payBtnText = isThu ? '💰 Nhận' : '💸 Trả';
           const payBtnBg = isThu ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white';
 
           return `
-              <div class="debt-card p-1.5 px-2 rounded-xl border transition text-xs space-y-0.5 cursor-pointer shadow-2xs ${cardStyle}" id="card-debt-${item.id}" onclick="toggleCheckbox('chk-debt-${item.id}')">
+              <div class="debt-card p-1.5 px-2 rounded-xl border transition text-xs space-y-0.5 cursor-pointer shadow-2xs ${cardStyle}" id="card-debt-${item.id}" onclick="openEditDebtModal('${item.id}')">
                   <div class="flex justify-between items-center gap-1.5">
                       <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                          ${!isDone ? `
                           <input type="checkbox" id="chk-debt-${item.id}" class="chk-debt-item accent-indigo-600 w-3.5 h-3.5 cursor-pointer shrink-0" 
                                  data-id="${item.id}" data-amount="${item.duNo}" data-name="${(item.ten || '').replace(/"/g, '&quot;')}" 
                                  data-loai="${item.loai}" data-noidung="${(item.noidung || '').replace(/"/g, '&quot;')}" data-ngay="${item.ngay || ''}" 
                                  onchange="calcBulkPay()" onclick="event.stopPropagation()" />
-                          <span class="card-name font-bold text-[11px] truncate flex-1 min-w-0">
+                          ` : `
+                          <span class="w-3.5 h-3.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold flex items-center justify-center shrink-0">✓</span>
+                          `}
+                          <span class="card-name font-bold text-[11px] truncate flex-1 min-w-0 text-slate-800">
                               ${item.ten || 'Không tên'} 
-                              <span class="text-[9px] opacity-75 font-normal">(${item.noidung || 'Ghi nợ'})</span>
+                              <span class="text-[9px] text-slate-500 font-normal">(${item.noidung || 'Ghi nợ'})</span>
                           </span>
                       </div>
                       <div class="text-right shrink-0">
-                          <span class="font-bold ${amtColor} text-[11px]">${amtSign}${(item.duNo || 0).toLocaleString()} ¥</span>
+                          <span class="font-bold ${amtColor} text-[11px]">${amtSign}${displayAmt.toLocaleString()} ¥</span>
                       </div>
                   </div>
-                  <div class="flex justify-between items-center pt-0.5 border-t border-slate-200/50 text-[9px] opacity-80 flex-wrap gap-1">
-                      <span>Ngày: <b>${item.ngay || 'N/A'}</b> | Nguồn: <b>${item.nguon || '—'}</b> | Đã trả: <b>${(item.daTra || 0).toLocaleString()} ¥</b></span>
+                  <div class="flex justify-between items-center pt-0.5 border-t border-slate-100 text-[9px] text-slate-500 flex-wrap gap-1">
+                      <span>Ngày: <b>${item.ngay || 'N/A'}</b> | Nguồn: <b>${item.nguon || '—'}</b>${isDone ? ` | Hoàn tất: <b>${item.ngayTra || item.ngay || '—'}</b>` : ` | Đã trả: <b>${(item.daTra || 0).toLocaleString()} ¥</b>`}</span>
                       <div class="flex gap-1 items-center shrink-0">
-                          ${!isDone ? `<button onclick="event.stopPropagation(); openPayModal('${item.id}', '${(item.ten || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', ${item.duNo}, '${item.loai}')" class="px-1.5 py-0.2 ${payBtnBg} rounded font-bold transition cursor-pointer text-[9px] shadow-2xs">${payBtnText}</button>` : ''}
-                          <button onclick="event.stopPropagation(); openEditDebtModal('${item.id}')" class="bg-white/80 hover:bg-white text-slate-700 border border-slate-300/80 px-1 py-0.2 rounded font-bold transition cursor-pointer text-[9px]">✏️</button>
-                          <button onclick="event.stopPropagation(); confirmDeleteDebt('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-1 py-0.2 rounded font-bold transition cursor-pointer text-[9px]">🗑️</button>
+                          ${!isDone ? `<button onclick="event.stopPropagation(); openPayModal('${item.id}', '${(item.ten || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', ${item.duNo}, '${item.loai}')" class="px-1.5 py-0.2 ${payBtnBg} rounded font-bold transition cursor-pointer text-[9px] shadow-2xs">${payBtnText}</button>` : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-1.5 py-0.2 rounded font-bold text-[9px]">✓ Đã TT</span>`}
+                          <button onclick="event.stopPropagation(); confirmDeleteDebt('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-1.5 py-0.2 rounded font-bold transition cursor-pointer text-[9px]">🗑️</button>
                       </div>
                   </div>
               </div>
@@ -563,7 +506,13 @@
       if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4) {
           applyTab4Data(window.SERVER_INITIAL_DATA.tab4);
       } else {
-          reloadTab4Data();
+          try {
+              const cached = localStorage.getItem('T4_CACHE_DATA_LATEST');
+              if (cached) {
+                  const cData = JSON.parse(cached);
+                  if (cData && cData.success) applyTab4Data(cData);
+              }
+          } catch(e) {}
       }
   });
 
@@ -572,6 +521,21 @@
       if (!input) return;
       const query = input.value.toLowerCase().trim();
       const cards = document.querySelectorAll('#debt-all-cards .debt-card');
+      cards.forEach(card => {
+          const text = card.innerText.toLowerCase();
+          if (!query || text.includes(query)) {
+              card.style.display = 'block';
+          } else {
+              card.style.display = 'none';
+          }
+      });
+  }
+
+  function filterDoneDebtCards() {
+      const input = document.getElementById('search-list-done');
+      if (!input) return;
+      const query = input.value.toLowerCase().trim();
+      const cards = document.querySelectorAll('#debt-done-cards .debt-card');
       cards.forEach(card => {
           const text = card.innerText.toLowerCase();
           if (!query || text.includes(query)) {
@@ -592,7 +556,7 @@
       const activeBtn = document.getElementById('btn-debt-' + tab);
       if (activeBtn) activeBtn.className = "flex-1 min-w-[65px] py-1.5 text-[11px] font-bold bg-white text-indigo-600 rounded-lg shadow-2xs cursor-pointer transition text-center whitespace-nowrap";
 
-      renderDebtCardsList(window.TAB4_DEBTS);
+      renderDebtCardsList(tab === 'done' ? (window.TAB4_ALL_DEBTS || window.TAB4_DEBTS) : window.TAB4_DEBTS);
   }
 
   function toggleSelectAllDebts(chkElem) {
@@ -724,7 +688,8 @@
   }
 
   function openEditDebtModal(id) {
-      const item = (window.TAB4_DEBTS || []).find(d => String(d.id) === String(id));
+      const allList = (window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0) ? window.TAB4_ALL_DEBTS : (window.TAB4_DEBTS || []);
+      const item = allList.find(d => String(d.id) === String(id));
       if (!item) {
           showToast("⚠️ Không tìm thấy bản ghi công nợ!", true);
           return;
@@ -733,7 +698,7 @@
       openAddDebtModal(item.loai || 'THU');
       document.getElementById('add-debt-title').innerText = `✏️ Sửa Công Nợ (${item.id})`;
       document.getElementById('add-debt-id').value = item.id;
-      document.getElementById('add-debt-date').value = item.ngay || getTodayString();
+      document.getElementById('add-debt-date').value = t4_formatIsoDate(item.ngay);
       document.getElementById('add-debt-name').value = item.ten || '';
       document.getElementById('add-debt-amount').value = item.tongNo || 0;
       document.getElementById('add-debt-source').value = item.nguon || '';
@@ -779,7 +744,9 @@
           }
       }
 
+      const reqId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_DEBT_") : ("REQ_DEBT_" + Date.now());
       const payload = {
+          requestId: reqId,
           id: id,
           ngay: ngay,
           ten: ten,
@@ -797,6 +764,12 @@
                       showToast(res.message || "✅ Đã lưu khoản công nợ!");
                       closeModal('modal-add-debt');
                       reloadTab4Data();
+                      if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                          mergeUpdatedWallets(res.updatedWallets);
+                      }
+                      if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                          window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                      }
                   } else {
                       showToast("❌ " + (res ? res.message : "Lỗi lưu dữ liệu"), true);
                   }
@@ -892,7 +865,9 @@
           btn.innerText = "⏳ Đang xử lý...";
       }
 
+      const reqIdSettle = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_DS_") : ("REQ_DS_" + Date.now());
       const payload = {
+          requestId: reqIdSettle,
           ids: currentPayContext.ids,
           name: currentPayContext.name,
           amount: amtVal,
@@ -910,6 +885,12 @@
                           closeModal('modal-pay-debt');
                           if (res.freshData && typeof applyTab3Data === 'function') applyTab3Data(res.freshData);
                           else if (typeof reloadTab3Data === 'function') reloadTab3Data();
+                          if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                              mergeUpdatedWallets(res.updatedWallets);
+                          }
+                          if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                              window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                          }
                       } else {
                           showToast("❌ " + (res ? res.message : "Thu tiền thất bại"), true);
                       }
@@ -935,6 +916,12 @@
                       showToast(res.message || "✅ Đã gạch nợ thành công!");
                       closeModal('modal-pay-debt');
                       reloadTab4Data();
+                      if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                          mergeUpdatedWallets(res.updatedWallets);
+                      }
+                      if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                          window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                      }
                   } else {
                       showToast("❌ " + (res ? res.message : "Thanh toán thất bại"), true);
                   }
@@ -1084,6 +1071,7 @@
   function confirmDeleteDebt(id) {
       if (typeof showConfirmModal === 'function') {
           showConfirmModal("⚠️ Xóa Bản Ghi Công Nợ", `Bạn có chắc chắn muốn xóa bản ghi công nợ (${id}) không?`, function() {
+              const reqIdDel = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_DD_") : ("REQ_DD_" + Date.now());
               if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.deleteDebtRecord === 'function') {
                   showToast("⏳ Đang xóa bản ghi công nợ...");
                   google.script.run
@@ -1091,6 +1079,12 @@
                           if (res && res.success) {
                               showToast(res.message || "✅ Đã xóa bản ghi công nợ!");
                               reloadTab4Data();
+                              if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                                  mergeUpdatedWallets(res.updatedWallets);
+                              }
+                              if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                                  window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                              }
                           } else {
                               showToast("❌ " + (res ? res.message : "Xóa thất bại"), true);
                           }
@@ -1098,7 +1092,7 @@
                       .withFailureHandler(function(err) {
                           showToast("❌ Lỗi xóa bản ghi: " + (err ? (err.message || err) : "Không thể xóa"), true);
                       })
-                      .deleteDebtRecord(id);
+                      .deleteDebtRecord({ id: id, requestId: reqIdDel });
               } else {
                   showToast("✅ Đã xóa bản ghi (Demo)!");
               }

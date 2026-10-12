@@ -61,76 +61,12 @@
 
 <script>
     function renderTab6Data() {
-        let totalCash = 0;
-        let totalCredit = 0;
-        let inventoryValue = 0;
-        let receivables = 0;
-        let payables = 0;
-        let totalSales = 0;
-        let totalCogs = 0;
-        let netProfit = 0;
-
-        const wallets = window.t1_walletsData || (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.wallets) || [];
-        wallets.forEach(w => {
-            const rawBal = Number(w.current_balance) || 0;
-            if (w.type === 'CREDIT') {
-                const limit = Number(w.credit_limit || w.limit || 0);
-                if (rawBal < 0) totalCredit += Math.abs(rawBal);
-                else if (rawBal > 0 && limit > 0 && rawBal > limit / 2 && rawBal <= limit) {
-                    totalCredit += Math.max(0, limit - rawBal);
-                } else if (rawBal > 0) {
-                    totalCredit += rawBal;
-                }
-            } else {
-                totalCash += rawBal;
-            }
-        });
-
-        if (window.SERVER_INITIAL_DATA) {
-            if (window.SERVER_INITIAL_DATA.tab3 && window.SERVER_INITIAL_DATA.tab3.summary) {
-                inventoryValue = window.SERVER_INITIAL_DATA.tab3.summary.stockValue || 0;
-                totalSales = window.SERVER_INITIAL_DATA.tab3.summary.sales || 0;
-                totalCogs = window.SERVER_INITIAL_DATA.tab3.summary.cogs || 0;
-                netProfit = window.SERVER_INITIAL_DATA.tab3.summary.net || 0;
-            }
-            if (window.SERVER_INITIAL_DATA.tab4 && window.SERVER_INITIAL_DATA.tab4.summary) {
-                receivables = window.SERVER_INITIAL_DATA.tab4.summary.receivables || 0;
-                payables = window.SERVER_INITIAL_DATA.tab4.summary.payables || 0;
-            }
+        if (typeof renderTab1Wallets === 'function') {
+            renderTab1Wallets();
         }
-
-        const totalAssets = totalCash + inventoryValue + receivables;
-        const totalLiabilities = totalCredit + payables;
-        const netWorth = totalAssets - totalLiabilities;
-
-        const setText = (id, val, colorClass = '') => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.innerText = val.toLocaleString() + ' ¥';
-                if (colorClass) {
-                    el.className = el.className.replace(/text-(emerald|rose|blue)-[0-9]+/g, '');
-                    if (val > 0) el.classList.add(colorClass);
-                    else if (val < 0) el.classList.add('text-rose-500');
-                    else el.classList.add('text-slate-600');
-                }
-            }
-        };
-
-        setText('t6-net-worth', netWorth);
-        setText('t6-total-assets', totalAssets);
-        setText('t6-total-liabilities', totalLiabilities);
-        setText('t6-cash-balance', totalCash);
-        setText('t6-inventory-value', inventoryValue);
-        setText('t6-receivables', receivables);
-        setText('t6-credit-debt', totalCredit);
-        setText('t6-payables', payables);
-
-        setText('t6-total-sales', totalSales);
-        setText('t6-total-cogs', totalCogs);
-        setText('t6-net-profit', netProfit, 'text-emerald-600');
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(renderTab6Data, 500);
+        setTimeout(renderTab6Data, 300);
     });
 </script>

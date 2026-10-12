@@ -653,7 +653,7 @@
     }
   }
 
-  // Tự động nạp dữ liệu tức thì 0ms từ preloaded initial data
+  // Tự động nạp dữ liệu tức thì 0ms từ preloaded initial data hoặc cache
   document.addEventListener('DOMContentLoaded', function() {
     if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab5) {
       window.TAB5_DATA = window.SERVER_INITIAL_DATA.tab5;
@@ -661,7 +661,13 @@
     } else if (window.TAB5_DATA && window.TAB5_DATA.items && window.TAB5_DATA.items.length > 0) {
       t5_renderMatrix();
     } else {
-      t5_loadData();
+      try {
+        const cached = localStorage.getItem('tab5_data_local');
+        if (cached) {
+          const cData = JSON.parse(cached);
+          if (cData && cData.success) applyTab5Data(cData);
+        }
+      } catch(e) {}
     }
   });
 </script>

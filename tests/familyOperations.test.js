@@ -21,7 +21,9 @@ function createMockSpreadsheetDB() {
     JAR: [],
     Wallets: [
       ['ID', 'Tên Ví', 'Phân Loại', 'Hạn Mức', 'Ngày Chốt', 'Ngày Trả', 'Số Dư'],
-      ['W001', 'Ví Tiền Mặt', 'DEBIT', 0, '', '', 100000]
+      ['W001', 'Ví Tiền Mặt', 'DEBIT', 0, '', '', 100000],
+      ['W002', 'Thẻ Ufj', 'DEBIT', 0, '', '', 200000],
+      ['W003', 'Thẻ Rakuten', 'CREDIT', 500000, '', '', 0]
     ]
   };
 
@@ -137,6 +139,41 @@ test('updateFamilyTransaction updates existing transaction details by ID', () =>
   assert.equal(db.Family[3][5], 6200);
 });
 
+test('saveFamilyTransaction and updateFamilyTransaction reject invalid/unregistered money sources', () => {
+  const db = createMockSpreadsheetDB();
+
+  // 1. Rejects unknown wallet in save
+  const invalidSaveRes = saveFamilyTransaction({
+    ngay: '2026-09-05',
+    loai: 'CHI',
+    noidung: 'Mua sắm online',
+    sotien: 1000,
+    nguontien: 'Ví Lạ Không Tồn Tại',
+    hu: 'Thiết yếu'
+  });
+  assert.equal(invalidSaveRes.success, false);
+  assert.ok(invalidSaveRes.message.includes('không tồn tại trong danh sách Ví/Thẻ'));
+
+  // 2. Rejects empty wallet in save
+  const emptySaveRes = saveFamilyTransaction({
+    ngay: '2026-09-05',
+    loai: 'THU',
+    noidung: 'Tiền thưởng',
+    sotien: 5000,
+    nguontien: '',
+    hu: '----Thu nhập'
+  });
+  assert.equal(emptySaveRes.success, false);
+
+  // 3. Rejects unknown wallet in update
+  const invalidUpdateRes = updateFamilyTransaction({
+    id: 'TC002',
+    nguontien: 'Thẻ Ảo Bất Kỳ'
+  });
+  assert.equal(invalidUpdateRes.success, false);
+  assert.ok(invalidUpdateRes.message.includes('không tồn tại trong danh sách Ví/Thẻ'));
+});
+
 test('deleteTransaction removes transaction row by ID', () => {
   const db = createMockSpreadsheetDB();
 
@@ -234,5 +271,35 @@ test('updateFamilyTransaction and deleteTransaction support ROW_ fallback IDs wh
   const deleteRes = deleteTransaction('ROW_' + newRowIndex);
   assert.equal(deleteRes.success, true);
   assert.equal(db.Family.length, newRowIndex - 1);
+});
+
+test('saveBatchQuickFixedAmounts writes to Family sheet, updates wallet balance, and triggers financial event posting', () => {
+  const db = createMockSpreadsheetDB();
+  const postedEvents = [];
+  global.postFinancialEvents = (events) => {
+    postedEvents.push(...events);
+  };
+  global.updateWalletBalanceHelper = (wName, delta) => {
+    return { name: wName, currentBalance: 100000 + delta };
+  };
+
+  const res = saveBatchQuickFixedAmounts([
+    {
+      noiDung: 'Tiền mạng Internet',
+      newDate: '2026-10-05',
+      newAmount: 4500,
+      newSource: 'Ví Tiền Mặt',
+      hu: 'Thiết yếu',
+      loai: 'Chi'
+    }
+  ]);
+
+  assert.equal(res.success, true);
+  assert.equal(postedEvents.length, 1);
+  assert.equal(postedEvents[0].walletName, 'Ví Tiền Mặt');
+  assert.equal(postedEvents[0].amount, 4500);
+  assert.equal(postedEvents[0].direction, 'OUT');
+  assert.equal(postedEvents[0].eventType, 'FAMILY_EXPENSE');
+  assert.equal(res.updatedWallets.length, 1);
 });
 

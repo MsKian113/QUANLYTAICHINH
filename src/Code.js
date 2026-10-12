@@ -27,7 +27,7 @@ function standardizeAllSheetStatuses() {
     let updatedCountD = 0;
 
     // 1. Standardize Sheet Purchase (13 columns)
-    const pSheet = ss.getSheetByName("Purchase") || ss.getSheetByName("MuaHang");
+    const pSheet = ss.getSheetByName("Purchase");
     if (pSheet && pSheet.getLastRow() >= 2) {
       const lastColP = Math.max(pSheet.getLastColumn(), 13);
       const pRange = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP);
@@ -163,3 +163,6 @@ function standardizeAllSheetStatuses() {
     return { success: false, message: "❌ Lỗi khi chuẩn hóa database: " + err.toString() };
   }
 }
+
+
+

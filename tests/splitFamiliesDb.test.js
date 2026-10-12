@@ -13,7 +13,7 @@ function createMockSpreadsheet() {
       return sheets[name] || null;
     },
     insertSheet(name) {
-      const rows = [];
+      const rows = [["Header1", "Header2", "Header3", "Header4", "Header5", "Header6", "Header7", "Header8", "Header9", "Header10", "Header11", "Header12", "Header13", "Header14", "Header15", "Header16"]];
       const sheet = {
         name: name,
         appendRow(rowArr) {
@@ -87,15 +87,15 @@ function createMockSpreadsheet() {
   };
 }
 
-test('SplitFamilies: Sheet creation auto-seeds default sample families when empty', () => {
+test('SplitFamilies: Sheet creation initializes 8 header columns without hardcoded seed rows', () => {
   const ss = createMockSpreadsheet();
   const sheet = Server_Tab7.getSplitFamiliesSheetHelper(ss);
   assert.ok(sheet);
-  assert.equal(sheet.getLastRow(), 6); // 1 header row + 5 seed rows
+  assert.equal(sheet.getLastRow(), 1); // 1 header row, 0 hardcoded seed rows
 
   const res = Server_Tab7.getSplitFamilies(ss);
   assert.equal(res.success, true);
-  assert.equal(res.families.length, 2); // 2 default families (2F and Gia đình Tuyết Anh)
+  assert.equal(res.families.length, 0);
 });
 
 test('SplitFamilies: saveSplitFamilyBatch uses 8 columns, FAM-xxxxx, MEB-xxxxx and toggles repstatus true/false', () => {
@@ -266,7 +266,6 @@ test('SplitGroups: saves and reads 15 flat relational columns for 3 families 7 m
 test('standardizeSplitFamiliesSheet standardizes 8 columns and ensures 1 rep per family and 1 isme family', () => {
   const ss = createMockSpreadsheet();
   const sheet = ss.insertSheet('SplitFamilies');
-  sheet.appendRow(['family_id', 'family_name', 'member_id', 'member_name', 'member_type', 'default_weight', 'isme', 'is_rep']);
   sheet.appendRow(['FAM-10001', '1F', 'MEB-10001', 'Member 1', 'ADULT', 1, false, false]);
   sheet.appendRow(['FAM-10001', '1F', 'MEB-10002', 'Member 2', 'ADULT', 1, false, false]);
   sheet.appendRow(['FAM-10002', '2F', 'MEB-10003', 'Member 3', 'ADULT', 1, true, true]);

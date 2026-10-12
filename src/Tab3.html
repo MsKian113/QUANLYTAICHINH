@@ -35,8 +35,9 @@
   <!-- SUB TABS TAB 3 -->
   <div class="flex p-1 bg-slate-200 rounded-xl mb-3 shrink-0 overflow-x-auto gap-1">
       <button onclick="switchBizTab('donhang')" id="btn-biz-donhang" class="flex-1 min-w-[70px] py-1.5 text-[11px] font-bold bg-white text-teal-600 rounded-lg shadow-xs cursor-pointer transition text-center whitespace-nowrap">1. Hàng hoá</button>
-      <button onclick="switchBizTab('tonkho')" id="btn-biz-tonkho" class="flex-1 min-w-[70px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">2. Tồn kho</button>
-      <button onclick="switchBizTab('lichmua')" id="btn-biz-lichmua" class="flex-1 min-w-[70px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">3. Lịch mua</button>
+      <button onclick="switchBizTab('choxuly')" id="btn-biz-choxuly" class="flex-1 min-w-[70px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">2. Chờ xử lý</button>
+      <button onclick="switchBizTab('tonkho')" id="btn-biz-tonkho" class="flex-1 min-w-[70px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">3. Tồn kho</button>
+      <button onclick="switchBizTab('lichmua')" id="btn-biz-lichmua" class="flex-1 min-w-[70px] py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition text-center whitespace-nowrap">4. Lịch mua</button>
   </div>
 
   <!-- MODAL: GHI NHẬP MUA HÀNG -->
@@ -69,9 +70,8 @@
           <div class="min-w-0">
               <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Trạng thái Kho</label>
               <select id="mua-trangthai-kho" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-1.5 py-1 text-xs font-bold text-teal-700 outline-none focus:border-teal-500 cursor-pointer">
-                  <option value="Chờ Ship">📦 Chờ Ship</option>
-                  <option value="Kho Nhật">🟢 Kho Nhật</option>
-                  <option value="Kho VN">✴️ Kho VN</option>
+                  <option value="Chờ Ship" selected>📦 Chờ Ship</option>
+                  <option value="Đặt trước">🟡 Đặt trước</option>
               </select>
           </div>
           <div class="relative min-w-0">
@@ -109,8 +109,8 @@
       <div class="bg-blue-50/70 border border-blue-100 p-2 rounded-lg space-y-1.5 relative z-[30]">
           <div class="grid grid-cols-2 gap-2">
               <label class="flex items-center gap-1.5 cursor-pointer group">
-                  <input type="checkbox" id="chk-pre-order" class="accent-blue-600 w-3.5 h-3.5 cursor-pointer shrink-0" />
-                  <span class="text-[11px] font-bold text-slate-800 group-hover:text-blue-700">💳 Pre-order</span>
+                  <input type="checkbox" id="chk-pre-order" onchange="onTogglePreOrderCheckbox(this)" class="accent-blue-600 w-3.5 h-3.5 cursor-pointer shrink-0" />
+                  <span class="text-[11px] font-bold text-slate-800 group-hover:text-blue-700">💳 Pre-order / Đặt trước</span>
               </label>
               
               <label class="flex items-center gap-1.5 cursor-pointer group">
@@ -178,38 +178,43 @@
 
   <!-- 3. ĐƠN HÀNG & LUÂN CHUYỂN KHO -->
   <div id="biz-donhang" class="space-y-3 pb-4 shrink-0 relative">
-    <!-- DANH SÁCH GOM CHUNG ĐƠN MUA & BÁN THEO NGÀY MỚI NHẤT -->
+    <!-- DANH SÁCH GOM CHUNG ĐƠN MUA & BÁN THEO TIMELINE NGÀY -->
     <div class="bg-white p-2.5 rounded-2xl shadow-xs border border-slate-200 space-y-2">
-        <!-- HEADER PILL CARD MATCHING MOCKUP UI -->
-        <div class="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-xl p-2 px-2.5">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" id="chk-select-all-purchase-orders" onchange="toggleSelectAllPurchaseOrders(this)" class="accent-teal-600 w-4 h-4 cursor-pointer rounded shrink-0" />
-                <span class="text-xs font-bold text-slate-800 flex items-center gap-1">📦 ĐƠN HÀNG</span>
-                <span id="purchase-orders-checked-count" class="text-[10px] font-extrabold bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full border border-teal-300 ml-0.5">0 Mục</span>
-                <span id="combined-order-count" class="hidden">0 Đơn</span>
-            </label>
-            <div class="flex items-center gap-1">
-                <button onclick="openModal('modal-biz-mua')" class="px-2 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shadow-xs">
+        <!-- HEADER ROW: DROPDOWN FILTER & ACTION BUTTONS -->
+        <div class="flex justify-between items-center gap-1.5 flex-wrap">
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                <select id="filter-combined-type" onchange="setCombinedFilterType(this.value)" class="bg-white border border-slate-300 hover:border-teal-500 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-800 outline-none cursor-pointer transition shadow-2xs">
+                    <option value="ALL" id="opt-combined-all" selected>📋 Tất cả</option>
+                    <option value="PURCHASE" id="opt-combined-purchase">🛒 Đơn mua</option>
+                    <option value="SALES" id="opt-combined-sales">📤 Đơn bán</option>
+                </select>
+                <select id="filter-combined-wh" onchange="filterCombinedOrdersList(1)" class="bg-white border border-slate-200 rounded-xl px-2 py-1 text-[10px] font-bold text-slate-700 outline-none cursor-pointer max-w-[130px] truncate">
+                    <option value="ALL">🏢 Kho (Tất cả)</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center gap-1 shrink-0">
+                <button onclick="openModal('modal-biz-mua')" class="px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shadow-xs">
                     <span>+ Mua</span>
                 </button>
-                <button onclick="openModal('modal-biz-ban')" class="px-2 py-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shadow-xs">
+                <button onclick="openModal('modal-biz-ban')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg font-bold text-[11px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shadow-xs">
                     <span>- Bán</span>
                 </button>
             </div>
         </div>
 
-        <div class="flex items-center gap-1.5">
-            <div class="relative flex-1">
-                <input type="text" id="search-combined-orders" onkeyup="filterCombinedOrdersList(1)" placeholder="🔍 Gõ tìm tên sản phẩm, nơi mua, kho, ví..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-teal-500 font-medium shadow-inner" />
-            </div>
-            <select id="filter-combined-wh" onchange="filterCombinedOrdersList(1)" class="bg-white border border-slate-200 rounded-xl px-2 py-1 text-[10px] font-bold text-slate-700 outline-none cursor-pointer max-w-[110px] truncate">
-                <option value="ALL">🏢 Kho (Tất cả)</option>
-            </select>
-            <select id="filter-combined-type" onchange="filterCombinedOrdersList(1)" class="bg-white border border-slate-200 rounded-xl px-2 py-1 text-[10px] font-bold text-slate-700 outline-none cursor-pointer">
-                <option value="ALL">Tất cả</option>
-                <option value="PURCHASE">🛒 Mua</option>
-                <option value="SALES">📤 Bán</option>
-            </select>
+        <div class="relative">
+            <input type="text" id="search-combined-orders" onkeyup="filterCombinedOrdersList(1)" placeholder="🔍 Gõ tìm tên sản phẩm, nơi mua, kho, ví..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs outline-none focus:border-teal-500 font-medium shadow-inner" />
+        </div>
+
+        <!-- SELECT ALL ROW FOR BULK SELECTION -->
+        <div id="combined-select-all-row" class="flex justify-between items-center px-1 text-[10px] text-slate-500 border-b border-slate-100 pb-1">
+            <label class="flex items-center gap-1.5 cursor-pointer select-none">
+                <input type="checkbox" id="chk-select-all-purchase-orders" onchange="toggleSelectAllPurchaseOrders(this)" class="accent-teal-600 w-3.5 h-3.5 cursor-pointer rounded shrink-0" />
+                <span class="font-bold text-slate-700">Tất cả</span>
+                <span id="purchase-orders-checked-count" class="text-[9px] font-bold bg-teal-100 text-teal-800 px-1.5 py-0.2 rounded-md ml-0.5">0/0 đơn</span>
+            </label>
+            <span id="combined-order-count" class="font-bold text-slate-500 text-[10px]">0 Đơn</span>
         </div>
 
         <div id="combined-orders-container" class="space-y-1.5 pt-1"></div>
@@ -219,6 +224,7 @@
     <div id="purchase-orders-bulk-bar" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 max-w-sm w-[92%] bg-slate-900/95 backdrop-blur-md text-white px-3.5 py-2.5 rounded-2xl shadow-2xl z-[150] flex items-center justify-between border border-slate-700/80">
         <div class="flex items-center gap-2">
             <span class="text-xs font-bold text-teal-400">Đã chọn: <span id="purchase-orders-bulk-count" class="font-extrabold text-white text-sm">0</span> đơn hàng</span>
+            <button onclick="resetPurchaseOrderSelection()" class="text-slate-400 hover:text-white text-xs font-bold px-1 py-0.5 rounded transition cursor-pointer" title="Hủy chọn">✕</button>
         </div>
         <button onclick="openWarehouseTransferModal()" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-extrabold rounded-xl text-xs transition cursor-pointer shadow-md flex items-center gap-1">
             <span>📦 Chuyển kho</span>
@@ -226,40 +232,135 @@
     </div>
   </div>
 
-  <!-- 2. QUẢN LÝ THAO TÁC (CHUYỂN KHO, PRE-ORDER & KHÁCH NỢ) -->
-  <div id="biz-thaotac" class="space-y-3 hidden pb-4 shrink-0">
-<div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
-        <div class="flex flex-col gap-1.5 border-b pb-1.5">
-            <div class="flex justify-between items-center">
-                <h4 class="text-[11px] font-bold text-amber-600 uppercase flex items-center gap-1">📦 Danh Sách Đơn Hàng & Luân Chuyển Kho</h4>
-            </div>
-            
-            <!-- Công cụ Lọc & Chuyển Kho Nhanh -->
-            <div class="bg-amber-50/70 p-1.5 px-2 rounded-lg border border-amber-200/60 space-y-1 text-xs">
-                <div class="flex items-center justify-between gap-1.5">
-                    <label class="text-[9px] font-bold text-slate-600 uppercase whitespace-nowrap">🔍 Lọc Xem Kho:</label>
-                    <select id="transfer-from-wh" onchange="filterInventoryByWh(1)" class="flex-1 bg-white border border-amber-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none">
-                        <option value="ALL">🌐 Tất cả các kho</option>
-                    </select>
-                </div>
-                <div class="relative pt-0.5">
-                    <input type="text" id="search-donhang-wh" onkeyup="filterInventoryByWh(1)" placeholder="🔍 Gõ tìm tên SP hoặc tên kho..." class="w-full bg-white border border-amber-300 rounded px-2 py-0.5 text-[10px] outline-none font-bold text-slate-700 shadow-inner" />
-                </div>
-
-                <!-- Thanh tác vụ chuyển hàng loạt cho các đơn được chọn -->
-                <div class="flex items-center gap-1 pt-1 border-t border-amber-200/60">
-                    <input type="checkbox" id="chk-select-all-wh" onchange="toggleSelectAllWh(this)" class="accent-amber-600 w-3.5 h-3.5 cursor-pointer ml-0.5" />
-                    <span class="text-[10px] text-slate-600 font-bold whitespace-nowrap">Tất cả</span>
-                    <select id="batch-target-wh" class="flex-1 bg-white border border-amber-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none">
-                        <option value="">-- Chuyển sang Kho --</option>
-                    </select>
-                    <button id="btn-batch-transfer" onclick="saveBatchWarehouseTransfer(this)" class="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold px-2 py-0.5 rounded-md text-[10px] shadow-2xs cursor-pointer whitespace-nowrap transition-all">💾 Lưu</button>
-                </div>
+  <!-- 2. QUẢN LÝ CHỜ XỬ LÝ (PRE-ORDER, ĐƠN HỦY CHỜ HOÀN & KHÁCH NỢ) -->
+  <div id="biz-choxuly" class="space-y-3 hidden pb-4 shrink-0">
+    <!-- 1. PRE-ORDER / GOM ĐƠN CHỜ TRỪ THẺ -->
+    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center border-b pb-1">
+            <h4 class="text-[11px] font-bold text-blue-600 uppercase flex items-center gap-1">💳 Pre-order (Chờ Trừ Thẻ)</h4>
+            <div class="flex items-center gap-1">
+                <span id="pre-order-checked-sum" class="text-[9px] font-bold bg-blue-50 text-blue-800 px-1.5 py-0.2 rounded border border-blue-200/80">Tổng: 0 ¥</span>
+                <span id="pre-order-count" class="text-[9px] font-bold bg-blue-50 text-blue-700 px-1.5 py-0.2 rounded border border-blue-200/60">0 Đơn</span>
             </div>
         </div>
-        
-        <div id="inventory-container" class="space-y-1"></div>
+
+        <!-- Hàng Thao Tác Nhanh Pre-Order: Checkbox Tất cả + Tìm kiếm -->
+        <div class="flex items-center gap-1.5">
+            <label class="flex items-center gap-1.5 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                <input type="checkbox" id="chk-select-all-pre-orders" onchange="toggleSelectAllPreOrders(this)" class="accent-blue-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
+                <span id="pre-order-checked-count" class="text-[9px] font-bold bg-blue-100 text-blue-800 px-1.5 py-0.2 rounded-md">0/0 đơn</span>
+            </label>
+            <div class="relative flex-1">
+                <input type="text" id="search-pre-orders" onkeyup="filterPreOrderList()" placeholder="🔍 Tìm pre-order..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-blue-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
+            </div>
+        </div>
+
+        <div id="pre-order-container" class="space-y-1"></div>
     </div>
+
+    <!-- 2. ĐƠN HỦY CHỜ HOÀN TIỀN -->
+    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center border-b pb-1">
+            <h4 class="text-[11px] font-bold text-amber-600 uppercase flex items-center gap-1">🔄 Đơn Hủy Chờ Hoàn Tiền</h4>
+            <div class="flex items-center gap-1">
+                <span id="cancelled-refund-count" class="text-[9px] font-bold bg-amber-50 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200/80">0 Đơn</span>
+            </div>
+        </div>
+
+        <!-- Hàng Thao Tác Nhanh Hoàn Tiền: Checkbox Tất cả + Tìm kiếm -->
+        <div class="flex items-center gap-1.5">
+            <label class="flex items-center gap-1 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                <input type="checkbox" id="chk-select-all-cancelled-refunds" onchange="toggleSelectAllCancelledRefunds(this)" class="accent-amber-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
+                <span id="cancelled-refund-checked-count" class="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-md">0/0 đơn</span>
+            </label>
+            <div class="relative flex-1">
+                <input type="text" id="search-cancelled-refunds" onkeyup="filterCancelledRefundsList()" placeholder="🔍 Tìm đơn hoàn tiền..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-amber-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
+            </div>
+        </div>
+
+        <div id="cancelled-refund-container" class="space-y-1">
+            <div class="text-center py-2 text-[11px] text-slate-400">Không có đơn hủy chờ hoàn tiền.</div>
+        </div>
+    </div>
+
+    <!-- 3. KHÁCH NỢ TIỀN (CHỜ THU) -->
+    <div class="bg-white p-2.5 rounded-xl shadow-xs border border-slate-200 space-y-1.5">
+        <div class="flex justify-between items-center border-b pb-1">
+            <h4 class="text-xs font-bold text-rose-600 uppercase flex items-center gap-1">💸 Khách Nợ Tiền (Chờ Thu)</h4>
+            <div class="flex items-center gap-1">
+                <span id="debt-sales-count" class="text-[9px] font-bold bg-rose-50 text-rose-700 px-2 py-0.5 rounded-md border border-rose-200/60">0 Đơn</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <label class="flex items-center gap-1.5 cursor-pointer bg-slate-50 border border-slate-200 px-2 py-1 rounded-xl shrink-0">
+                <input type="checkbox" id="chk-select-all-debt-sales" onchange="toggleSelectAllDebtSales(this)" class="accent-rose-600 w-3.5 h-3.5 cursor-pointer" />
+                <span class="text-[11px] font-bold text-slate-700 whitespace-nowrap">Tất cả</span>
+                <span id="t3-debt-sales-checked-count" class="text-[9px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded-md">0/0 đơn</span>
+            </label>
+            <div class="relative flex-1">
+                <input type="text" id="search-debt-sales" onkeyup="filterDebtSalesList()" placeholder="🔍 Gõ tìm tên mặt hàng hoặc tên khách..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-[11px] outline-none focus:border-rose-400 focus:bg-white transition text-slate-800 font-semibold shadow-inner" />
+            </div>
+        </div>
+
+        <div id="debt-sales-container" class="space-y-1 mt-1"></div>
+    </div>
+  </div>
+
+  <!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN ĐƠN KHÁCH NỢ -->
+  <div id="t3-debt-sales-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-teal-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-teal-700/50 gap-2">
+      <!-- DÒNG 1: Đơn hàng đã chọn: xx mục - số tiền -->
+      <div class="flex items-center justify-between text-xs font-bold border-b border-teal-800/60 pb-1.5 px-0.5">
+          <span class="text-slate-200">Đơn hàng đã chọn: <span id="t3-bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="t3-bulk-total" class="text-emerald-400 font-black text-xs">0 ¥</span></span>
+      </div>
+      <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Xuất BC - Thanh Toán - X) -->
+      <div class="flex items-center justify-between gap-1.5">
+          <button onclick="openT3ExportDebtReportModal()" class="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-1 shadow-xs">
+              📸 Xuất BC
+          </button>
+          <button onclick="saveBatchDebtSalesPayment()" class="flex-[1.5] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1">
+              💰 Thanh Toán
+          </button>
+          <button onclick="resetDebtSalesSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
+              ✕
+          </button>
+      </div>
+  </div>
+
+  <!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN PRE-ORDER -->
+  <div id="pre-order-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-blue-950/95 backdrop-blur-md text-white p-2.5 px-3.5 rounded-2xl shadow-2xl hidden flex-col z-[90] w-[92%] max-w-[390px] transition-all border border-blue-700/50 gap-2">
+      <!-- DÒNG 1: Pre order: xxx mục - số tiền -->
+      <div class="flex items-center justify-between text-xs font-bold border-b border-blue-800/60 pb-1.5 px-0.5">
+          <span class="text-slate-200">Pre order: <span id="pre-order-bulk-count" class="text-white font-black text-xs">0</span> mục - <span id="pre-order-bulk-total" class="text-blue-300 font-black text-xs">0 ¥</span></span>
+      </div>
+      <!-- DÒNG 2: 3 NÚT HÀNH ĐỘNG (Hủy đơn - Đã trừ thẻ - X) -->
+      <div class="flex items-center justify-between gap-1.5">
+          <button onclick="saveBatchCancelPreOrders(this)" class="flex-1 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-0.5">
+              ❌ Hủy Đơn
+          </button>
+          <button onclick="saveBatchConfirmPreOrders(this)" class="flex-[1.5] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-0.5">
+              ✅ Đã Trừ Thẻ
+          </button>
+          <button onclick="resetPreOrderSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
+              ✕
+          </button>
+      </div>
+  </div>
+
+  <!-- STICKY FLOATING BOTTOM BAR KHI TÍCH CHỌN ĐƠN HỦY CHỜ HOÀN TIỀN -->
+  <div id="cancelled-refund-bulk-bar" class="fixed bottom-[82px] left-1/2 -translate-x-1/2 bg-amber-950/95 backdrop-blur-md text-white px-3.5 py-2 rounded-2xl shadow-2xl hidden items-center z-[90] w-[92%] max-w-[390px] justify-between transition-all border border-amber-700/50">
+      <div>
+          <p class="text-[9px] font-bold opacity-80 uppercase tracking-wider mb-0.5">Hoàn tiền đã chọn <span id="cancelled-refund-bulk-count" class="text-white text-[10px] bg-white/20 px-1.5 py-0.2 rounded font-bold">0</span> mục</p>
+          <p class="text-sm font-extrabold text-amber-300" id="cancelled-refund-bulk-total">0 ¥</p>
+      </div>
+      <div class="flex items-center gap-1.5">
+          <button onclick="openBatchRefundModal()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-3 py-1.5 rounded-xl text-[11px] font-extrabold shadow-md transition cursor-pointer flex items-center gap-1">
+              💰 Hoàn Tiền
+          </button>
+          <button onclick="resetCancelledRefundSelection()" class="text-slate-400 hover:text-white font-bold text-lg leading-none cursor-pointer px-1 transition active:scale-90 ml-0.5" title="Đóng & Hủy Chọn">&times;</button>
+      </div>
   </div>
 
 
@@ -326,6 +427,27 @@
   </div>
 </div>
 
+<!-- MODAL XEM CHI TIẾT ĐƠN HÀNG XUẤT BÁN -->
+<div id="modal-sales-detail" class="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-[200] hidden">
+  <div class="bg-white w-full max-w-[420px] rounded-t-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85%] animate-slide-up">
+    <div class="bg-amber-600 text-white p-2.5 px-3.5 flex justify-between items-center shrink-0">
+      <div>
+        <h3 id="sales-detail-title" class="font-bold text-xs">Chi Tiết Đơn Bán Hàng</h3>
+        <p id="sales-detail-sub" class="text-[9px] text-amber-100">Thông tin xuất bán và doanh thu</p>
+      </div>
+      <button type="button" onclick="closeSalesDetailModal()" class="text-white/80 hover:text-white text-base font-bold px-2 py-0.5 rounded-lg cursor-pointer">&times;</button>
+    </div>
+    
+    <div id="sales-detail-body" class="p-3 overflow-y-auto space-y-2 flex-1 text-xs">
+      <!-- Chi tiết đơn bán được tự động đổ vào đây -->
+    </div>
+    
+    <div class="p-2 px-3 bg-slate-50 border-t flex justify-end gap-2 shrink-0">
+      <button onclick="closeSalesDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg text-[11px] cursor-pointer">Đóng</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
   function t3_initDateFilters() {
@@ -333,14 +455,16 @@
       const yearSelect = document.getElementById('t3-filter-year');
       if(!monthSelect || !yearSelect) return;
       
-      let monthHTML = '<option value="ALL" selected>All</option>';
+      let monthHTML = '<option value="All" selected>All</option>';
       for (let i = 1; i <= 12; i++) {
           monthHTML += `<option value="${i}">Tháng ${i}</option>`;
       }
       monthSelect.innerHTML = monthHTML;
 
-      let yearHTML = '<option value="ALL" selected>All</option>';
-      for (let y = 2024; y <= 2030; y++) {
+      const d = new Date();
+      const currYear = d.getFullYear();
+      let yearHTML = '<option value="All" selected>All</option>';
+      for (let y = 2024; y <= Math.max(2031, currYear + 5); y++) {
           yearHTML += `<option value="${y}">Năm ${y}</option>`;
       }
       yearSelect.innerHTML = yearHTML;
@@ -354,11 +478,13 @@
   const INVENTORY_PAGE_SIZE = 10;
 
   window.currentPreorderGroupKey = null;
+  window.currentPreorderGroupTenSP = null;
 
   function openPreorderDetailModal(groupIndex) {
       window.currentPreorderGroupIdx = groupIndex;
       const modal = document.getElementById('modal-preorder-detail');
       const title = document.getElementById('preorder-detail-title');
+      const sub = document.getElementById('preorder-detail-sub');
       const body = document.getElementById('preorder-detail-body');
       if (!modal || !body) return;
 
@@ -367,44 +493,124 @@
 
       if (!group || !group.items || group.items.length === 0) {
           if (title) title.innerText = "Chi Tiết Đơn Pre-order";
-          body.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Không tìm thấy đơn pre-order nào.</div>';
-      } else {
-          if (title) title.innerText = `📦 ${group.tenSP}`;
-          body.innerHTML = group.items.map((item, idx) => `
-              <div class="p-2 border rounded-xl bg-blue-50/60 text-xs shadow-2xs hover:shadow-xs transition-all mb-1.5" id="item-preorder-${item.id}">
-                  <div class="flex justify-between items-center gap-1.5">
-                      <div class="flex items-center gap-1.5 flex-1 truncate min-w-0">
-                          <span class="font-bold text-blue-800 text-[10px]">#${idx + 1}</span>
-                          <span class="text-[9px] font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded shrink-0">Nơi mua: ${item.noiMua || 'N/A'}</span>
-                          <span class="text-[9px] font-mono text-slate-500">ID: ${item.id}</span>
-                          <span class="text-[9px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded shrink-0">${item.nguonTien || 'Thẻ'}</span>
+          if (sub) sub.innerText = "Danh sách các đơn chờ trừ thẻ";
+          body.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs font-medium">Không tìm thấy đơn pre-order nào.</div>';
+          modal.classList.add('active');
+          modal.classList.remove('hidden');
+          return;
+      }
+
+      window.currentPreorderGroupTenSP = group.tenSP;
+
+      // Gom các item theo mã đơn hàng gốc (baseId / getPurchaseOrderGroupKey)
+      const ordersMap = new Map();
+      group.items.forEach(item => {
+          const groupKey = getPurchaseOrderGroupKey(item);
+          const baseId = extractBaseOrderId(item.id);
+
+          if (!ordersMap.has(groupKey)) {
+              ordersMap.set(groupKey, {
+                  baseId: baseId || item.id,
+                  date: item.ngayMua || '',
+                  noiMua: item.noiMua || '',
+                  taiKhoan: item.taiKhoan || '',
+                  nguonTien: item.nguonTien || '',
+                  trangThaiKho: item.trangThaiKho || 'Chờ Ship',
+                  items: [],
+                  totalAmt: 0,
+                  totalQty: 0
+              });
+          }
+
+          const ord = ordersMap.get(groupKey);
+          ord.items.push(item);
+          ord.totalAmt += (Number(item.total) || 0);
+          ord.totalQty += (Number(item.qty) || 0);
+          if (!ord.date && item.ngayMua) ord.date = item.ngayMua;
+          if (!ord.noiMua && item.noiMua) ord.noiMua = item.noiMua;
+          if (!ord.taiKhoan && item.taiKhoan) ord.taiKhoan = item.taiKhoan;
+          if (!ord.nguonTien && item.nguonTien) ord.nguonTien = item.nguonTien;
+      });
+
+      const ordersList = Array.from(ordersMap.values());
+      ordersList.sort((a, b) => parseBizDateSortHelper(b.date) - parseBizDateSortHelper(a.date));
+
+      if (title) title.innerText = `📦 ${group.tenSP}`;
+      if (sub) sub.innerText = `${ordersList.length} đơn hàng • Tổng SL: ${group.totalQty} • Tổng: ${group.totalValue.toLocaleString()} ¥`;
+
+      body.innerHTML = ordersList.map((ord, idx) => {
+          const firstItem = ord.items[0] || {};
+          const safeName = (firstItem.tenSP || group.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          const wh = ord.trangThaiKho || 'Chờ Ship';
+          const itemIdsArr = ord.items.map(it => String(it.id || '')).filter(Boolean);
+          const allItemIdsJoin = itemIdsArr.join(',');
+          const cardId = 'detail-preorder-card-' + idx;
+
+          const names = ord.items.map(it => (it.tenSP || '').trim()).filter(Boolean);
+          const uniqueNames = Array.from(new Set(names));
+          const totalItemsCount = ord.items.length;
+          let titleText = '';
+          let multiBadge = '';
+          if (uniqueNames.length === 1 && totalItemsCount === 1) {
+              titleText = uniqueNames[0] || group.tenSP;
+          } else if (uniqueNames.length === 1 && totalItemsCount > 1) {
+              titleText = `${uniqueNames[0]} (x${totalItemsCount})`;
+              multiBadge = `<span class="text-[8.5px] font-bold bg-blue-100 text-blue-700 px-1 py-0.2 rounded border border-blue-200/80 shrink-0">${totalItemsCount} món</span>`;
+          } else {
+              titleText = uniqueNames.join(', ');
+              multiBadge = `<span class="text-[8.5px] font-bold bg-blue-100 text-blue-700 px-1 py-0.2 rounded border border-blue-200/80 shrink-0">${totalItemsCount} món</span>`;
+          }
+
+          const formattedDate = normalizeBizDateStr(ord.date);
+          const accText = ord.taiKhoan || ord.nguonTien;
+          const subParts = [];
+          if (formattedDate && formattedDate !== 'Chưa rõ ngày') subParts.push(formattedDate);
+          if (ord.noiMua) subParts.push(ord.noiMua);
+          if (accText) subParts.push(accText);
+          const subInfo = subParts.join(' · ');
+
+          return `
+              <div class="p-2 border rounded-xl bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-2xs transition-all mb-1.5" id="${cardId}">
+                  <!-- Row 1: Tên sản phẩm & Tiền -->
+                  <div class="flex items-center justify-between gap-1.5">
+                      <div class="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer" 
+                           onclick="openProductDetailModal('${safeName}', '${wh}', '${allItemIdsJoin}')" title="${titleText}">
+                          <span class="font-bold text-[11px] text-slate-800 hover:text-blue-600 truncate transition">${titleText}</span>
+                          ${multiBadge}
+                          ${ord.baseId ? `<span class="text-[8.5px] font-mono text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200 shrink-0">#${ord.baseId}</span>` : ''}
                       </div>
-                      <span class="font-bold text-slate-800 text-[11px] shrink-0">${(item.total || 0).toLocaleString()} ¥</span>
+                      <div class="text-right shrink-0">
+                          <span class="font-extrabold text-[11px] text-blue-700 whitespace-nowrap">${ord.totalAmt.toLocaleString()} ¥</span>
+                      </div>
                   </div>
-                  <div class="flex justify-between items-center pt-1.5 mt-1 border-t border-blue-100 text-[10px] text-slate-500">
-                      <div>
-                          SL: <b class="text-slate-700">${item.qty}</b> | Mua: <b class="text-slate-700">${item.ngayMua || ''}</b>
+                  <!-- Row 2: Ngày · Nơi mua · Tài khoản · SL (Trái) & Nút hành động (Phải) -->
+                  <div class="flex items-center justify-between gap-1 text-[9px] pl-1 mt-1 pt-1 border-t border-slate-100">
+                      <div class="flex items-center gap-1 truncate flex-1 min-w-0 text-slate-500 font-medium">
+                          ${subInfo ? `<span class="truncate">${subInfo}</span>` : ''}
+                          ${ord.totalQty ? `<span class="bg-blue-100/80 text-blue-800 px-1 py-0.2 rounded font-bold shrink-0">SL: ${ord.totalQty}</span>` : ''}
                       </div>
-                      <div class="flex items-center gap-1">
+                      <div class="flex items-center gap-1 shrink-0">
                           <button class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-2 py-0.5 rounded-md font-bold cursor-pointer transition-all shadow-2xs text-[10px]" 
-                                  onclick="handleConfirmPreOrder('${item.id}', '${(item.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', 'item-preorder-${item.id}', this)">
+                                  onclick="event.stopPropagation(); handleConfirmPreOrder('${allItemIdsJoin}', '${safeName}', '${cardId}', this)">
                               ✅ Đã Trừ Thẻ
                           </button>
                           <button class="bg-slate-200 hover:bg-rose-100 hover:text-rose-700 active:scale-95 text-slate-600 px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all text-[10px]" 
-                                  onclick="handleCancelPreOrder('${item.id}', '${(item.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', 'item-preorder-${item.id}')">
+                                  onclick="event.stopPropagation(); handleCancelPreOrder('${allItemIdsJoin}', '${safeName}', '${cardId}')">
                               ❌ Hủy
                           </button>
                       </div>
                   </div>
               </div>
-          `).join('');
-      }
+          `;
+      }).join('');
+
       modal.classList.add('active');
       modal.classList.remove('hidden');
   }
 
   function closePreorderDetailModal() {
       window.currentPreorderGroupIdx = null;
+      window.currentPreorderGroupTenSP = null;
       const modal = document.getElementById('modal-preorder-detail');
       if (modal) {
           modal.classList.remove('active');
@@ -419,8 +625,25 @@
       const preOrders = res ? res.preOrders || [] : [];
       const debtSales = res ? res.debtSales || [] : [];
 
-      if (preCount) preCount.innerText = `${preOrders.length} Đơn`;
+      const uniquePreOrderKeys = new Set(preOrders.map(it => typeof getPurchaseOrderGroupKey === 'function' ? getPurchaseOrderGroupKey(it) : (typeof extractBaseOrderId === 'function' ? extractBaseOrderId(it.id) : it.id)));
+      if (preCount) preCount.innerText = `${uniquePreOrderKeys.size} Đơn`;
       if (debtCount) debtCount.innerText = `${debtSales.length} Đơn`;
+
+      // Đồng bộ ngay lập tức 4 thẻ số lượng trên Tab 1 theo dữ liệu Tab 3 thực tế
+      if (typeof window.t1_getCanonicalTab3Counts === 'function') {
+          const canon = window.t1_getCanonicalTab3Counts(res);
+          if (canon) {
+              window.t1_orderCounts = canon;
+              const cShip = document.getElementById('t1-count-cho-ship');
+              const cPre = document.getElementById('t1-count-preorder');
+              const cDebt = document.getElementById('t1-count-khach-no');
+              const cRefund = document.getElementById('t1-count-cho-hoan');
+              if (cShip) cShip.innerText = canon.choShip + ' đơn';
+              if (cPre) cPre.innerText = canon.preorder + ' đơn';
+              if (cDebt) cDebt.innerText = canon.khachNo + ' đơn';
+              if (cRefund) cRefund.innerText = canon.choHoan + ' đơn';
+          }
+      }
 
       // Render danh sách Gom chung Mua (Xanh) & Bán (Đỏ) theo Ngày mới nhất
       filterCombinedOrdersList();
@@ -463,22 +686,22 @@
           const itemId = String(item.id || '').replace(/'/g, "\\'");
 
           return `
-              <div class="p-2 border rounded-xl bg-amber-50/70 border-amber-200 text-xs shadow-2xs flex justify-between items-center mb-1 cursor-pointer hover:bg-amber-100/60 transition" id="item-refund-${item.id}" onclick="if(!event.target.closest('button') && !event.target.closest('input')) openProductDetailModal('${safeName}', '${wh}', '${itemId}')">
-                  <div class="flex items-center gap-1.5 flex-1 min-w-0 pr-2">
+              <div class="p-1.5 px-2 border rounded-xl bg-white border-slate-200 hover:border-slate-300 text-xs shadow-2xs flex justify-between items-center mb-1 cursor-pointer hover:bg-slate-50 transition" id="item-refund-${item.id}" onclick="if(!event.target.closest('button') && !event.target.closest('input')) openProductDetailModal('${safeName}', '${wh}', '${itemId}')">
+                  <div class="flex items-center gap-1.5 flex-1 min-w-0 pr-1.5">
                       <input type="checkbox" class="cancelled-refund-chk accent-amber-600 w-3.5 h-3.5 cursor-pointer shrink-0" value="${item.id}" data-total="${totalAmt}" onchange="updateCancelledRefundsCheckedSummary()" onclick="event.stopPropagation()" />
-                      <div class="truncate flex-1 min-w-0">
+                      <div class="truncate flex-1 min-w-0 leading-tight">
                           <div class="flex items-center gap-1.5 truncate">
                               <span class="font-bold text-slate-800 text-[11px] truncate">${item.tenSP}</span>
-                              <span class="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded border border-amber-200 shrink-0">Chờ hoàn</span>
+                              <span class="text-[8px] font-bold bg-amber-100 text-amber-800 px-1 py-0.2 rounded border border-amber-200 shrink-0">Chờ hoàn</span>
                           </div>
                           <p class="text-[9px] text-slate-500 mt-0.5 truncate">
-                              Nguồn: <b>${item.nguonTien || 'N/A'}</b> | Ngày: <b>${item.ngayMua || ''}</b>
+                              <span>Nơi: <b class="text-slate-700">${item.noiMua || 'N/A'}</b></span>${item.taiKhoan ? ` • TK: <b class="text-slate-700">${item.taiKhoan}</b>` : ''} | Nguồn: <b>${item.nguonTien || 'N/A'}</b> | Ngày: <b>${item.ngayMua || ''}</b>
                           </p>
                       </div>
                   </div>
-                  <div class="text-right shrink-0 flex flex-col items-end gap-1">
-                      <span class="font-bold text-slate-800 text-[11px]">${totalAmt.toLocaleString()} ¥</span>
-                      <button onclick="openConfirmRefundModal('${item.id}', '${safeName}', '${safeWallet}', ${totalAmt})" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition shadow-2xs flex items-center gap-0.5">
+                  <div class="text-right shrink-0 flex flex-col items-end justify-center gap-0.5">
+                      <span class="font-bold text-slate-800 text-[11px] leading-tight">${totalAmt.toLocaleString()} ¥</span>
+                      <button onclick="openConfirmRefundModal('${item.id}', '${safeName}', '${safeWallet}', ${totalAmt})" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-white px-2 py-0.5 rounded-md font-bold text-[9px] cursor-pointer transition shadow-2xs flex items-center gap-0.5">
                           Đã hoàn
                       </button>
                   </div>
@@ -499,6 +722,7 @@
 
   function updateCancelledRefundsCheckedSummary() {
       const checkedInputs = document.querySelectorAll('.cancelled-refund-chk:checked');
+      const allInputs = document.querySelectorAll('.cancelled-refund-chk');
       const countEl = document.getElementById('cancelled-refund-checked-count');
       const bulkBar = document.getElementById('cancelled-refund-bulk-bar');
       const bulkCount = document.getElementById('cancelled-refund-bulk-count');
@@ -509,7 +733,7 @@
           sum += parseFloat(cb.getAttribute('data-total') || 0);
       });
 
-      if (countEl) countEl.innerText = `${checkedInputs.length} Mục`;
+      if (countEl) countEl.innerText = `${checkedInputs.length}/${allInputs.length} đơn`;
 
       if (bulkBar) {
           if (checkedInputs.length > 0) {
@@ -634,18 +858,125 @@
       if (val instanceof Date) return isNaN(val.getTime()) ? 0 : val.getTime();
       const str = String(val).trim();
       if (!str) return 0;
-      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
-        const p = str.split(' ')[0].split('-');
+      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(str)) {
+        const p = str.split(' ')[0].split(/[-/]/);
         return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime() || 0;
       }
-      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
-        const p = str.split(' ')[0].split('/');
+      if (/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(str)) {
+        const p = str.split(' ')[0].split(/[-/]/);
         let y = parseInt(p[2], 10);
         if (y < 100) y += 2000;
         return new Date(y, parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime() || 0;
       }
       const d = new Date(str);
       return isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
+  function setCombinedFilterType(type) {
+      const filterInput = document.getElementById('filter-combined-type');
+      if (filterInput) filterInput.value = type;
+      filterCombinedOrdersList(1);
+  }
+
+  function extractBaseOrderId(rawId) {
+      if (!rawId) return '';
+      const str = String(rawId).trim();
+      // Sub-item suffixes are generated as -(idx+1) (e.g. -1, -2, -3.. without leading zeros).
+      // Examples:
+      //   PO-26100116310300198-1 -> PO-26100116310300198
+      //   PO-12345-2 -> PO-12345
+      //   SO-999-1 -> SO-999
+      //   PO_12345_1 -> PO_12345
+      // Single order IDs like PO-26100116310300198 or PO-20261009-001 are preserved as-is.
+      const match = str.match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+      if (match && match[1]) {
+          return match[1];
+      }
+      return str;
+  }
+
+  function getPurchaseOrderGroupKey(item) {
+      const rawId = String(item.id || '').trim();
+      const baseId = extractBaseOrderId(rawId);
+      // Gom đúng theo mã đơn hàng (baseId / mã đơn gốc). Khác mã đơn hàng thì không gom!
+      if (baseId) {
+          return `PURCHASE___${baseId}`;
+      }
+      return `PURCHASE_RAW___${rawId || ('ROW_' + Math.random())}`;
+  }
+
+  function getSalesOrderGroupKey(item) {
+      const rawId = String(item.id || '').trim();
+      const baseId = extractBaseOrderId(rawId);
+      // Gom đúng theo mã đơn hàng (baseId / mã đơn gốc). Khác mã đơn hàng thì không gom!
+      if (baseId) {
+          return `SALES___${baseId}`;
+      }
+      return `SALES_RAW___${rawId || ('ROW_' + Math.random())}`;
+  }
+
+  function normalizeBizDateStr(val) {
+      if (!val) return 'Chưa rõ ngày';
+      if (val instanceof Date) {
+          if (isNaN(val.getTime())) return 'Chưa rõ ngày';
+          const y = val.getFullYear();
+          const m = String(val.getMonth() + 1).padStart(2, '0');
+          const d = String(val.getDate()).padStart(2, '0');
+          return `${d}/${m}/${y}`;
+      }
+      const str = String(val).trim();
+      if (!str) return 'Chưa rõ ngày';
+      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(str)) {
+          const p = str.split(' ')[0].split(/[-/]/);
+          const y = p[0];
+          const m = p[1].padStart(2, '0');
+          const d = p[2].padStart(2, '0');
+          return `${d}/${m}/${y}`;
+      }
+      if (/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}/.test(str)) {
+          const p = str.split(' ')[0].split(/[-/]/);
+          const d = p[0].padStart(2, '0');
+          const m = p[1].padStart(2, '0');
+          let y = p[2];
+          if (y.length === 2) y = '20' + y;
+          return `${d}/${m}/${y}`;
+      }
+      return str;
+  }
+
+  function getWarehouseBadgeHtml(whName) {
+      if (!whName) return '';
+      const raw = String(whName).trim();
+      const lower = raw.toLowerCase();
+
+      let colorClasses = 'bg-slate-50 text-slate-700 border-slate-200/80';
+
+      if (lower.includes('hủy') || lower.includes('cancel')) {
+          colorClasses = 'bg-rose-50 text-rose-600 border-rose-200/80 font-bold';
+      } else if (lower.includes('hoàn tiền') || lower.includes('hoan_tien')) {
+          colorClasses = 'bg-rose-50 text-rose-600 border-rose-200/80 font-bold';
+      } else if (lower.includes('đặt trước') || lower.includes('dat truoc') || lower.includes('preorder') || lower.includes('pre-order')) {
+          colorClasses = 'bg-amber-50 text-amber-700 border-amber-300 font-bold';
+      } else if (lower.includes('chờ ship') || lower.includes('cho ship')) {
+          colorClasses = 'bg-purple-50 text-purple-700 border-purple-200/80 font-bold';
+      } else if (lower.includes('chusen')) {
+          colorClasses = 'bg-yellow-50 text-yellow-700 border-yellow-300 font-bold';
+      } else if (lower.includes('1f')) {
+          colorClasses = 'bg-sky-50 text-sky-700 border-sky-200/80 font-bold';
+      } else if (lower.includes('2f')) {
+          colorClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200/80 font-bold';
+      } else if (lower.includes('vn') || lower.includes('việt nam') || lower.includes('viet nam')) {
+          colorClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200/80 font-bold';
+      } else if (lower.includes('nhật') || lower.includes('jp') || lower.includes('japan')) {
+          colorClasses = 'bg-indigo-50 text-indigo-700 border-indigo-200/80 font-bold';
+      } else {
+          colorClasses = 'bg-slate-50 text-slate-700 border-slate-200/80 font-bold';
+      }
+
+      let displayWh = raw;
+      if (raw === 'DA_HOAN_TIEN') displayWh = 'Đã hoàn tiền';
+
+      return `<span class="text-[8.5px] px-1.5 py-0.2 rounded border shrink-0 font-semibold whitespace-nowrap ${colorClasses}">${displayWh}</span>`;
   }
 
   function filterCombinedOrdersList(page = 1) {
@@ -682,6 +1013,7 @@
           });
       }
 
+      // Luôn sắp xếp đơn mới nhất lên trên
       combined.sort((a, b) => {
           const dateA = a.orderType === 'PURCHASE' ? a.ngayMua : a.ngayBan;
           const dateB = b.orderType === 'PURCHASE' ? b.ngayMua : b.ngayBan;
@@ -702,183 +1034,352 @@
       renderCombinedOrdersList(combined, page);
   }
 
-  function groupPurchaseItems(items) {
-      if (!items || items.length === 0) return [];
-      const grouped = [];
-      const groupMap = new Map();
-
-      items.forEach(item => {
-          if (item.orderType === 'SALES') {
-              grouped.push({ type: 'SALES', item: item });
-              return;
-          }
-
-          const rawId = String(item.id || '').trim();
-          const match = rawId.match(/^(PO-[^-]+)(?:-\d+)?$/i);
-          const baseId = match ? match[1] : rawId;
-          const groupKey = baseId.toUpperCase();
-
-          if (!groupMap.has(groupKey)) {
-              const groupObj = {
-                  type: 'PURCHASE_GROUP',
-                  baseId: baseId,
-                  ngayMua: item.ngayMua || '',
-                  noiMua: item.noiMua || '',
-                  nguonTien: item.nguonTien || '',
-                  taiKhoan: item.taiKhoan || '',
-                  items: [item]
-              };
-              groupMap.set(groupKey, groupObj);
-              grouped.push(groupObj);
-          } else {
-              const targetGroup = groupMap.get(groupKey);
-              targetGroup.items.push(item);
-              if (!targetGroup.ngayMua && item.ngayMua) targetGroup.ngayMua = item.ngayMua;
-              if (!targetGroup.noiMua && item.noiMua) targetGroup.noiMua = item.noiMua;
-              if (!targetGroup.nguonTien && item.nguonTien) targetGroup.nguonTien = item.nguonTien;
-              if (!targetGroup.taiKhoan && item.taiKhoan) targetGroup.taiKhoan = item.taiKhoan;
-          }
-      });
-
-      return grouped;
-  }
-
-  function toggleGroupCheckboxes(masterChk, itemIds) {
-      const checked = masterChk ? masterChk.checked : false;
-      if (Array.isArray(itemIds)) {
-          itemIds.forEach(id => {
-              const chk = document.querySelector(`.purchase-order-chk[value="${id}"]`);
-              if (chk) chk.checked = checked;
-          });
-      }
-      if (typeof updatePurchaseOrdersCheckedSummary === 'function') {
-          updatePurchaseOrdersCheckedSummary();
-      }
-  }
-
-  function renderPurchaseGroupCard(groupObj) {
-      const items = groupObj.items || [];
-      if (items.length === 0) return '';
-
-      const baseId = groupObj.baseId;
-      const ngayMua = groupObj.ngayMua || '';
-      const noiMua = Array.from(new Set(items.map(it => it.noiMua).filter(Boolean))).join(', ') || groupObj.noiMua || 'N/A';
-      const nguonTien = Array.from(new Set(items.map(it => it.nguonTien).filter(Boolean))).join(', ') || groupObj.nguonTien || 'N/A';
-      const taiKhoan = Array.from(new Set(items.map(it => it.taiKhoan).filter(Boolean))).join(', ') || groupObj.taiKhoan || 'N/A';
-      const ghiChu = items.map(it => it.ghiChu).filter(Boolean).join('; ');
-
-      const totalBill = items.reduce((sum, it) => sum + (Number(it.total) || 0), 0);
-
-      const warehouses = Array.from(new Set(items.map(it => it.trangThaiKho || 'Chờ Ship')));
-      const groupWh = warehouses.length === 1 ? warehouses[0] : 'Đa kho';
-      const badgeStyle = getWarehouseBadgeStyle(groupWh);
-
-      const allChecked = items.every(it => window.SELECTED_PURCHASE_ORDER_IDS && window.SELECTED_PURCHASE_ORDER_IDS.has(String(it.id)));
-      const itemIdsArray = items.map(it => String(it.id));
-      const itemIdsJson = JSON.stringify(itemIdsArray).replace(/"/g, '&quot;');
-
-      const itemRowsHtml = items.map(item => {
-          const safeName = (item.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
-          const itemId = (item.id || '').replace(/'/g, "\\'");
-          const wh = item.trangThaiKho || 'Chờ Ship';
-          const isChecked = window.SELECTED_PURCHASE_ORDER_IDS && window.SELECTED_PURCHASE_ORDER_IDS.has(String(item.id));
-
-          return `
-              <div onclick="openProductDetailModal('${safeName}', '${wh}', '${itemId}')" class="p-1.5 px-2 rounded-xl bg-white/90 border border-teal-200/70 hover:border-teal-400 hover:bg-white text-[11px] cursor-pointer transition-all flex justify-between items-center gap-1.5 shadow-2xs">
-                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
-                      <input type="checkbox" value="${item.id}" ${isChecked ? 'checked' : ''} onchange="updatePurchaseOrdersCheckedSummary()" onclick="event.stopPropagation()" class="purchase-order-chk accent-teal-600 w-3.5 h-3.5 cursor-pointer rounded shrink-0" />
-                      <div class="truncate flex-1 min-w-0">
-                          <span class="font-bold text-slate-800 text-xs">📦 ${item.tenSP}</span>
-                          <span class="text-[10px] text-slate-500 ml-2">SL: <b class="text-slate-800">${item.qty}</b> × ${(item.price || 0).toLocaleString()} ¥</span>
-                      </div>
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                      ${warehouses.length > 1 ? `<span class="text-[8px] font-bold px-1 py-0.2 rounded border ${getWarehouseBadgeStyle(wh)}">${wh}</span>` : ''}
-                      <span class="font-extrabold text-teal-700 text-xs">${(item.total || 0).toLocaleString()} ¥</span>
-                      <span onclick="event.stopPropagation(); openProductDetailModal('${safeName}', '${wh}', '${itemId}')" class="text-[9px] text-teal-600 bg-white border border-teal-300 px-1.5 py-0.2 rounded font-bold hover:bg-teal-100 cursor-pointer">✏️ Sửa</span>
-                  </div>
-              </div>
-          `;
-      }).join('');
-
-      return `
-          <div class="p-2 border rounded-2xl bg-teal-50/60 border-teal-200/90 text-[11px] mb-2 shadow-2xs hover:border-teal-300 transition-all space-y-1.5">
-              <div class="flex justify-between items-center gap-1 border-b border-teal-200/80 pb-1.5">
-                  <div class="flex items-center gap-1.5 truncate flex-1 min-w-0">
-                      <input type="checkbox" ${allChecked ? 'checked' : ''} onchange="toggleGroupCheckboxes(this, ${itemIdsJson})" onclick="event.stopPropagation()" class="accent-teal-600 w-3.5 h-3.5 cursor-pointer rounded shrink-0" />
-                      <span class="font-extrabold text-teal-900 text-[11px] truncate">🛒 #${baseId}</span>
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                      <span class="text-[9px] text-slate-500 font-mono">${ngayMua}</span>
-                      <span class="text-[9px] font-bold px-1.5 py-0.2 rounded border ${badgeStyle}">${groupWh}</span>
-                      <span class="font-black text-teal-800 text-xs pl-1">${totalBill.toLocaleString()} ¥</span>
-                  </div>
-              </div>
-              <div class="space-y-1">
-                  ${itemRowsHtml}
-              </div>
-              <div class="flex justify-between items-center text-[9px] text-slate-500 pt-1 border-t border-teal-200/60">
-                  <div class="truncate flex-1 min-w-0">
-                      💳 TK/Ví: <b class="text-slate-700">${nguonTien || 'N/A'}</b> | 👤 TK Mua: <b class="text-slate-700">${taiKhoan || 'N/A'}</b> | Nơi mua: <b class="text-slate-700">${noiMua || 'N/A'}</b> ${items.length > 1 ? `| 📦 <b class="text-teal-800 font-bold">${items.length} món</b>` : ''} ${ghiChu ? '| 💡 ' + ghiChu : ''}
-                  </div>
-              </div>
-          </div>
-      `;
-  }
-
   function renderCombinedOrdersList(items, page = 1) {
       const container = document.getElementById('combined-orders-container');
       const countBadge = document.getElementById('combined-order-count');
       if (!container) return;
 
+      const res = window.lastTab3Res;
+      const purchasesAll = (res ? res.inventory || [] : []);
+      const salesAll = (res ? res.allSales || [] : []);
+
+      const pCountEl = document.getElementById('tab-purchase-count');
+      const sCountEl = document.getElementById('tab-sales-count');
+      const aCountEl = document.getElementById('tab-all-count');
+      if (pCountEl) pCountEl.innerText = purchasesAll.length;
+      if (sCountEl) sCountEl.innerText = salesAll.length;
+      if (aCountEl) aCountEl.innerText = purchasesAll.length + salesAll.length;
+
       if (!items || items.length === 0) {
           if (countBadge) countBadge.innerText = `0 Đơn`;
-          container.innerHTML = '<div class="text-center py-4 text-xs text-slate-400">Không tìm thấy đơn mua/bán nào.</div>';
+          window.currentFilteredPurchaseOrders = [];
+          window.currentTotalFilteredPurchaseOrders = 0;
+          if (typeof resetPurchaseOrderSelection === 'function') resetPurchaseOrderSelection();
+          else if (typeof updatePurchaseOrdersCheckedSummary === 'function') updatePurchaseOrdersCheckedSummary();
+          container.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-medium bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">Không tìm thấy đơn mua/bán nào.</div>';
           return;
       }
 
-      const grouped = groupPurchaseItems(items);
-      if (countBadge) countBadge.innerText = `${grouped.length} Đơn`;
+      // 1. Gom các item vào từng Đơn hàng (Group into Orders)
+      const ordersMap = new Map();
+      items.forEach(item => {
+          const isPurchase = (item.orderType === 'PURCHASE');
+          const rawDate = isPurchase ? item.ngayMua : item.ngayBan;
+          const groupKey = isPurchase ? getPurchaseOrderGroupKey(item) : getSalesOrderGroupKey(item);
+          const baseId = extractBaseOrderId(item.id);
 
-      const totalPages = Math.ceil(grouped.length / COMBINED_PAGE_SIZE);
-      const curPage = Math.min(Math.max(1, page), totalPages);
-      const startIdx = (curPage - 1) * COMBINED_PAGE_SIZE;
-      const pageGroups = grouped.slice(startIdx, startIdx + COMBINED_PAGE_SIZE);
-
-      const itemsHtml = pageGroups.map(group => {
-          if (group.type === 'PURCHASE_GROUP') {
-              return renderPurchaseGroupCard(group);
-          } else {
-              const item = group.item;
-              return `
-                  <div class="p-1.5 px-2 border rounded-xl bg-rose-50/60 border-rose-200/80 hover:border-rose-400 text-[11px] mb-1 shadow-2xs transition-all">
-                      <div class="flex justify-between items-center gap-1">
-                          <div class="flex items-center gap-1 truncate flex-1 min-w-0">
-                              <span class="font-bold text-slate-800 text-xs truncate">📦 ${item.tenSP}</span>
-                          </div>
-                          <span class="font-extrabold text-rose-600 text-xs shrink-0">${(item.total || 0).toLocaleString()} ¥</span>
-                      </div>
-                      <div class="flex justify-between items-center text-[9.5px] text-slate-500 pt-0.5 mt-0.5 border-t border-rose-200/50">
-                          <div class="truncate flex-1 min-w-0">
-                              📅 ${item.ngayBan || ''} | Trừ kho: <b class="text-slate-700">${item.noiTru || 'N/A'}</b> | Ví: <b class="text-slate-700">${item.nhanTien || 'N/A'}</b> | SL: <b class="text-slate-800 font-bold">${item.qty || 0}</b> ${item.ghiChu ? '| 💡 ' + item.ghiChu : ''}
-                          </div>
-                          <span class="font-bold text-rose-800 bg-rose-100/90 px-1 py-0.2 rounded text-[9px] shrink-0 ml-1 border border-rose-200">${item.nhanTien || 'Ví'}</span>
-                      </div>
-                  </div>
-              `;
+          if (!ordersMap.has(groupKey)) {
+              ordersMap.set(groupKey, {
+                  groupKey: groupKey,
+                  orderType: item.orderType,
+                  baseId: baseId || item.id,
+                  date: rawDate,
+                  noiMua: item.noiMua || '',
+                  taiKhoan: item.taiKhoan || '',
+                  nguonTien: item.nguonTien || '',
+                  trangThaiKho: item.trangThaiKho || 'Chờ Ship',
+                  nhanTien: item.nhanTien || '',
+                  noiTru: item.noiTru || '',
+                  items: [],
+                  totalAmt: 0
+              });
           }
+
+          const ord = ordersMap.get(groupKey);
+          ord.items.push(item);
+          ord.totalAmt += (Number(item.total) || 0);
+      });
+
+      const allOrders = Array.from(ordersMap.values());
+      allOrders.sort((a, b) => parseBizDateSortHelper(b.date) - parseBizDateSortHelper(a.date));
+      if (countBadge) countBadge.innerText = `${allOrders.length} Đơn`;
+
+      const purchaseOrders = allOrders.filter(o => o.orderType === 'PURCHASE');
+      window.currentFilteredPurchaseOrders = purchaseOrders;
+      window.currentTotalFilteredPurchaseOrders = purchaseOrders.length;
+
+      // Keep only selected keys & IDs that exist in current filtered purchase orders
+      if (window.SELECTED_PURCHASE_ORDER_KEYS && window.SELECTED_PURCHASE_ORDER_KEYS.size > 0) {
+          const validKeys = new Set(purchaseOrders.map(o => o.groupKey));
+          for (const key of window.SELECTED_PURCHASE_ORDER_KEYS) {
+              if (!validKeys.has(key)) {
+                  window.SELECTED_PURCHASE_ORDER_KEYS.delete(key);
+              }
+          }
+      }
+      if (window.SELECTED_PURCHASE_ORDER_IDS && window.SELECTED_PURCHASE_ORDER_IDS.size > 0) {
+          const validIds = new Set();
+          purchaseOrders.forEach(o => (o.items || []).forEach(it => validIds.add(String(it.id || ''))));
+          for (const id of window.SELECTED_PURCHASE_ORDER_IDS) {
+              if (!validIds.has(id)) {
+                  window.SELECTED_PURCHASE_ORDER_IDS.delete(id);
+              }
+          }
+      }
+
+      const PAGE_SIZE = 15;
+      const totalPages = Math.ceil(allOrders.length / PAGE_SIZE) || 1;
+      const curPage = Math.min(Math.max(1, page), totalPages);
+      const startIdx = (curPage - 1) * PAGE_SIZE;
+      const pageOrders = allOrders.slice(startIdx, startIdx + PAGE_SIZE);
+
+      let totalSumNet = 0;
+      allOrders.forEach(ord => {
+          if (ord.orderType === 'PURCHASE') totalSumNet -= ord.totalAmt;
+          else totalSumNet += ord.totalAmt;
+      });
+
+      // 2. Gom các Đơn hàng theo Ngày (Group Orders by Date)
+      const dateGroupsMap = new Map();
+      pageOrders.forEach(ord => {
+          const dateKey = normalizeBizDateStr(ord.date);
+          if (!dateGroupsMap.has(dateKey)) {
+              dateGroupsMap.set(dateKey, {
+                  date: dateKey,
+                  orders: [],
+                  totalSumNet: 0
+              });
+          }
+          const grp = dateGroupsMap.get(dateKey);
+          grp.orders.push(ord);
+          if (ord.orderType === 'PURCHASE') grp.totalSumNet -= ord.totalAmt;
+          else grp.totalSumNet += ord.totalAmt;
+      });
+
+      const dateCardsHtml = Array.from(dateGroupsMap.values()).map(grp => {
+          const ordersHtml = grp.orders.map(ord => {
+              const isPurchase = (ord.orderType === 'PURCHASE');
+              const totalAmt = ord.totalAmt;
+
+              if (isPurchase) {
+                  const firstItem = ord.items[0] || {};
+                  const safeName = (firstItem.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+                  const wh = ord.trangThaiKho || 'Chờ Ship';
+                  const itemIdsArr = ord.items.map(it => String(it.id || '')).filter(Boolean);
+                  const allItemIdsJoin = itemIdsArr.join(',');
+                  const isChecked = Boolean(
+                      (window.SELECTED_PURCHASE_ORDER_KEYS && window.SELECTED_PURCHASE_ORDER_KEYS.has(ord.groupKey)) ||
+                      (itemIdsArr.length > 0 && window.SELECTED_PURCHASE_ORDER_IDS && itemIdsArr.every(id => window.SELECTED_PURCHASE_ORDER_IDS.has(id)))
+                  );
+
+                  const names = ord.items.map(it => (it.tenSP || '').trim()).filter(Boolean);
+                  const uniqueNames = Array.from(new Set(names));
+                  const totalItemsCount = ord.items.length;
+                  let titleText = '';
+                  let multiBadge = '';
+                  if (uniqueNames.length === 1 && totalItemsCount === 1) {
+                      titleText = uniqueNames[0] || 'Sản phẩm mua';
+                  } else if (uniqueNames.length === 1 && totalItemsCount > 1) {
+                      titleText = `${uniqueNames[0]} (x${totalItemsCount})`;
+                      multiBadge = `<span class="text-[8.5px] font-bold bg-rose-50 text-rose-700 px-1 py-0.2 rounded border border-rose-200/80 shrink-0">${totalItemsCount} món</span>`;
+                  } else {
+                      titleText = uniqueNames.join(', ');
+                      multiBadge = `<span class="text-[8.5px] font-bold bg-rose-50 text-rose-700 px-1 py-0.2 rounded border border-rose-200/80 shrink-0">${totalItemsCount} món</span>`;
+                  }
+
+                  const accText = ord.taiKhoan || ord.nguonTien;
+                  const subParts = [];
+                  if (ord.noiMua) subParts.push(ord.noiMua);
+                  if (accText) subParts.push(accText);
+                  const subInfo = subParts.join(' · ');
+
+                  const whBadge = getWarehouseBadgeHtml(wh);
+
+                  return `
+                      <div onclick="openProductDetailModal('${safeName}', '${wh}', '${allItemIdsJoin}')" class="px-2.5 py-1 hover:bg-slate-50 transition cursor-pointer">
+                          <!-- Row 1: Tên sản phẩm & Tiền -->
+                          <div class="flex items-center justify-between gap-1.5">
+                              <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                                  <input type="checkbox" data-order-key="${ord.groupKey}" value="${allItemIdsJoin}" ${isChecked ? 'checked' : ''} onchange="handlePurchaseOrderCheck(this)" onclick="event.stopPropagation()" class="purchase-order-chk accent-teal-600 w-3.5 h-3.5 cursor-pointer rounded shrink-0" />
+                                  <span class="font-bold text-[11px] text-slate-800 truncate" title="${titleText}">${titleText}</span>
+                              </div>
+                              <div class="text-right shrink-0">
+                                  <span class="font-extrabold text-[11px] text-rose-600 whitespace-nowrap">-${totalAmt.toLocaleString()} ¥</span>
+                              </div>
+                          </div>
+                          <!-- Row 2: Nơi mua · Tài khoản (Trái) & Kho (Phải) -->
+                          <div class="flex items-center justify-between gap-1 text-[9px] pl-5 mt-0.5">
+                              <div class="flex items-center gap-1 truncate flex-1 min-w-0 text-slate-500 font-medium">
+                                  ${multiBadge}
+                                  ${subInfo ? `<span class="truncate">${subInfo}</span>` : ''}
+                              </div>
+                              <div class="shrink-0">
+                                  ${whBadge}
+                              </div>
+                          </div>
+                      </div>
+                  `;
+              } else {
+                  const firstItem = ord.items[0] || {};
+                  const safeItemJson = encodeURIComponent(JSON.stringify(ord.items.length === 1 ? firstItem : ord));
+                  const salesWh = ord.noiTru || (firstItem && (firstItem.noiTru || firstItem.trangThaiKho)) || '';
+                  const subInfo = ord.nhanTien ? ord.nhanTien : '';
+                  const whBadge = getWarehouseBadgeHtml(salesWh);
+
+                  const names = ord.items.map(it => (it.tenSP || '').trim()).filter(Boolean);
+                  const uniqueNames = Array.from(new Set(names));
+                  const totalItemsCount = ord.items.length;
+                  let titleText = '';
+                  let multiBadge = '';
+                  if (uniqueNames.length === 1 && totalItemsCount === 1) {
+                      titleText = uniqueNames[0] || 'Sản phẩm bán';
+                  } else if (uniqueNames.length === 1 && totalItemsCount > 1) {
+                      titleText = `${uniqueNames[0]} (x${totalItemsCount})`;
+                      multiBadge = `<span class="text-[8.5px] font-bold bg-emerald-50 text-emerald-700 px-1 py-0.2 rounded border border-emerald-200/80 shrink-0">${totalItemsCount} món</span>`;
+                  } else {
+                      titleText = uniqueNames.join(', ');
+                      multiBadge = `<span class="text-[8.5px] font-bold bg-emerald-50 text-emerald-700 px-1 py-0.2 rounded border border-emerald-200/80 shrink-0">${totalItemsCount} món</span>`;
+                  }
+
+                  return `
+                      <div onclick="openSalesDetailModal('${safeItemJson}')" class="px-2.5 py-1 hover:bg-slate-50 transition cursor-pointer">
+                          <!-- Row 1: Tên sản phẩm & Tiền -->
+                          <div class="flex items-center justify-between gap-1.5">
+                              <div class="flex items-center gap-1.5 min-w-0 truncate flex-1">
+                                  <span class="font-bold text-[11px] text-slate-800 truncate" title="${titleText}">${titleText}</span>
+                              </div>
+                              <div class="text-right shrink-0">
+                                  <span class="font-extrabold text-[11px] text-emerald-600 whitespace-nowrap">+${totalAmt.toLocaleString()} ¥</span>
+                              </div>
+                          </div>
+                          <!-- Row 2: Bán / Nguồn tiền (Trái) & Kho (Phải) -->
+                          <div class="flex items-center justify-between gap-1 text-[9px] mt-0.5">
+                              <div class="flex items-center gap-1 truncate flex-1 min-w-0 text-slate-500 font-medium">
+                                  <span class="text-[8.5px] text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/80 font-bold shrink-0">Bán</span>
+                                  ${multiBadge}
+                                  ${subInfo ? `<span class="truncate">· ${subInfo}</span>` : ''}
+                              </div>
+                              <div class="shrink-0">
+                                  ${whBadge}
+                              </div>
+                          </div>
+                      </div>
+                  `;
+              }
+          }).join('');
+
+          return `
+              <div class="bg-white border border-slate-200/90 rounded-xl overflow-hidden shadow-2xs">
+                  <div class="flex items-center justify-between px-2.5 py-1 bg-slate-50/90 border-b border-slate-100 text-[10px] font-bold text-slate-700">
+                      <span class="flex items-center gap-1">
+                          <span class="text-slate-400 text-xs">📅</span>
+                          <span class="font-bold text-slate-800">${grp.date}</span>
+                      </span>
+                      <span class="text-[9px] font-medium text-slate-400">${grp.orders.length} đơn</span>
+                  </div>
+                  <div class="divide-y divide-slate-100">
+                      ${ordersHtml}
+                  </div>
+              </div>
+          `;
       }).join('');
 
       let paginationHtml = '';
       if (totalPages > 1) {
-          paginationHtml = `<div class="flex items-center justify-center gap-2 pt-1 select-none">`;
+          paginationHtml = `<div class="flex items-center justify-center gap-2 pt-1.5 select-none">`;
           paginationHtml += `<button onclick="filterCombinedOrdersList(${curPage - 1})" ${curPage <= 1 ? 'disabled' : ''} class="px-2 py-0.5 text-[10px] font-bold rounded-lg border bg-white ${curPage <= 1 ? 'opacity-40 pointer-events-none' : 'hover:bg-teal-50 text-teal-700 cursor-pointer shadow-2xs'}">‹ Trước</button>`;
           paginationHtml += `<span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">${curPage}/${totalPages}</span>`;
           paginationHtml += `<button onclick="filterCombinedOrdersList(${curPage + 1})" ${curPage >= totalPages ? 'disabled' : ''} class="px-2 py-0.5 text-[10px] font-bold rounded-lg border bg-white ${curPage >= totalPages ? 'opacity-40 pointer-events-none' : 'hover:bg-teal-50 text-teal-700 cursor-pointer shadow-2xs'}">Sau ›</button>`;
           paginationHtml += `</div>`;
       }
 
-      container.innerHTML = itemsHtml + paginationHtml;
+      const footerSummaryHtml = `
+          <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-2 px-3 flex justify-between items-center shadow-2xs mt-1.5">
+              <span class="text-xs font-bold text-slate-700">Tổng cộng (${allOrders.length} đơn)</span>
+              <span class="text-xs font-black ${totalSumNet >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+                  ${totalSumNet >= 0 ? '+' : ''}${totalSumNet.toLocaleString()} ¥
+              </span>
+          </div>
+      `;
+
+      container.innerHTML = `
+          <div class="space-y-1.5 pt-0.5">
+              ${dateCardsHtml}
+          </div>
+          ${footerSummaryHtml}
+          ${paginationHtml}
+      `;
+      if (typeof updatePurchaseOrdersCheckedSummary === 'function') {
+          updatePurchaseOrdersCheckedSummary();
+      }
+  }
+
+  function openSalesDetailModal(itemData) {
+      const modal = document.getElementById('modal-sales-detail');
+      const title = document.getElementById('sales-detail-title');
+      const body = document.getElementById('sales-detail-body');
+      if (!modal || !body) return;
+
+      let item = itemData;
+      if (typeof itemData === 'string') {
+          try { item = JSON.parse(decodeURIComponent(itemData)); } catch(e) { item = {}; }
+      }
+
+      if (item.items && item.items.length > 1) {
+          const names = item.items.map(it => (it.tenSP || '').trim()).filter(Boolean);
+          const uniqueNames = Array.from(new Set(names));
+          if (title) title.innerText = `Chi Tiết Đơn Bán (${item.items.length} món)`;
+          const itemsRows = item.items.map(it => {
+              const itTot = Number(it.total) || ((Number(it.qty) || 1) * (Number(it.price) || 0));
+              return `<div class="flex justify-between items-center py-1 border-b border-amber-100 last:border-b-0 text-[11px]">
+                  <span class="font-bold text-slate-800">${it.tenSP} <span class="text-slate-500 font-normal">x${it.qty || 1}</span></span>
+                  <span class="font-extrabold text-emerald-600">+${itTot.toLocaleString()} ¥</span>
+              </div>`;
+          }).join('');
+          const totalOrderAmt = item.totalAmt || item.items.reduce((sum, it) => sum + (Number(it.total) || 0), 0);
+          body.innerHTML = `
+              <div class="bg-amber-50/70 p-2.5 rounded-xl border border-amber-200 space-y-2">
+                  <div class="flex justify-between items-center pb-1.5 border-b border-amber-200/80">
+                      <span class="font-extrabold text-sm text-slate-800">📦 ${uniqueNames.join(', ')}</span>
+                      <span class="font-black text-sm text-emerald-600">+${totalOrderAmt.toLocaleString()} ¥</span>
+                  </div>
+                  <div class="bg-white/80 p-1.5 rounded-lg border border-amber-200/60 divide-y divide-amber-100">
+                      ${itemsRows}
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                      <div>📅 Ngày bán: <b class="text-slate-800">${item.date || item.ngayBan || 'N/A'}</b></div>
+                      <div>🏢 Trừ kho: <b class="text-slate-800">${item.noiTru || 'N/A'}</b></div>
+                      <div>💳 Ví nhận: <b class="text-slate-800">${item.nhanTien || 'N/A'}</b></div>
+                  </div>
+              </div>
+          `;
+          modal.classList.remove('hidden');
+          return;
+      }
+
+      if (title) title.innerText = `Chi Tiết Đơn Bán: ${item.tenSP || 'Sản Phẩm'}`;
+
+      const total = Number(item.total) || 0;
+      const price = Number(item.price) || 0;
+      const qty = Number(item.qty) || 0;
+      const cogs = Number(item.cogs) || 0;
+      const profit = total - cogs;
+      const profitColor = profit >= 0 ? 'text-emerald-600' : 'text-rose-600';
+
+      body.innerHTML = `
+          <div class="bg-amber-50/70 p-2.5 rounded-xl border border-amber-200 space-y-2">
+              <div class="flex justify-between items-center pb-1.5 border-b border-amber-200/80">
+                  <span class="font-extrabold text-sm text-slate-800">📦 ${item.tenSP || 'Sản phẩm'}</span>
+                  <span class="font-black text-sm text-emerald-600">+${total.toLocaleString()} ¥</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>📅 Ngày bán: <b class="text-slate-800">${item.ngayBan || 'N/A'}</b></div>
+                  <div>🔢 Số lượng: <b class="text-slate-800">${qty}</b> (Giá: <b>${price.toLocaleString()} ¥</b>)</div>
+                  <div>🏢 Trừ kho: <b class="text-slate-800">${item.noiTru || 'N/A'}</b></div>
+                  <div>💳 Ví nhận: <b class="text-slate-800">${item.nhanTien || 'N/A'}</b></div>
+                  ${cogs > 0 ? `<div>📉 Tiền vốn: <b class="text-slate-800">${cogs.toLocaleString()} ¥</b></div>` : ''}
+                  ${cogs > 0 ? `<div>📈 Tiền lãi: <b class="${profitColor} font-bold">${profit >= 0 ? '+' : ''}${profit.toLocaleString()} ¥</b></div>` : ''}
+              </div>
+              ${item.ghiChu ? `<div class="pt-1.5 text-[10px] text-slate-600 italic border-t border-amber-200/60">💡 Ghi chú: ${item.ghiChu}</div>` : ''}
+          </div>
+      `;
+
+      modal.classList.remove('hidden');
+  }
+
+  function closeSalesDetailModal() {
+      const modal = document.getElementById('modal-sales-detail');
+      if (modal) modal.classList.add('hidden');
   }
 
   let currentPurchasePage = 1;
@@ -1016,7 +1517,13 @@
       const preOrders = res ? res.preOrders || [] : [];
 
       const filtered = searchVal 
-          ? preOrders.filter(item => (item.tenSP || '').toLowerCase().includes(searchVal))
+          ? preOrders.filter(item => {
+              const nameMatch = (item.tenSP || '').toLowerCase().includes(searchVal);
+              const storeMatch = (item.noiMua || '').toLowerCase().includes(searchVal);
+              const idMatch = (item.id || '').toLowerCase().includes(searchVal);
+              const accMatch = (item.taiKhoan || item.nguonTien || '').toLowerCase().includes(searchVal);
+              return nameMatch || storeMatch || idMatch || accMatch;
+          })
           : preOrders;
 
       renderPreOrderCards(filtered);
@@ -1041,15 +1548,18 @@
           selectAllChk.checked = (allInputs.length > 0 && checkedInputs.length === allInputs.length);
       }
       if (checkedCountElem) {
-          checkedCountElem.innerText = `${checkedInputs.length} / ${allInputs.length} Mục`;
+          checkedCountElem.innerText = `${checkedInputs.length}/${allInputs.length} đơn`;
       }
 
       if (checkedSumElem) {
-          checkedSumElem.innerText = `Tổng: ${sum.toLocaleString()} ¥`;
           if (checkedInputs.length > 0) {
-              checkedSumElem.classList.remove('hidden');
+              checkedSumElem.innerText = `Đã chọn: ${sum.toLocaleString()} ¥`;
           } else {
-              checkedSumElem.classList.add('hidden');
+              let totalAll = 0;
+              allInputs.forEach(cb => {
+                  totalAll += parseFloat(cb.getAttribute('data-total') || 0);
+              });
+              checkedSumElem.innerText = `Tổng: ${totalAll.toLocaleString()} ¥`;
           }
       }
 
@@ -1070,14 +1580,16 @@
       const preContainer = document.getElementById('pre-order-container');
       const preCount = document.getElementById('pre-order-count');
 
-      if (preCount) preCount.innerText = `${preOrders.length} Đơn`;
       if (!preContainer) return;
 
       if (!preOrders || preOrders.length === 0) {
-          preContainer.innerHTML = '<div class="text-center py-3 text-xs text-slate-400">Không có đơn pre-order nào.</div>';
+          if (preCount) preCount.innerText = `0 Đơn`;
+          preContainer.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-medium bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">Không có đơn pre-order nào.</div>';
+          updatePreOrdersCheckedSummary();
           return;
       }
 
+      // 1. Gom theo Mặt hàng (Tên sản phẩm - mỗi mặt hàng 1 thẻ đại diện)
       const groupsArray = [];
       preOrders.forEach(item => {
           const spName = (item.tenSP || '').trim();
@@ -1101,68 +1613,73 @@
 
       window.lastGroupedPreOrders = groupsArray;
 
+      // Đếm tổng số đơn hàng thực tế
+      let totalOrdersCount = 0;
+      groupsArray.forEach(g => {
+          const keys = new Set(g.items.map(it => getPurchaseOrderGroupKey(it)));
+          totalOrdersCount += keys.size;
+      });
+      if (preCount) preCount.innerText = `${totalOrdersCount} Đơn`;
+
       preContainer.innerHTML = groupsArray.map((g, idx) => {
-          const uniqueIds = new Set(g.items.map(it => String(it.id || '').trim()).filter(Boolean));
-          const count = uniqueIds.size;
+          const uniqueOrderKeys = new Set(g.items.map(it => getPurchaseOrderGroupKey(it)));
+          const orderCount = uniqueOrderKeys.size;
           const storesArr = Array.from(g.storesSet);
           const storesDisplay = storesArr.length > 0 ? storesArr.join(', ') : 'N/A';
           const safeName = (g.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
-
-          let actionBtnHtml = '';
-          if (count === 1) {
-              const singleItem = g.items[0];
-              actionBtnHtml = `
-                  <div class="flex items-center gap-1 mt-1">
-                      <button class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-2 py-0.5 rounded-md font-bold cursor-pointer transition-all shadow-2xs text-[10px]" 
-                              onclick="handleConfirmPreOrder('${singleItem.id}', '${safeName}', 'item-preorder-card-${singleItem.id}', this)">
-                          ✅ Đã Trừ Thẻ
-                      </button>
-                      <button class="bg-slate-200 hover:bg-rose-100 hover:text-rose-700 active:scale-95 text-slate-600 px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all text-[10px]" 
-                              onclick="handleCancelPreOrder('${singleItem.id}', '${safeName}', 'item-preorder-card-${singleItem.id}')">
-                          ❌ Hủy
-                      </button>
-                  </div>
-              `;
-          } else {
-              actionBtnHtml = `
-                  <button onclick="openPreorderDetailModal(${idx})" class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-2 py-0.5 rounded-md font-bold text-[10px] cursor-pointer transition shadow-2xs flex items-center gap-0.5">
-                      <span>👁️</span> <span>Chi tiết (${count})</span>
-                  </button>
-              `;
-          }
-
           const itemIdsJoin = g.items.map(it => it.id).filter(Boolean).join(',');
 
+          const cancelTitle = orderCount > 1 ? `${safeName} (${orderCount} đơn)` : safeName;
+
+          const actionBtnHtml = `
+              <button class="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-2 py-0.5 rounded-md font-bold cursor-pointer transition-all shadow-2xs text-[10px]" 
+                      onclick="event.stopPropagation(); handleConfirmPreOrder('${itemIdsJoin}', '${safeName}', 'item-preorder-group-${idx}', this, ${orderCount})">
+                  ✅ Đã Trừ Thẻ
+              </button>
+              <button class="bg-slate-100 hover:bg-rose-100 hover:text-rose-700 active:scale-95 text-slate-600 px-1.5 py-0.5 rounded-md font-bold cursor-pointer transition-all text-[10px] border border-slate-200" 
+                      onclick="event.stopPropagation(); handleCancelPreOrder('${itemIdsJoin}', '${cancelTitle}', 'item-preorder-group-${idx}')">
+                  ❌ Hủy
+              </button>
+          `;
+
           return `
-              <div class="p-2 border rounded-xl bg-blue-50/70 border-blue-200 text-xs shadow-2xs hover:shadow-xs transition-all mb-1.5 flex justify-between items-center" id="item-preorder-card-${count === 1 ? g.items[0].id : 'grp-' + idx}">
-                  <div class="flex items-center gap-1.5 truncate flex-1 min-w-0 pr-2">
-                      <input type="checkbox" class="pre-order-chk accent-blue-600 w-3.5 h-3.5 cursor-pointer shrink-0" value="${itemIdsJoin}" data-total="${g.totalValue}" onchange="updatePreOrdersCheckedSummary()" onclick="event.stopPropagation()" />
-                      <div class="truncate flex-1 min-w-0">
+              <div class="p-1.5 px-2 border rounded-xl bg-white border-slate-200 hover:border-slate-300 text-xs shadow-2xs flex justify-between items-center mb-1 cursor-pointer hover:bg-slate-50 transition" id="item-preorder-group-${idx}" onclick="openPreorderDetailModal(${idx})">
+                  <!-- Cột trái: Checkbox + Nội dung chữ (Thẳng hàng tuyệt đối, bỏ hoàn toàn Nơi mua) -->
+                  <div class="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                      <input type="checkbox" class="pre-order-chk accent-blue-600 w-3.5 h-3.5 cursor-pointer rounded shrink-0" 
+                             value="${itemIdsJoin}" data-total="${g.totalValue}" 
+                             onchange="updatePreOrdersCheckedSummary()" onclick="event.stopPropagation()" />
+                      <div class="truncate flex-1 min-w-0 leading-tight">
                           <div class="flex items-center gap-1.5 truncate">
-                              <span class="font-bold text-slate-800 text-[11px] truncate">${g.tenSP}</span>
+                              <span class="font-bold text-slate-800 text-[11px] truncate hover:text-blue-600 transition" title="${g.tenSP}">${g.tenSP}</span>
                           </div>
-                          <div class="flex items-center gap-1 mt-0.5 truncate">
-                              <span class="text-[9px] font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded shrink-0 truncate max-w-[200px]">${storesDisplay}</span>
-                          </div>
-                          <p class="text-[9px] text-slate-500 mt-0.5">
-                              Tổng SL: <b class="text-slate-700">${g.totalQty}</b> | Gom: <b class="text-blue-700">${count} đơn</b>
+                          <p class="text-[9px] text-slate-500 mt-0.5 truncate">
+                              Tổng SL: <b class="text-slate-700">${g.totalQty}</b> | Gom: <b class="text-blue-700">${orderCount} đơn</b>${orderCount > 1 ? ' <span class="text-[8.5px] text-blue-600 font-semibold underline">(xem chi tiết)</span>' : ''}
                           </p>
                       </div>
                   </div>
-                  <div class="text-right shrink-0 flex flex-col items-end gap-1">
-                      <span class="font-bold text-slate-800 text-[11px]">${(g.totalValue || 0).toLocaleString()} ¥</span>
-                      ${actionBtnHtml}
+                  <!-- Cột phải: Giá tiền & 2 Nút hành động -->
+                  <div class="text-right shrink-0 flex flex-col items-end justify-center gap-0.5">
+                      <span class="font-bold text-slate-800 text-[11px] leading-tight">${(g.totalValue || 0).toLocaleString()} ¥</span>
+                      <div class="flex items-center gap-1 mt-0.5">
+                          ${actionBtnHtml}
+                      </div>
                   </div>
               </div>
           `;
       }).join('');
 
       const detailModal = document.getElementById('modal-preorder-detail');
-      if (detailModal && detailModal.classList.contains('active') && typeof window.currentPreorderGroupIdx === 'number') {
-          openPreorderDetailModal(window.currentPreorderGroupIdx);
-      } else {
-          window.currentPreorderGroupIdx = null;
+      if (detailModal && detailModal.classList.contains('active') && window.currentPreorderGroupTenSP) {
+          const foundIdx = groupsArray.findIndex(g => (g.tenSP || '').toLowerCase() === window.currentPreorderGroupTenSP.toLowerCase());
+          if (foundIdx >= 0) {
+              openPreorderDetailModal(foundIdx);
+          } else {
+              closePreorderDetailModal();
+          }
       }
+
+      updatePreOrdersCheckedSummary();
   }
 
   function toggleSelectAllPreOrders(chkElem) {
@@ -1199,7 +1716,7 @@
       });
 
       if (checkedCountElem) {
-          checkedCountElem.innerText = `${checkedInputs.length} / ${allInputs.length} Mục`;
+          checkedCountElem.innerText = `${checkedInputs.length}/${allInputs.length} đơn`;
       }
 
       if (bulkCountElem) bulkCountElem.innerText = checkedInputs.length;
@@ -1229,18 +1746,18 @@
               debtContainer.innerHTML = '<div class="text-center py-3 text-[11px] text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">Không có đơn khách nợ.</div>';
           } else {
               debtContainer.innerHTML = debtSales.map(item => `
-                  <div class="p-2 px-2.5 border rounded-xl bg-rose-50/40 border-rose-100/80 text-xs mb-1 hover:bg-rose-50/80 transition shadow-2xs" id="item-debtsale-${item.id}">
-                      <div class="flex justify-between items-center gap-2">
-                          <div class="flex items-center gap-2 flex-1 truncate min-w-0">
-                              <input type="checkbox" class="debt-sale-chk accent-rose-600 w-4 h-4 cursor-pointer shrink-0" value="${item.id}" data-total="${item.total || 0}" onchange="updateDebtSalesCheckedSummary()" />
-                              <div class="truncate flex-1 min-w-0">
+                  <div class="p-1.5 px-2 border rounded-xl bg-white border-slate-200 hover:border-slate-300 text-xs mb-1 hover:bg-slate-50 transition shadow-2xs" id="item-debtsale-${item.id}">
+                      <div class="flex justify-between items-center gap-1.5">
+                          <div class="flex items-center gap-1.5 flex-1 truncate min-w-0">
+                              <input type="checkbox" class="debt-sale-chk accent-rose-600 w-3.5 h-3.5 cursor-pointer shrink-0" value="${item.id}" data-total="${item.total || 0}" onchange="updateDebtSalesCheckedSummary()" />
+                              <div class="truncate flex-1 min-w-0 leading-tight">
                                   <p class="font-extrabold text-slate-800 text-[11px] truncate">${item.tenSP || 'Mặt hàng'}</p>
-                                  <p class="text-[10px] text-slate-500 font-medium mt-0.5">Ngày: <b class="text-slate-700">${item.ngayBan || 'N/A'}</b> | SL: <b class="text-slate-700">${item.qty}</b> ${item.noiTru ? '| Kho: <b class="text-slate-700">' + item.noiTru + '</b>' : ''}</p>
+                                  <p class="text-[9px] text-slate-500 font-medium mt-0.5 truncate">Ngày: <b class="text-slate-700">${item.ngayBan || 'N/A'}</b> | SL: <b class="text-slate-700">${item.qty}</b> ${item.noiTru ? '| Kho: <b class="text-slate-700">' + item.noiTru + '</b>' : ''}</p>
                               </div>
                           </div>
-                          <div class="text-right shrink-0 ml-1">
-                              <span class="font-extrabold text-rose-600 text-xs whitespace-nowrap block">+${(item.total || 0).toLocaleString()} ¥</span>
-                              <button class="mt-1 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white px-2.5 py-0.5 rounded-lg font-extrabold cursor-pointer shadow-2xs transition text-[10px] inline-flex items-center gap-0.5" 
+                          <div class="text-right shrink-0 ml-1 flex flex-col items-end justify-center">
+                              <span class="font-extrabold text-rose-600 text-[11px] whitespace-nowrap block leading-tight mb-0.5">+${(item.total || 0).toLocaleString()} ¥</span>
+                              <button class="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white px-2 py-0.5 rounded font-extrabold cursor-pointer shadow-2xs transition text-[9px] inline-flex items-center gap-0.5" 
                                       onclick="handleSingleDebtSalePayment('${item.id}', '${(item.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', this)">
                                   💰 Nhận
                               </button>
@@ -1424,6 +1941,7 @@
                       if (typeof closeModal === 'function') closeModal('modal-pay-debt-t3');
                       if (res.freshData && typeof applyTab3Data === 'function') applyTab3Data(res.freshData);
                       else if (typeof reloadTab3Data === 'function') reloadTab3Data();
+                      if (typeof reloadTab1Data === 'function') reloadTab1Data();
                   } else {
                       showToast("❌ " + (res ? res.message : "Thu tiền thất bại"), true);
                   }
@@ -1520,9 +2038,12 @@
   }
 
   function updateWarehouseDropdowns(warehouses) {
-      const defaultWhs = ["Chờ Ship", "Chusen", "1F", "2F", "Kho Nhật", "Kho VN"];
-      const inputWhs = Array.isArray(warehouses) ? warehouses : [];
-      const whList = Array.from(new Set(inputWhs.concat(defaultWhs)));
+      let whList = Array.isArray(warehouses) ? [...warehouses] : [];
+      if (whList.length === 0) {
+          whList = ["Chờ Ship"];
+      } else if (!whList.some(w => w.toLowerCase() === "chờ ship" || w.toLowerCase() === "cho ship")) {
+          whList.unshift("Chờ Ship");
+      }
 
       const fromWhSelect = document.getElementById('transfer-from-wh');
       if (fromWhSelect) {
@@ -1545,10 +2066,24 @@
   }
 
   function updatePurchaseWarehouseDropdown(warehouses) {
-      if (!Array.isArray(warehouses) || warehouses.length === 0) return;
       const whSelect = document.getElementById('mua-trangthai-kho');
-      if (whSelect) {
-          whSelect.innerHTML = warehouses.map(w => `<option value="${w}">${w}</option>`).join('');
+      if (!whSelect) return;
+      let whList = Array.isArray(warehouses) ? [...warehouses] : [];
+      if (!whList.some(w => w.toLowerCase() === "chờ ship" || w.toLowerCase() === "cho ship")) {
+          whList.unshift("Chờ Ship");
+      }
+      if (!whList.some(w => w.toLowerCase() === "đặt trước" || w.toLowerCase() === "dat truoc" || w.toLowerCase().includes("preorder"))) {
+          whList.unshift("Đặt trước");
+      }
+      const currentVal = whSelect.value;
+      whSelect.innerHTML = whList.map(w => {
+          const styleIcon = w.includes('Đặt trước') ? '🟡 ' : (w.includes('Chờ Ship') ? '📦 ' : (w.includes('1F') ? '🔵 ' : (w.includes('2F') ? '🟢 ' : (w.includes('Chusen') ? '🟡 ' : (w.includes('Hủy') ? '🔴 ' : '🏢 ')))));
+          return `<option value="${w}">${styleIcon}${w}</option>`;
+      }).join('');
+      if (currentVal && whList.includes(currentVal)) {
+          whSelect.value = currentVal;
+      } else {
+          whSelect.value = "Chờ Ship";
       }
   }
 
@@ -1826,6 +2361,7 @@
   function openProductDetailModal(spName, targetWh = null, specificId = null) {
       const modal = document.getElementById('modal-product-detail');
       const title = document.getElementById('product-detail-title');
+      const sub = document.getElementById('product-detail-sub');
       const body = document.getElementById('product-detail-body');
       if (!modal || !body) return;
 
@@ -1834,10 +2370,12 @@
       let matchingItems = [];
 
       if (specificId) {
-          matchingItems = inv.filter(item => String(item.id) === String(specificId));
-      }
-
-      if (matchingItems.length === 0) {
+          const targetIds = String(specificId).split(',').map(s => s.trim()).filter(Boolean);
+          matchingItems = inv.filter(item => {
+              const itemId = String(item.id || '').trim();
+              return targetIds.some(tid => (itemId === tid || itemId.startsWith(tid + '-')));
+          });
+      } else if (spName) {
           matchingItems = inv.filter(item => {
               const matchName = (item.tenSP || '').trim().toLowerCase() === (spName || '').trim().toLowerCase();
               if (!matchName) return false;
@@ -1849,112 +2387,265 @@
           });
       }
 
-      if (title) {
-          if (specificId && matchingItems.length > 0) {
-              title.innerText = `Chi Tiết Đơn Hàng #${specificId}: ${matchingItems[0].tenSP || spName}`;
-          } else {
-              title.innerText = targetWh ? `Chi Tiết Đơn Hàng: ${spName} (${targetWh})` : `Chi Tiết Đơn Hàng: ${spName}`;
-          }
-      }
+      window.currentModalMatchingItemIds = matchingItems.map(it => String(it.id));
 
       if (matchingItems.length === 0) {
+          if (title) title.innerText = "Chi Tiết Đơn Hàng";
+          if (sub) sub.innerText = "";
           body.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Không tìm thấy chi tiết đợt nhập mua nào.</div>';
-      } else {
-          const warehouses = (res && Array.isArray(res.warehouses) && res.warehouses.length > 0) ? res.warehouses : ["Chờ Ship", "Kho Nhật", "Kho VN"];
-          body.innerHTML = matchingItems.map((item, idx) => {
-              const whOptions = warehouses.map(w => `<option value="${w}" ${item.trangThaiKho === w ? 'selected' : ''}>${w}</option>`).join('');
-              const formattedDate = formatDateForInput(item.ngayMua);
-              const spNameEsc = (item.tenSP || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
-              const targetWhEsc = (targetWh || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          modal.classList.add('active');
+          modal.classList.remove('hidden');
+          return;
+      }
 
-              return `
-                  <div class="p-2 border rounded-xl bg-slate-50/80 border-slate-200 text-xs space-y-1.5 mb-2 shadow-2xs relative" id="item-detail-row-${item.id}">
-                      <div class="flex justify-between items-center text-[10px] font-bold text-slate-700 border-b border-slate-200 pb-1">
-                          <span class="text-teal-700 font-bold">📦 Đơn Hàng #${item.id}</span>
-                          <span class="text-slate-400 font-mono text-[9px]">${item.ngayMua || ''}</span>
+      const firstItem = matchingItems[0];
+      const baseOrderId = extractBaseOrderId(firstItem.id || specificId);
+      const totalOrdAmt = matchingItems.reduce((s, it) => s + (Number(it.total) || 0), 0);
+      const totalOrdQty = matchingItems.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+      const warehouses = (res && Array.isArray(res.warehouses) && res.warehouses.length > 0) ? res.warehouses : ["Chờ Ship", "Hủy"];
+
+      if (title) {
+          title.innerText = `Chi Tiết Đơn Mua #${baseOrderId}`;
+      }
+      if (sub) {
+          sub.innerText = `${matchingItems.length} món • Tổng: ${totalOrdAmt.toLocaleString()} ¥ • SL: ${totalOrdQty}`;
+      }
+
+      const whOptions = warehouses.map(w => `<option value="${w}">${w}</option>`).join('');
+      const formattedDate = formatDateForInput(firstItem.ngayMua);
+      const isCardPre = String(firstItem.trangThaiThe || '').toUpperCase().includes('PRE');
+
+      // 1. Khung thông tin chung (Hiển thị 1 lần duy nhất)
+      const commonInfoHtml = `
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5 text-xs">
+              <div class="flex justify-between items-center border-b border-slate-200/80 pb-1 text-[10px]">
+                  <span class="font-extrabold text-teal-800 flex items-center gap-1">📋 <span>Thông Tin Chung Đơn Hàng</span></span>
+                  <span class="font-mono text-slate-500 font-bold">#${baseOrderId}</span>
+              </div>
+
+              <!-- Hàng 1: Ngày mua + Nơi mua -->
+              <div class="grid grid-cols-2 gap-1.5 relative z-[50]">
+                  <div>
+                      <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">📅 Ngày Mua</label>
+                      <input type="date" id="order-edit-ngaymua" value="${formattedDate}" class="w-full bg-white border border-slate-300 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-700 outline-none focus:border-teal-500" />
+                  </div>
+                  <div class="relative">
+                      <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">🏬 Nơi Mua</label>
+                      <input type="text" id="order-edit-noimua" value="${firstItem.noiMua || ''}" placeholder="Bicamera, Rakuten..." 
+                             oninput="renderSuggest('order-edit-noimua', 'noimua')" onfocus="renderSuggest('order-edit-noimua', 'noimua', true)" onclick="renderSuggest('order-edit-noimua', 'noimua', true)" onblur="hideSuggest('order-edit-noimua')"
+                             class="w-full bg-white border border-slate-300 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-700 outline-none focus:border-teal-500" />
+                      <div id="box-order-edit-noimua" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
+                  </div>
+              </div>
+
+              <!-- Hàng 2: Nguồn tiền mua + Tài khoản mua -->
+              <div class="grid grid-cols-2 gap-1.5 relative z-[45]">
+                  <div class="relative">
+                      <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">💳 Nguồn Tiền Mua</label>
+                      <input type="text" id="order-edit-nguontien" value="${firstItem.nguonTien || ''}" placeholder="Thẻ Rakuten, Ví..." 
+                             oninput="renderSuggest('order-edit-nguontien', 'nguon')" onfocus="renderSuggest('order-edit-nguontien', 'nguon', true)" onclick="renderSuggest('order-edit-nguontien', 'nguon', true)" onblur="hideSuggest('order-edit-nguontien')"
+                             class="w-full bg-white border border-slate-300 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-700 outline-none focus:border-teal-500" />
+                      <div id="box-order-edit-nguontien" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
+                  </div>
+                  <div class="relative">
+                      <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">👤 Tài Khoản Mua (Cooldown)</label>
+                      <input type="text" id="order-edit-taikhoan" value="${firstItem.taiKhoan || ''}" placeholder="Joshin KA, Yodo KA..." 
+                             oninput="renderSuggest('order-edit-taikhoan', 'account')" onfocus="renderSuggest('order-edit-taikhoan', 'account', true)" onclick="renderSuggest('order-edit-taikhoan', 'account', true)" onblur="hideSuggest('order-edit-taikhoan')"
+                             class="w-full bg-white border border-slate-300 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-700 outline-none focus:border-teal-500" />
+                      <div id="box-order-edit-taikhoan" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
+                  </div>
+              </div>
+
+              <!-- Hàng 3: Trạng thái thẻ + Đổi kho tất cả -->
+              <div class="grid grid-cols-2 gap-1.5 relative z-[40]">
+                  <div>
+                      <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">💳 Trạng Thái Thẻ</label>
+                      <select id="order-edit-cardstatus" class="w-full bg-white border border-slate-300 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-slate-700 outline-none focus:border-teal-500">
+                          <option value="HOAN_TAT" ${!isCardPre ? 'selected' : ''}>✅ HOAN_TAT (Đã trừ)</option>
+                          <option value="PRE-ORDER" ${isCardPre ? 'selected' : ''}>⏳ PRE-ORDER (Chờ trừ)</option>
+                      </select>
+                  </div>
+                  <div>
+                      <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">🏢 Áp Dụng Kho Toàn Đơn</label>
+                      <select id="order-edit-wh-all" onchange="applyOrderWarehouseToAllItems(this.value)" class="w-full bg-white border border-slate-300 rounded-md px-1.5 py-0.5 text-[11px] font-bold text-teal-700 outline-none focus:border-teal-500">
+                          <option value="">-- Chọn kho chung --</option>
+                          ${whOptions}
+                      </select>
+                  </div>
+              </div>
+          </div>
+      `;
+
+      // 2. Danh sách các sản phẩm trong đơn (Gọn gàng 2 dòng)
+      const itemsListHtml = matchingItems.map((item, idx) => {
+          const itemWhOptions = warehouses.map(w => `<option value="${w}" ${item.trangThaiKho === w ? 'selected' : ''}>${w}</option>`).join('');
+          const itemSubtotal = (Number(item.total) || ((Number(item.qty) || 1) * (Number(item.price) || 0)));
+
+          return `
+              <div class="p-1.5 px-2 rounded-xl bg-white border border-slate-200 hover:border-teal-400 transition shadow-2xs space-y-1" id="item-detail-row-${item.id}">
+                  <!-- Dòng 1: Index + Tên SP + Thành tiền -->
+                  <div class="flex items-center gap-1.5">
+                      <span class="text-[9px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200/60 px-1.5 py-0.5 rounded shrink-0">#${idx + 1}</span>
+                      <div class="relative flex-1 min-w-0">
+                          <input type="text" id="edit-tensp-${item.id}" value="${item.tenSP || ''}" placeholder="Tên sản phẩm..." 
+                                 oninput="renderSuggest('edit-tensp-${item.id}', 'sp')" onfocus="renderSuggest('edit-tensp-${item.id}', 'sp', true)" onclick="renderSuggest('edit-tensp-${item.id}', 'sp', true)" onblur="hideSuggest('edit-tensp-${item.id}')"
+                                 class="w-full bg-slate-50/80 border border-slate-200 rounded-md px-1.5 py-0.5 text-xs font-bold text-slate-800 outline-none focus:border-teal-500 focus:bg-white" />
+                          <div id="box-edit-tensp-${item.id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
                       </div>
+                      <span class="text-xs font-black text-teal-800 shrink-0 text-right whitespace-nowrap min-w-[60px]" id="item-subtotal-${item.id}">${itemSubtotal.toLocaleString()} ¥</span>
+                  </div>
 
-                      <!-- Hàng 1: Ngày mua & Nơi mua -->
-                      <div class="grid grid-cols-2 gap-1.5">
-                          <div>
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">📅 Ngày Mua</label>
-                              <input type="date" id="edit-ngaymua-${item.id}" value="${formattedDate}" class="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none" />
-                          </div>
-                          <div class="relative">
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">🏬 Nơi Mua</label>
-                              <input type="text" id="edit-noimua-${item.id}" value="${item.noiMua || ''}" placeholder="Bicamera, Rakuten..." 
-                                     oninput="renderSuggest('edit-noimua-${item.id}', 'noimua')" onfocus="renderSuggest('edit-noimua-${item.id}', 'noimua', true)" onclick="renderSuggest('edit-noimua-${item.id}', 'noimua', true)" onblur="hideSuggest('edit-noimua-${item.id}')"
-                                     class="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none" />
-                              <div id="box-edit-noimua-${item.id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
-                          </div>
+                  <!-- Dòng 2: SL, Giá, Kho (gọn trên 1 hàng) -->
+                  <div class="grid grid-cols-12 gap-1 items-center text-[10px]">
+                      <div class="col-span-3 flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md px-1 py-0.5">
+                          <span class="text-[8px] text-slate-400 font-bold">SL:</span>
+                          <input type="number" id="edit-qty-${item.id}" value="${item.qty}" min="1" oninput="recalcOrderItemSubtotal('${item.id}')" class="w-full bg-transparent text-xs font-bold text-slate-800 text-center outline-none" />
                       </div>
-
-                      <!-- Hàng 2: Nguồn tiền mua, Tình trạng thẻ & Tài khoản mua (Lịch Mua) -->
-                      <div class="grid grid-cols-3 gap-1.5">
-                          <div class="relative">
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">💳 Nguồn Tiền</label>
-                              <input type="text" id="edit-nguontien-${item.id}" value="${item.nguonTien || ''}" placeholder="Thẻ Rakuten, Ví..." 
-                                     oninput="renderSuggest('edit-nguontien-${item.id}', 'nguon')" onfocus="renderSuggest('edit-nguontien-${item.id}', 'nguon', true)" onclick="renderSuggest('edit-nguontien-${item.id}', 'nguon', true)" onblur="hideSuggest('edit-nguontien-${item.id}')"
-                                     class="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none" />
-                              <div id="box-edit-nguontien-${item.id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
-                          </div>
-                          <div>
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">💳 Trạng Thái Thẻ</label>
-                              <select id="edit-cardstatus-${item.id}" class="w-full bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-bold text-slate-700 outline-none">
-                                  <option value="HOAN_TAT" ${String(item.trangThaiThe || '').toUpperCase() === 'HOAN_TAT' ? 'selected' : ''}>HOAN_TAT</option>
-                                  <option value="PRE-ORDER" ${String(item.trangThaiThe || '').toUpperCase().includes('PRE') ? 'selected' : ''}>PRE-ORDER</option>
-                              </select>
-                          </div>
-                          <div class="relative">
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">👤 Tài Khoản Mua</label>
-                              <input type="text" id="edit-taikhoan-${item.id}" value="${item.taiKhoan || ''}" placeholder="Joshin KA, Yodo KA..." 
-                                     oninput="renderSuggest('edit-taikhoan-${item.id}', 'account')" onfocus="renderSuggest('edit-taikhoan-${item.id}', 'account', true)" onclick="renderSuggest('edit-taikhoan-${item.id}', 'account', true)" onblur="hideSuggest('edit-taikhoan-${item.id}')"
-                                     class="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none" />
-                              <div id="box-edit-taikhoan-${item.id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
-                          </div>
+                      <div class="col-span-4 flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md px-1 py-0.5">
+                          <span class="text-[8px] text-slate-400 font-bold">Giá:</span>
+                          <input type="text" inputmode="decimal" id="edit-price-${item.id}" value="${item.price || 0}" oninput="recalcOrderItemSubtotal('${item.id}')" onblur="this.value = evalMathExpression(this.value); recalcOrderItemSubtotal('${item.id}')" class="w-full bg-transparent text-xs font-bold text-slate-800 text-center outline-none" />
                       </div>
-
-                      <!-- Hàng 2.5: Tên Sản Phẩm -->
-                      <div>
-                          <div class="relative">
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">📦 Tên Sản Phẩm</label>
-                              <input type="text" id="edit-tensp-${item.id}" value="${item.tenSP || ''}" placeholder="Tên sản phẩm..." 
-                                     oninput="renderSuggest('edit-tensp-${item.id}', 'sp')" onfocus="renderSuggest('edit-tensp-${item.id}', 'sp', true)" onclick="renderSuggest('edit-tensp-${item.id}', 'sp', true)" onblur="hideSuggest('edit-tensp-${item.id}')"
-                                     class="w-full bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-bold text-slate-700 outline-none" />
-                              <div id="box-edit-tensp-${item.id}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-28 overflow-y-auto z-[100]"></div>
-                          </div>
-                      </div>
-
-                      <!-- Hàng 3: Kho, Số lượng, Giá mua -->
-                      <div class="grid grid-cols-3 gap-1">
-                          <div>
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">🏢 Trạng Thái Kho</label>
-                              <select id="edit-wh-${item.id}" class="w-full bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-bold text-slate-700 outline-none">
-                                  ${whOptions}
-                              </select>
-                          </div>
-                          <div>
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">🔢 Số Lượng</label>
-                              <input type="number" id="edit-qty-${item.id}" value="${item.qty}" min="0" class="w-full bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-bold text-slate-700 text-center outline-none" />
-                          </div>
-                          <div>
-                              <label class="block text-[8px] font-bold text-slate-500 uppercase mb-0.5">💰 Giá Mua (¥)</label>
-                              <input type="text" inputmode="decimal" id="edit-price-${item.id}" value="${item.price || 0}" onblur="this.value = evalMathExpression(this.value)" class="w-full bg-white border border-slate-300 rounded px-1 py-0.5 text-[10px] font-bold text-slate-700 text-center outline-none" />
-                          </div>
-                      </div>
-
-                      <!-- Hàng 4: Ghi chú & Nút Lưu -->
-                      <div class="flex items-center gap-1.5 pt-1 border-t border-slate-200/70">
-                          <input type="text" id="edit-ghichu-${item.id}" value="${item.ghiChu || ''}" placeholder="💡 Ghi chú..." class="flex-1 bg-white border border-slate-300 rounded px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 outline-none" />
-                          <button onclick="saveSingleItemEdit('${item.id}', '${spNameEsc}', this, '${targetWhEsc}')" class="bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold px-2.5 py-1 rounded text-[10px] cursor-pointer shrink-0 transition shadow-2xs">💾 Lưu Đơn</button>
+                      <div class="col-span-5">
+                          <select id="edit-wh-${item.id}" class="w-full bg-slate-50 border border-slate-200 rounded-md px-1 py-1 text-[10px] font-bold text-slate-700 outline-none focus:border-teal-500">
+                              ${itemWhOptions}
+                          </select>
                       </div>
                   </div>
-              `;
-          }).join('');
-      }
+              </div>
+          `;
+      }).join('');
+
+      const productsSectionHtml = `
+          <div class="space-y-1 pt-1">
+              <div class="flex justify-between items-center px-1">
+                  <span class="font-extrabold text-[11px] text-slate-700 uppercase">🛍️ Danh Sách Sản Phẩm (${matchingItems.length} món)</span>
+                  <span class="text-[11px] font-black text-teal-700" id="order-edit-total-preview">Tổng: ${totalOrdAmt.toLocaleString()} ¥</span>
+              </div>
+              <div class="space-y-1">
+                  ${itemsListHtml}
+              </div>
+          </div>
+      `;
+
+      const saveActionHtml = `
+          <div class="pt-2 sticky bottom-0 bg-white pb-1 z-20">
+              <button onclick="saveAllItemsInOrder(this)" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-bold rounded-xl text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-1.5">
+                  <span>💾</span> <span>Lưu Toàn Bộ Thay Đổi Đơn Hàng</span>
+              </button>
+          </div>
+      `;
+
+      body.innerHTML = `
+          <div class="space-y-2">
+              ${commonInfoHtml}
+              ${productsSectionHtml}
+              ${saveActionHtml}
+          </div>
+      `;
 
       modal.classList.add('active');
       modal.classList.remove('hidden');
+  }
+
+  function recalcOrderItemSubtotal(itemId) {
+      const qtyInput = document.getElementById(`edit-qty-${itemId}`);
+      const priceInput = document.getElementById(`edit-price-${itemId}`);
+      const subtotalEl = document.getElementById(`item-subtotal-${itemId}`);
+      const totalPreviewEl = document.getElementById('order-edit-total-preview');
+      if (!qtyInput || !priceInput) return;
+      
+      let price = evalMathExpression(priceInput.value);
+      let qty = parseFloat(qtyInput.value) || 0;
+      let subtotal = Math.round(qty * price);
+      if (subtotalEl) subtotalEl.innerText = `${subtotal.toLocaleString()} ¥`;
+
+      const itemRows = window.currentModalMatchingItemIds || [];
+      let grandTotal = 0;
+      itemRows.forEach(id => {
+          const q = parseFloat(document.getElementById(`edit-qty-${id}`)?.value || 0) || 0;
+          const p = evalMathExpression(document.getElementById(`edit-price-${id}`)?.value);
+          grandTotal += Math.round(q * p);
+      });
+      if (totalPreviewEl) totalPreviewEl.innerText = `Tổng: ${grandTotal.toLocaleString()} ¥`;
+  }
+
+  function applyOrderWarehouseToAllItems(newWh) {
+      if (!newWh) return;
+      const itemIds = window.currentModalMatchingItemIds || [];
+      itemIds.forEach(id => {
+          const whSelect = document.getElementById(`edit-wh-${id}`);
+          if (whSelect) whSelect.value = newWh;
+      });
+  }
+
+  function saveAllItemsInOrder(btnElem) {
+      const btn = btnElem || (typeof event !== 'undefined' ? event.currentTarget : null);
+      if (btn && btn.disabled) return;
+
+      const itemIds = window.currentModalMatchingItemIds || [];
+      if (itemIds.length === 0) return;
+
+      const newNgayMua = document.getElementById('order-edit-ngaymua') ? document.getElementById('order-edit-ngaymua').value : '';
+      const newNoiMua = document.getElementById('order-edit-noimua') ? document.getElementById('order-edit-noimua').value : '';
+      const newNguonTien = document.getElementById('order-edit-nguontien') ? document.getElementById('order-edit-nguontien').value : '';
+      const newCardStatus = document.getElementById('order-edit-cardstatus') ? document.getElementById('order-edit-cardstatus').value : '';
+      const newTaiKhoan = document.getElementById('order-edit-taikhoan') ? document.getElementById('order-edit-taikhoan').value : '';
+
+      const payload = {
+          ngayMua: newNgayMua,
+          noiMua: newNoiMua,
+          nguonTien: newNguonTien,
+          trangThaiThe: newCardStatus,
+          taiKhoan: newTaiKhoan,
+          items: itemIds.map(id => {
+              const pVal = document.getElementById(`edit-price-${id}`) ? document.getElementById(`edit-price-${id}`).value : 0;
+              return {
+                  id: id,
+                  tenSP: document.getElementById(`edit-tensp-${id}`) ? document.getElementById(`edit-tensp-${id}`).value : '',
+                  qty: document.getElementById(`edit-qty-${id}`) ? document.getElementById(`edit-qty-${id}`).value : 1,
+                  price: evalMathExpression(pVal),
+                  trangThaiKho: document.getElementById(`edit-wh-${id}`) ? document.getElementById(`edit-wh-${id}`).value : '',
+                  ghiChu: document.getElementById(`edit-ghichu-${id}`) ? document.getElementById(`edit-ghichu-${id}`).value : ''
+              };
+          })
+      };
+
+      const origText = btn ? btn.innerHTML : '💾 Lưu Toàn Bộ Đơn Hàng';
+      if (btn) {
+          btn.disabled = true;
+          btn.classList.add('opacity-50', 'pointer-events-none');
+          btn.innerHTML = "⏳ Đang lưu thay đổi...";
+      }
+
+      function restoreBtn() {
+          if (btn) {
+              btn.disabled = false;
+              btn.classList.remove('opacity-50', 'pointer-events-none');
+              btn.innerHTML = origText;
+          }
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveBatchPurchaseOrderEdit === 'function') {
+          google.script.run.withSuccessHandler(function(res) {
+              restoreBtn();
+              if (res && res.success) {
+                  showToast(res.message || "✅ Đã lưu thay đổi toàn bộ đơn hàng!");
+                  reloadTab3Data();
+                  if (typeof reloadTab1Data === 'function') reloadTab1Data();
+                  setTimeout(() => { 
+                      openProductDetailModal(payload.items[0]?.tenSP, null, itemIds.join(',')); 
+                  }, 500);
+              } else {
+                  showToast("❌ " + (res ? res.message : "Lỗi lưu đơn hàng"), true);
+              }
+          }).withFailureHandler(function(err) {
+              restoreBtn();
+              showToast("❌ Lỗi kết nối: " + err, true);
+          }).saveBatchPurchaseOrderEdit(payload);
+      } else {
+          restoreBtn();
+          showToast("✅ Đã lưu thay đổi toàn bộ đơn hàng! (Demo Mode)");
+      }
   }
 
   function closeProductDetailModal() {
@@ -1969,11 +2660,11 @@
       const btn = btnElem || (typeof event !== 'undefined' ? event.currentTarget : null);
       if (btn && btn.disabled) return;
 
-      const newNgayMua = document.getElementById(`edit-ngaymua-${itemId}`) ? document.getElementById(`edit-ngaymua-${itemId}`).value : '';
-      const newNoiMua = document.getElementById(`edit-noimua-${itemId}`) ? document.getElementById(`edit-noimua-${itemId}`).value : '';
-      const newNguonTien = document.getElementById(`edit-nguontien-${itemId}`) ? document.getElementById(`edit-nguontien-${itemId}`).value : '';
-      const newCardStatus = document.getElementById(`edit-cardstatus-${itemId}`) ? document.getElementById(`edit-cardstatus-${itemId}`).value : '';
-      const newTaiKhoan = document.getElementById(`edit-taikhoan-${itemId}`) ? document.getElementById(`edit-taikhoan-${itemId}`).value : '';
+      const newNgayMua = document.getElementById(`edit-ngaymua-${itemId}`) ? document.getElementById(`edit-ngaymua-${itemId}`).value : (document.getElementById('order-edit-ngaymua')?.value || '');
+      const newNoiMua = document.getElementById(`edit-noimua-${itemId}`) ? document.getElementById(`edit-noimua-${itemId}`).value : (document.getElementById('order-edit-noimua')?.value || '');
+      const newNguonTien = document.getElementById(`edit-nguontien-${itemId}`) ? document.getElementById(`edit-nguontien-${itemId}`).value : (document.getElementById('order-edit-nguontien')?.value || '');
+      const newCardStatus = document.getElementById(`edit-cardstatus-${itemId}`) ? document.getElementById(`edit-cardstatus-${itemId}`).value : (document.getElementById('order-edit-cardstatus')?.value || '');
+      const newTaiKhoan = document.getElementById(`edit-taikhoan-${itemId}`) ? document.getElementById(`edit-taikhoan-${itemId}`).value : (document.getElementById('order-edit-taikhoan')?.value || '');
       const newTenSP = document.getElementById(`edit-tensp-${itemId}`) ? document.getElementById(`edit-tensp-${itemId}`).value : '';
       const newWh = document.getElementById(`edit-wh-${itemId}`) ? document.getElementById(`edit-wh-${itemId}`).value : '';
       const newQty = document.getElementById(`edit-qty-${itemId}`) ? document.getElementById(`edit-qty-${itemId}`).value : '';
@@ -2003,6 +2694,7 @@
               if (res && res.success) {
                   showToast(res.message || "✅ Đã lưu thay đổi chi tiết đơn hàng!");
                   reloadTab3Data();
+                  if (typeof reloadTab1Data === 'function') reloadTab1Data();
                   setTimeout(() => { openProductDetailModal(targetSpName, newWh || originalWh, itemId); }, 500);
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi lưu chi tiết"), true);
@@ -2110,31 +2802,31 @@
       try {
           const monthSelect = document.getElementById('t3-filter-month');
           const yearSelect = document.getElementById('t3-filter-year');
-          const cacheKey = 'T3_CACHE_BUSINESS_DATA_' + (monthSelect ? monthSelect.value : 'ALL') + '_' + (yearSelect ? yearSelect.value : 'ALL');
+          const cacheKey = 'T3_CACHE_BUSINESS_DATA_' + (monthSelect ? monthSelect.value : 'All') + '_' + (yearSelect ? yearSelect.value : 'All');
           localStorage.setItem(cacheKey, JSON.stringify(res));
           localStorage.setItem('T3_CACHE_BUSINESS_DATA_LATEST', JSON.stringify(res));
       } catch(e) {}
 
       if (res.summary) {
+          window.t1_tab3Summary = res.summary;
           document.getElementById('biz-dashboard-net').innerText = (res.summary.net >= 0 ? '+' : '') + res.summary.net.toLocaleString() + ' ¥';
           document.getElementById('biz-dashboard-sales').innerText = res.summary.sales.toLocaleString() + ' ¥';
           document.getElementById('biz-dashboard-cogs').innerText = res.summary.cogs.toLocaleString() + ' ¥';
           const stockEl = document.getElementById('biz-dashboard-stock');
           if (stockEl) stockEl.innerText = "Tồn kho: " + (res.summary.stockValue || 0).toLocaleString() + ' ¥';
+          if (typeof renderTab1Wallets === 'function') renderTab1Wallets();
       }
 
-      // Đổ danh sách kho động từ Categories Cột H vào select
+      // Đổ danh sách kho động vào select
       if (Array.isArray(res.warehouses) && res.warehouses.length > 0) {
-          const whSelect = document.getElementById('mua-trangthai-kho');
-          if (whSelect) {
-              whSelect.innerHTML = res.warehouses.map(w => `<option value="${w}">${w}</option>`).join('');
-          }
+          updatePurchaseWarehouseDropdown(res.warehouses);
       }
 
       renderBizInventoryLists(res);
 
       // Cập nhật suggest data từ database thật
-      if (res.products) window.bizSuggestData.sp = res.products;
+      if (res.allProducts && res.allProducts.length > 0) window.bizSuggestData.sp = res.allProducts;
+      else if (res.products) window.bizSuggestData.sp = res.products;
       if (res.purchasePlaces) window.bizSuggestData.noimua = res.purchasePlaces;
       if (res.sources) window.bizSuggestData.nguon = res.sources;
       if (res.accounts) window.bizSuggestData.account = res.accounts;
@@ -2144,8 +2836,8 @@
       const monthSelect = document.getElementById('t3-filter-month');
       const yearSelect = document.getElementById('t3-filter-year');
 
-      let month = monthSelect ? monthSelect.value : 'ALL';
-      let year = yearSelect ? yearSelect.value : 'ALL';
+      let month = monthSelect ? monthSelect.value : 'All';
+      let year = yearSelect ? yearSelect.value : 'All';
       const cacheKey = 'T3_CACHE_BUSINESS_DATA_' + month + '_' + year;
 
       const shouldForce = (forceRefresh === true);
@@ -2195,7 +2887,13 @@
           if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3) {
               applyTab3Data(window.SERVER_INITIAL_DATA.tab3);
           } else {
-              reloadTab3Data(false);
+              try {
+                  const cached = localStorage.getItem('T3_CACHE_DATA_LATEST');
+                  if (cached) {
+                      const cData = JSON.parse(cached);
+                      if (cData && cData.success) applyTab3Data(cData);
+                  }
+              } catch(e) {}
           }
       }, 100);
   });
@@ -2232,20 +2930,21 @@
       str = str.replace(/,/g, '.');
 
       if (/^-?\d+(\.\d+)?$/.test(str)) {
-          return Math.round(parseFloat(str) || 0);
+          const num = parseFloat(str) || 0;
+          return Number.isInteger(num) ? num : Math.round(num * 100) / 100;
       }
 
       if (/^[0-9\s\.\+\-\*\/\(\)]+$/.test(str)) {
           try {
               const res = new Function('"use strict"; return (' + str + ')')();
               if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
-                  return Math.round(res);
+                  return Number.isInteger(res) ? res : Math.round(res * 100) / 100;
               }
           } catch(e) {}
       }
 
       const clean = parseFloat(str.replace(/[^0-9\.]/g, ''));
-      return isNaN(clean) ? 0 : Math.round(clean);
+      return isNaN(clean) ? 0 : (Number.isInteger(clean) ? clean : Math.round(clean * 100) / 100);
   }
 
   let muaIdSeq = 0;
@@ -2508,7 +3207,9 @@
           return;
       }
 
+      const reqIdMua = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_PO_") : ("REQ_PO_" + Date.now());
       const payload = {
+          requestId: reqIdMua,
           ngay: document.getElementById('mua-ngay') ? document.getElementById('mua-ngay').value : '',
           noiMua: document.getElementById('mua-noi') ? document.getElementById('mua-noi').value : '',
           trangThaiKho: document.getElementById('mua-trangthai-kho') ? document.getElementById('mua-trangthai-kho').value : 'Chờ Ship',
@@ -2532,13 +3233,19 @@
                   showToast(res.message || "✅ Đã lưu đơn mua hàng!");
                   if (res.freshData) applyTab3Data(res.freshData);
                   else reloadTab3Data();
+                  if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                      mergeUpdatedWallets(res.updatedWallets);
+                  }
+                  if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                      window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                  }
                   if (typeof t5_loadData === 'function') t5_loadData();
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi lưu đơn mua"), true);
                   reloadTab3Data(true);
               }
           }).withFailureHandler(function(err) {
-              showToast("❌ Lỗi kết nối: " + err, true);
+              showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Mất kết nối"), true);
               reloadTab3Data(true);
           }).savePurchaseOrder(payload);
       } else {
@@ -2608,7 +3315,9 @@
           return;
       }
 
+      const reqIdBan = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_SO_") : ("REQ_SO_" + Date.now());
       const payload = {
+          requestId: reqIdBan,
           ngay: document.getElementById('ban-ngay') ? document.getElementById('ban-ngay').value : '',
           nhanTienVao: nhanTienVao,
           isKhachNo: isKhachNo,
@@ -2627,12 +3336,18 @@
                   showToast(res.message || "✅ Đã xuất bán đơn hàng!");
                   if (res.freshData) applyTab3Data(res.freshData);
                   else reloadTab3Data();
+                  if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                      mergeUpdatedWallets(res.updatedWallets);
+                  }
+                  if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                      window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                  }
               } else {
                   showToast("❌ " + (res ? res.message : "Lỗi xuất bán"), true);
                   reloadTab3Data(true);
               }
           }).withFailureHandler(function(err) {
-              showToast("❌ Lỗi kết nối: " + err, true);
+              showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Mất kết nối"), true);
               reloadTab3Data(true);
           }).saveSalesOrder(payload);
       } else {
@@ -2669,12 +3384,41 @@
       return clean.startsWith('c-') || clean.startsWith('c_');
   }
 
+  function onTogglePreOrderCheckbox(chk) {
+      const isPre = chk ? chk.checked : false;
+      const whSelect = document.getElementById('mua-trangthai-kho');
+      if (whSelect) {
+          if (isPre) {
+              let found = false;
+              for (let i = 0; i < whSelect.options.length; i++) {
+                  if (whSelect.options[i].value.toLowerCase().includes('đặt trước') || whSelect.options[i].value.toLowerCase().includes('preorder')) {
+                      whSelect.value = whSelect.options[i].value;
+                      found = true;
+                      break;
+                  }
+              }
+              if (!found) {
+                  const opt = new Option("🟡 Đặt trước", "Đặt trước");
+                  whSelect.add(opt, 0);
+                  whSelect.value = "Đặt trước";
+              }
+          } else {
+              if (whSelect.value.toLowerCase().includes('đặt trước') || whSelect.value.toLowerCase().includes('preorder')) {
+                  whSelect.value = "Chờ Ship";
+              }
+          }
+      }
+  }
+
   function checkAutoPreOrderForCreditCard() {
       const val = (document.getElementById('mua-nguon')?.value || '').trim();
       if (!val) return;
       if (isCreditCardWallet(val)) {
           const chk = document.getElementById('chk-pre-order');
-          if (chk) chk.checked = true;
+          if (chk && !chk.checked) {
+              chk.checked = true;
+              onTogglePreOrderCheckbox(chk);
+          }
       }
   }
 
@@ -2776,9 +3520,13 @@
       }, "Hủy Đơn");
   }
 
-  function handleConfirmPreOrder(orderId, itemName, rowId, btnElem) {
+  function handleConfirmPreOrder(orderId, itemName, rowId, btnElem, orderCount = 1) {
       const btn = btnElem || (typeof event !== 'undefined' ? event.currentTarget : null);
       if (btn && btn.disabled) return;
+
+      const subTitle = (orderCount > 1) 
+          ? `Xác nhận tất cả ${orderCount} đơn của ${itemName}` 
+          : `Đơn: ${itemName || 'Pre-order'}`;
 
       openConfirmPreorderDateModal({
           type: 'single',
@@ -2786,7 +3534,7 @@
           itemName: itemName,
           rowId: rowId,
           btnElem: btn
-      }, `Đơn: ${itemName || 'Pre-order'}`);
+      }, subTitle);
   }
 
   function doConfirmPreOrderPayment(orderId, itemName, rowId, btnElem, customDate) {
@@ -2865,6 +3613,7 @@
                           if (el) el.remove();
                           if (res.freshData) applyTab3Data(res.freshData);
                           else reloadTab3Data(true);
+                          if (typeof reloadTab1Data === 'function') reloadTab1Data();
                       } else {
                           showToast("❌ " + (res ? res.message : "Không thể hủy đơn"), true);
                           if (item && item.trangThaiKho) selectElem.value = item.trangThaiKho;
@@ -2883,6 +3632,7 @@
                       showToast(res.message || `✅ Đã chuyển ${itemName} sang ${newStatus}`);
                       if (res.freshData) applyTab3Data(res.freshData);
                       else reloadTab3Data(true);
+                      if (typeof reloadTab1Data === 'function') reloadTab1Data();
                   } else {
                       showToast("❌ " + (res ? res.message : "Lỗi chuyển kho"), true);
                       if (item && item.trangThaiKho) selectElem.value = item.trangThaiKho;
@@ -2897,7 +3647,7 @@
   }
 
   function switchBizTab(subId) {
-      ['donhang', 'thaotac', 'tonkho', 'lichmua'].forEach(id => {
+      ['donhang', 'choxuly', 'tonkho', 'lichmua'].forEach(id => {
           const el = document.getElementById('biz-' + id);
           const btn = document.getElementById('btn-biz-' + id);
           if (el) el.classList.add('hidden');
@@ -2914,7 +3664,9 @@
           else if (typeof t5_renderMatrix === 'function') t5_renderMatrix();
       }
   }
+  window.switchBizTab = switchBizTab;
 
+  window.SELECTED_PURCHASE_ORDER_KEYS = window.SELECTED_PURCHASE_ORDER_KEYS || new Set();
   window.SELECTED_PURCHASE_ORDER_IDS = window.SELECTED_PURCHASE_ORDER_IDS || new Set();
 
   function getWarehouseBadgeStyle(wh) {
@@ -2922,8 +3674,14 @@
       if (str.includes('hủy') || str.includes('cancel')) {
           return 'bg-rose-100 text-rose-800 border-rose-300';
       }
-      if (str.includes('chusen')) {
+      if (str.includes('đặt trước') || str.includes('dat truoc') || str.includes('preorder')) {
           return 'bg-amber-100 text-amber-800 border-amber-300';
+      }
+      if (str.includes('chờ ship') || str.includes('cho ship')) {
+          return 'bg-purple-100 text-purple-800 border-purple-300';
+      }
+      if (str.includes('chusen')) {
+          return 'bg-yellow-100 text-yellow-800 border-yellow-300';
       }
       if (str.includes('1f')) {
           return 'bg-blue-100 text-blue-800 border-blue-300';
@@ -2931,24 +3689,51 @@
       if (str.includes('2f')) {
           return 'bg-emerald-100 text-emerald-800 border-emerald-300';
       }
-      if (str.includes('chờ ship')) {
-          return 'bg-purple-100 text-purple-800 border-purple-300';
-      }
       return 'bg-slate-100 text-slate-700 border-slate-200';
   }
 
-  function updatePurchaseOrdersCheckedSummary() {
-      const checkedInputs = document.querySelectorAll('.purchase-order-chk:checked');
-      const totalCount = document.querySelectorAll('.purchase-order-chk').length;
-      const selectedCount = checkedInputs.length;
-      
+  function handlePurchaseOrderCheck(chk) {
+      if (!window.SELECTED_PURCHASE_ORDER_KEYS) window.SELECTED_PURCHASE_ORDER_KEYS = new Set();
       if (!window.SELECTED_PURCHASE_ORDER_IDS) window.SELECTED_PURCHASE_ORDER_IDS = new Set();
-      window.SELECTED_PURCHASE_ORDER_IDS.clear();
-      checkedInputs.forEach(cb => window.SELECTED_PURCHASE_ORDER_IDS.add(cb.value));
+
+      const orderKey = chk ? (chk.getAttribute('data-order-key') || chk.value) : '';
+      const ids = chk ? (chk.value || '').split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      if (chk && chk.checked) {
+          if (orderKey) window.SELECTED_PURCHASE_ORDER_KEYS.add(orderKey);
+          ids.forEach(id => window.SELECTED_PURCHASE_ORDER_IDS.add(id));
+      } else if (chk) {
+          if (orderKey) window.SELECTED_PURCHASE_ORDER_KEYS.delete(orderKey);
+          ids.forEach(id => window.SELECTED_PURCHASE_ORDER_IDS.delete(id));
+      }
+
+      updatePurchaseOrdersCheckedSummary();
+  }
+
+  function updatePurchaseOrdersCheckedSummary() {
+      if (!window.SELECTED_PURCHASE_ORDER_KEYS) window.SELECTED_PURCHASE_ORDER_KEYS = new Set();
+      if (!window.SELECTED_PURCHASE_ORDER_IDS) window.SELECTED_PURCHASE_ORDER_IDS = new Set();
+
+      // Synchronize DOM inputs if keys set is empty but DOM checkboxes were checked
+      const checkedDomInputs = document.querySelectorAll('.purchase-order-chk:checked');
+      if (window.SELECTED_PURCHASE_ORDER_KEYS.size === 0 && checkedDomInputs.length > 0) {
+          checkedDomInputs.forEach(cb => {
+              const orderKey = cb.getAttribute('data-order-key') || cb.value;
+              if (orderKey) window.SELECTED_PURCHASE_ORDER_KEYS.add(orderKey);
+              const ids = (cb.value || '').split(',').map(s => s.trim()).filter(Boolean);
+              ids.forEach(id => window.SELECTED_PURCHASE_ORDER_IDS.add(id));
+          });
+      }
+
+      const totalCount = (typeof window.currentTotalFilteredPurchaseOrders === 'number')
+          ? window.currentTotalFilteredPurchaseOrders
+          : (window.currentFilteredPurchaseOrders ? window.currentFilteredPurchaseOrders.length : document.querySelectorAll('.purchase-order-chk').length);
+
+      const selectedCount = window.SELECTED_PURCHASE_ORDER_KEYS.size;
 
       const checkedCountBadge = document.getElementById('purchase-orders-checked-count');
       if (checkedCountBadge) {
-          checkedCountBadge.innerText = selectedCount > 0 ? `${selectedCount} Mục` : `${totalCount} Mục`;
+          checkedCountBadge.innerText = `${selectedCount}/${totalCount} đơn`;
       }
 
       const selectAllChk = document.getElementById('chk-select-all-purchase-orders');
@@ -2972,30 +3757,80 @@
 
   function toggleSelectAllPurchaseOrders(chkAll) {
       const isChecked = chkAll ? chkAll.checked : false;
-      document.querySelectorAll('.purchase-order-chk').forEach(c => c.checked = isChecked);
+      if (!window.SELECTED_PURCHASE_ORDER_KEYS) window.SELECTED_PURCHASE_ORDER_KEYS = new Set();
+      if (!window.SELECTED_PURCHASE_ORDER_IDS) window.SELECTED_PURCHASE_ORDER_IDS = new Set();
+
+      const purchaseOrders = window.currentFilteredPurchaseOrders || [];
+
+      if (isChecked) {
+          if (purchaseOrders.length > 0) {
+              purchaseOrders.forEach(ord => {
+                  if (ord.groupKey) window.SELECTED_PURCHASE_ORDER_KEYS.add(ord.groupKey);
+                  (ord.items || []).forEach(it => {
+                      if (it.id) window.SELECTED_PURCHASE_ORDER_IDS.add(String(it.id));
+                  });
+              });
+          } else {
+              document.querySelectorAll('.purchase-order-chk').forEach(c => {
+                  const orderKey = c.getAttribute('data-order-key') || c.value;
+                  if (orderKey) window.SELECTED_PURCHASE_ORDER_KEYS.add(orderKey);
+                  const ids = (c.value || '').split(',').map(s => s.trim()).filter(Boolean);
+                  ids.forEach(id => window.SELECTED_PURCHASE_ORDER_IDS.add(id));
+              });
+          }
+          document.querySelectorAll('.purchase-order-chk').forEach(c => c.checked = true);
+      } else {
+          window.SELECTED_PURCHASE_ORDER_KEYS.clear();
+          window.SELECTED_PURCHASE_ORDER_IDS.clear();
+          document.querySelectorAll('.purchase-order-chk').forEach(c => c.checked = false);
+      }
+
+      updatePurchaseOrdersCheckedSummary();
+  }
+
+  function resetPurchaseOrderSelection() {
+      if (window.SELECTED_PURCHASE_ORDER_KEYS) window.SELECTED_PURCHASE_ORDER_KEYS.clear();
+      if (window.SELECTED_PURCHASE_ORDER_IDS) window.SELECTED_PURCHASE_ORDER_IDS = new Set();
+      document.querySelectorAll('.purchase-order-chk').forEach(c => c.checked = false);
+      const selectAllChk = document.getElementById('chk-select-all-purchase-orders');
+      if (selectAllChk) selectAllChk.checked = false;
       updatePurchaseOrdersCheckedSummary();
   }
 
   function openWarehouseTransferModal() {
-      const checkedInputs = document.querySelectorAll('.purchase-order-chk:checked');
-      if (checkedInputs.length === 0) {
+      let selectedItemIds = [];
+      if (window.SELECTED_PURCHASE_ORDER_IDS && window.SELECTED_PURCHASE_ORDER_IDS.size > 0) {
+          selectedItemIds = Array.from(window.SELECTED_PURCHASE_ORDER_IDS);
+      } else {
+          const checkedInputs = document.querySelectorAll('.purchase-order-chk:checked');
+          checkedInputs.forEach(cb => {
+              const ids = (cb.value || '').split(',').map(s => s.trim()).filter(Boolean);
+              ids.forEach(id => selectedItemIds.push(id));
+          });
+      }
+
+      if (selectedItemIds.length === 0) {
           showToast("⚠️ Vui lòng tick chọn ít nhất 1 đơn hàng để chuyển kho!", true);
           return;
       }
 
-      const itemIds = Array.from(checkedInputs).map(cb => cb.value);
       const res = window.lastTab3Res;
       const inv = res ? (res.inventory || []) : [];
-      const selectedItems = inv.filter(item => itemIds.includes(String(item.id)));
+      const selectedItems = inv.filter(item => selectedItemIds.includes(String(item.id)));
 
       const countElem = document.getElementById('transfer-modal-count');
-      if (countElem) countElem.innerText = `${selectedItems.length} Mục`;
+      if (countElem) {
+          const ordersCount = (window.SELECTED_PURCHASE_ORDER_KEYS && window.SELECTED_PURCHASE_ORDER_KEYS.size > 0)
+              ? window.SELECTED_PURCHASE_ORDER_KEYS.size
+              : selectedItems.length;
+          countElem.innerText = `${selectedItems.length} Mục (${ordersCount} Đơn)`;
+      }
 
       const selectElem = document.getElementById('transfer-modal-target-wh');
       if (selectElem && window.lastTab3Res && Array.isArray(window.lastTab3Res.warehouses) && window.lastTab3Res.warehouses.length > 0) {
           const customWhs = window.lastTab3Res.warehouses;
           const optionsHtml = customWhs.map(w => {
-              const styleIcon = w.includes('1F') ? '🔵 ' : (w.includes('2F') ? '🟢 ' : (w.includes('Chusen') ? '🟡 ' : (w.includes('Hủy') ? '🔴 ' : '🏢 ')));
+              const styleIcon = w.includes('Đặt trước') ? '🟡 ' : (w.includes('Chờ Ship') ? '🟣 ' : (w.includes('1F') ? '🔵 ' : (w.includes('2F') ? '🟢 ' : (w.includes('Chusen') ? '🟡 ' : (w.includes('Hủy') ? '🔴 ' : '🏢 ')))));
               return `<option value="${w}">${styleIcon}${w}</option>`;
           }).join('');
           selectElem.innerHTML = optionsHtml;
@@ -3039,13 +3874,12 @@
       const btn = btnElem || document.getElementById('btn-submit-modal-transfer');
       if (btn && btn.disabled) return;
 
-      const checkedInputs = document.querySelectorAll('.purchase-order-chk:checked');
-      if (checkedInputs.length === 0) {
+      const qtyInputs = document.querySelectorAll('#transfer-modal-items-container input[id^="transfer-qty-"]');
+      if (qtyInputs.length === 0) {
           showToast("⚠️ Vui lòng tick chọn ít nhất 1 đơn hàng để chuyển kho!", true);
           return;
       }
 
-      const itemIds = Array.from(checkedInputs).map(cb => cb.value);
       const targetWhSelect = document.getElementById('transfer-modal-target-wh');
       const targetWh = targetWhSelect ? targetWhSelect.value : '';
 
@@ -3054,29 +3888,26 @@
           return;
       }
 
-      const itemsToTransfer = itemIds.map(id => {
-          const inputEl = document.getElementById(`transfer-qty-${id}`);
-          const qtyVal = inputEl ? parseInt(inputEl.value, 10) : 0;
-          return {
+      const itemsToTransfer = [];
+      qtyInputs.forEach(inputEl => {
+          const id = inputEl.id.replace('transfer-qty-', '');
+          const qtyVal = parseInt(inputEl.value, 10);
+          itemsToTransfer.push({
               id: id,
               qty: (qtyVal && qtyVal > 0) ? qtyVal : null
-          };
+          });
       });
 
       // Optimistic Instant UI Reset (0ms Delay)
       closeModal('modal-transfer-warehouse');
-      document.querySelectorAll('.purchase-order-chk').forEach(c => c.checked = false);
-      const selectAllChk = document.getElementById('chk-select-all-purchase-orders');
-      if (selectAllChk) selectAllChk.checked = false;
-      if (window.SELECTED_PURCHASE_ORDER_IDS) window.SELECTED_PURCHASE_ORDER_IDS.clear();
-      updatePurchaseOrdersCheckedSummary();
+      resetPurchaseOrderSelection();
 
       showToast("⏳ Đang thực hiện chuyển kho...");
 
       if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
-                  showToast(res.message || `✅ Đã chuyển ${itemIds.length} đơn hàng sang ${targetWh}!`);
+                  showToast(res.message || `✅ Đã chuyển ${itemsToTransfer.length} sản phẩm sang ${targetWh}!`);
                   if (res.freshData) applyTab3Data(res.freshData);
                   else reloadTab3Data(true);
               } else {
@@ -3088,7 +3919,7 @@
               reloadTab3Data(true);
           }).updateBatchWarehouseStatus(itemsToTransfer, targetWh);
       } else {
-          showToast(`✅ Đã chuyển ${itemIds.length} đơn hàng sang ${targetWh}! (Demo Mode)`);
+          showToast(`✅ Đã chuyển ${itemsToTransfer.length} sản phẩm sang ${targetWh}! (Demo Mode)`);
       }
   }
 
@@ -3116,6 +3947,8 @@
   window.resetCancelledRefundSelection = resetCancelledRefundSelection;
   window.resetDebtSalesSelection = resetDebtSalesSelection;
   window.getWarehouseBadgeStyle = getWarehouseBadgeStyle;
+  window.handlePurchaseOrderCheck = handlePurchaseOrderCheck;
+  window.resetPurchaseOrderSelection = resetPurchaseOrderSelection;
   window.updatePurchaseOrdersCheckedSummary = updatePurchaseOrdersCheckedSummary;
   window.toggleSelectAllPurchaseOrders = toggleSelectAllPurchaseOrders;
   window.openWarehouseTransferModal = openWarehouseTransferModal;

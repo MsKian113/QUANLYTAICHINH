@@ -69,7 +69,7 @@
   </div>
 
   <!-- GROUPS LIST VIEW CONTAINER (ACTIVE WHEN VIEW IS 'LIST' IN DINING / TRIP) -->
-  <div id="t7-groups-list-container" class="space-y-3.5 hidden">
+  <div id="t7-groups-list-container" class="space-y-2 hidden">
     <div class="flex justify-between items-center px-1">
       <div>
         <h2 class="text-xs font-bold text-slate-800 flex items-center gap-1">
@@ -84,13 +84,13 @@
     </div>
 
     <!-- GROUPS CARDS LIST -->
-    <div id="t7-groups-cards-list" class="space-y-2.5">
+    <div id="t7-groups-cards-list" class="space-y-1.5">
       <!-- Dynamic group cards rendered here -->
     </div>
   </div>
 
   <!-- ACTIVE GROUP CONTAINER (DETAILED VIEW) -->
-  <div id="t7-active-group-container" class="space-y-3 hidden">
+  <div id="t7-active-group-container" class="space-y-2 hidden">
 
     <!-- GROUP HEADER & ACTION BAR -->
     <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs space-y-2.5">
@@ -754,8 +754,9 @@
   }
 
   function t7_loadAllData(forceRefresh) {
-    if (window.T7_STATE && window.T7_STATE.groups && window.T7_STATE.groups.length > 0 && window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0) {
+    if (window.T7_STATE && window.T7_STATE.groups && window.T7_STATE.groups.length > 0 && window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0 && !forceRefresh) {
       if (typeof t7_renderUI === 'function') t7_renderUI();
+      return;
     }
 
     if (typeof google === 'undefined' || !google.script || !google.script.run) {
@@ -994,15 +995,15 @@
 
     filtered.forEach(g => {
       const card = document.createElement('div');
-      card.className = "t7-group-card bg-white rounded-xl px-3 py-2 border border-slate-200 shadow-2xs hover:border-teal-400 transition cursor-pointer select-none flex justify-between items-center gap-2";
+      card.className = "t7-group-card bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-teal-400 transition cursor-pointer select-none space-y-1";
       card.onclick = function(e) {
         if (e.target.closest('button')) return;
         t7_openGroupDetail(g.id);
       };
 
       const statusBadge = g.status === 'CLOSED'
-        ? '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-slate-100 text-slate-700 border-slate-300">🔒 Đã chốt nợ</span>'
-        : '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-emerald-50 text-emerald-700 border-emerald-200">🟢 Đang diễn ra</span>';
+        ? '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-slate-100 text-slate-700 border-slate-300 shrink-0">🔒 Đã chốt nợ</span>'
+        : '<span class="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0">🟢 Đang diễn ra</span>';
 
       const catIcon = g.category === 'DINING' ? '🥣' : '✈️';
       const mbrCount = (g.members || []).length;
@@ -1010,21 +1011,23 @@
       const totalExp = Number(g.totalExpense) || 0;
 
       card.innerHTML = `
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <h3 class="font-extrabold text-xs text-slate-800 flex items-center gap-1 shrink-0">
-              <span>${catIcon}</span>
-              <span>${g.name}</span>
-            </h3>
-            <span class="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 shrink-0">📅 ${gDate}</span>
-            ${statusBadge}
+        <div class="flex items-center justify-between gap-1.5 min-w-0">
+          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+            <span class="text-xs shrink-0">${catIcon}</span>
+            <h3 class="font-extrabold text-xs text-slate-800 truncate leading-tight" title="${g.name}">${g.name}</h3>
           </div>
-          <p class="text-[10px] text-slate-500 truncate mt-0.5">👥 ${mbrCount} thành viên</p>
+          <div class="flex items-center gap-1 shrink-0">
+            <span class="font-black text-xs text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-md border border-emerald-200/80 leading-tight">${totalExp.toLocaleString()} ¥</span>
+            <button onclick="event.stopPropagation(); t7_confirmDeleteGroupById('${g.id}', '${g.name.replace(/'/g, "\\'")}')" title="Xóa" class="p-0.5 px-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded text-[9px] font-bold transition cursor-pointer">🗑️</button>
+          </div>
         </div>
 
-        <div class="flex items-center gap-1.5 shrink-0">
-          <span class="font-black text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/80">${totalExp.toLocaleString()} ¥</span>
-          <button onclick="event.stopPropagation(); t7_confirmDeleteGroupById('${g.id}', '${g.name.replace(/'/g, "\\'")}')" title="Xóa" class="p-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md text-[10px] font-bold transition cursor-pointer">🗑️</button>
+        <div class="flex items-center justify-between text-[10px] text-slate-500 gap-1.5 border-t border-slate-100 pt-1">
+          <span class="font-semibold text-slate-600 shrink-0">👥 ${mbrCount} thành viên</span>
+          <div class="flex items-center gap-1 shrink-0">
+            <span class="font-medium text-slate-400">📅 ${gDate}</span>
+            ${statusBadge}
+          </div>
         </div>
       `;
 
@@ -1841,7 +1844,7 @@
       const card = document.createElement('div');
       const escapedFamName = famName.replace(/'/g, "\\'");
       card.onclick = () => t7_openAddFamilyModal(famName);
-      card.className = "bg-white rounded-xl px-3 py-2 border border-slate-200 shadow-2xs hover:border-indigo-400 hover:bg-slate-50/90 transition cursor-pointer flex justify-between items-center gap-2";
+      card.className = "bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-indigo-400 hover:bg-slate-50/90 transition cursor-pointer flex flex-col gap-0.5";
 
       const members = fam.members || [];
       const adultCnt = members.filter(m => (m.type || m.member_type || 'ADULT') === 'ADULT').length;
@@ -1866,8 +1869,8 @@
       }).filter(Boolean).join(' • ');
 
       card.innerHTML = `
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1.5 flex-wrap">
+        <div class="flex items-center justify-between gap-1.5 min-w-0">
+          <div class="flex items-center gap-1.5 flex-wrap min-w-0 truncate">
             <h3 class="font-extrabold text-xs text-slate-800 flex items-center gap-1 shrink-0">
               <span>🏡</span>
               <span>Gia đình ${famName}</span>
@@ -1875,20 +1878,19 @@
             <span class="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-1.5 py-0.2 rounded shrink-0">${summaryText}</span>
             ${Boolean(fam.isMe || (members && members.some(m => m.isMe || m.is_me || m.isme))) ? '<span class="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded shrink-0">⭐ Gia đình Tôi</span>' : ''}
           </div>
-          <p class="text-[10px] text-slate-500 truncate mt-0.5" title="${memberNamesStr}">${memberNamesStr || 'Chưa có thành viên'}</p>
+          <div class="flex items-center gap-1 shrink-0">
+            <button onclick="event.stopPropagation(); t7_useFamilyForCategory('${escapedFamName}', 'DINING')" title="Tạo nhóm Ăn Chơi với gia đình này" class="px-1.5 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded text-[9px] font-extrabold border border-amber-200 transition cursor-pointer flex items-center gap-0.5 active:scale-95">
+              🍻 + Ăn Chơi
+            </button>
+            <button onclick="event.stopPropagation(); t7_useFamilyForCategory('${escapedFamName}', 'TRIP')" title="Tạo chuyến Du Lịch với gia đình này" class="px-1.5 py-0.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded text-[9px] font-extrabold border border-teal-200 transition cursor-pointer flex items-center gap-0.5 active:scale-95">
+              ✈️ + Du Lịch
+            </button>
+            <button onclick="event.stopPropagation(); t7_deleteFamilyFromDatabase('${escapedFamName}')" title="Xóa gia đình" class="p-0.5 px-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded text-[9px] font-bold transition cursor-pointer">
+              🗑️
+            </button>
+          </div>
         </div>
-
-        <div class="flex items-center gap-1 shrink-0">
-          <button onclick="event.stopPropagation(); t7_useFamilyForCategory('${escapedFamName}', 'DINING')" title="Tạo nhóm Ăn Chơi với gia đình này" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[10px] font-extrabold border border-amber-200 transition cursor-pointer flex items-center gap-0.5 active:scale-95">
-            🍻 + Ăn Chơi
-          </button>
-          <button onclick="event.stopPropagation(); t7_useFamilyForCategory('${escapedFamName}', 'TRIP')" title="Tạo chuyến Du Lịch với gia đình này" class="px-2 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-[10px] font-extrabold border border-teal-200 transition cursor-pointer flex items-center gap-0.5 active:scale-95">
-            ✈️ + Du Lịch
-          </button>
-          <button onclick="event.stopPropagation(); t7_deleteFamilyFromDatabase('${escapedFamName}')" title="Xóa gia đình" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition cursor-pointer">
-            🗑️
-          </button>
-        </div>
+        <p class="text-[10px] text-slate-500 truncate pt-0.5" title="${memberNamesStr}">${memberNamesStr || 'Chưa có thành viên'}</p>
       `;
 
       listEl.appendChild(card);
@@ -4321,7 +4323,7 @@
               .withSuccessHandler(function(appRes) {
                 if (appRes && appRes.success) {
                   if (typeof applyAppData === 'function') applyAppData(appRes);
-                  try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(appRes)); } catch(e) {}
+                  try { localStorage.setItem("APP_LOCAL_CACHE_V25", JSON.stringify(appRes)); } catch(e) {}
                   t7_renderUI();
                   t7_loadActiveGroupData(gId);
                   if (typeof reloadTab4Data === 'function') reloadTab4Data(true);

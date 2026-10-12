@@ -4,6 +4,29 @@
 // ==========================================
 
 function doGet(e) {
+  // Direct trigger migration endpoint via GET: ?action=migrateCards or ?action=migrateEncryptExistingCards
+  if (e && e.parameter && (e.parameter.action === 'migrateCards' || e.parameter.action === 'migrateEncryptExistingCards')) {
+    const res = typeof migrateEncryptExistingCards === 'function' ? migrateEncryptExistingCards() : { success: false, message: "Không tìm thấy hàm migrateEncryptExistingCards" };
+    try {
+      const props = typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties ? PropertiesService.getScriptProperties() : null;
+      if (props) props.setProperty("CARDS_MIGRATED_V1", "true");
+    } catch(pe) {}
+    const appUrl = (typeof ScriptApp !== 'undefined' && ScriptApp.getService) ? ScriptApp.getService().getUrl() : "#";
+    const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mã Hóa Dữ Liệu Thẻ</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:16px;box-sizing:border-box;} .card{background:#1e293b;padding:36px 28px;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,0.5);text-align:center;max-width:440px;width:100%;border:1px solid #334155;} .icon{font-size:48px;margin-bottom:12px;} h2{color:#10b981;margin:0 0 12px 0;font-size:20px;font-weight:800;} p{color:#94a3b8;font-size:13.5px;line-height:1.6;margin:0 0 24px 0;} code{background:#0f172a;padding:3px 8px;border-radius:6px;color:#38bdf8;font-size:12px;font-family:monospace;} .btn{display:inline-block;padding:12px 24px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:12px;font-weight:bold;font-size:13px;box-shadow:0 4px 12px rgba(59,130,246,0.4);}</style></head><body><div class="card"><div class="icon">🛡️</div><h2>' + (res.success ? 'Đã Mã Hóa Dữ Liệu Sheet Thành Công!' : 'Có Lỗi Xảy Ra') + '</h2><p>' + (res.success ? ('Hệ thống đã quét và mã hóa an toàn <b>' + (res.count || 0) + '</b> thẻ trên Google Sheet Database sang định dạng <code>ENC:v1:...</code>.<br><br>👉 Bạn có thể quay lại tab Google Sheet và bấm <b>F5 (Tải lại trang)</b> để kiểm tra!') : res.message) + '</p><a href="' + appUrl + '" class="btn">🚀 Mở Ứng Dụng Quản Lý</a></div></body></html>';
+    return HtmlService.createHtmlOutput(html);
+  }
+
+  // Tự động kiểm tra và mã hóa trong lần tải đầu nếu chưa gắn cờ CARDS_MIGRATED_V1
+  try {
+    const props = typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties ? PropertiesService.getScriptProperties() : null;
+    if (props && props.getProperty("CARDS_MIGRATED_V1") !== "true") {
+      if (typeof migrateEncryptExistingCards === 'function') {
+        migrateEncryptExistingCards();
+        props.setProperty("CARDS_MIGRATED_V1", "true");
+      }
+    }
+  } catch (migOnceErr) {}
+
   if (e && e.parameter && e.parameter.action) {
     return doPost(e);
   }
@@ -14,7 +37,7 @@ function doGet(e) {
     let initialDataStr = null;
 
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
-      const cacheKey = "APP_DATA_V18_" + m + "_" + y;
+      const cacheKey = "APP_DATA_V29_" + m + "_" + y;
       initialDataStr = getCachedAppDataStr(cacheKey);
     }
 
@@ -61,6 +84,9 @@ function doPost(e) {
       // Global & Preload
       "getAppData": function(d, a) { return getAppData(a[0] || d.month, a[1] || d.year, null, d.forceRefresh); },
       "getInitialData": function(d, a) { return typeof getInitialData === 'function' ? getInitialData() : {}; },
+      "getAppVersion": function(d, a) { return { success: true, version: getAppVersion() }; },
+      "runNightlyLedgerAudit": function(d, a) { return typeof runNightlyLedgerAudit === 'function' ? runNightlyLedgerAudit() : { success: false }; },
+      "syncLedgerFromHistory": function(d, a) { return typeof syncLedgerFromHistory === 'function' ? syncLedgerFromHistory(a[0] !== undefined ? a[0] : d.dryRun, a[1] || d.cutoverDate) : { success: false }; },
       
       // Tab 1 (Wallets & Cards)
       "getWalletsFromSheet": function(d, a) { return getWalletsFromSheet(a[0] || d.month, a[1] || d.year); },
@@ -70,10 +96,16 @@ function doPost(e) {
       "processCreditCardSettlement": function(d, a) { return processCreditCardSettlement(a[0] || d); },
       "getWalletTransactionHistory": function(d, a) { return getWalletTransactionHistory(a[0] || d.walletName); },
       "adjustWalletBalance": function(d, a) { return adjustWalletBalance(a[0] || d); },
+      "checkpointWalletBalance": function(d, a) { return checkpointWalletBalance(a[0] || d); },
+      "rebuildWalletBalance": function(d, a) { return rebuildWalletBalance(a[0] || d.walletId || d.id || d); },
+      "rebuildAllWallets": function(d, a) { return rebuildAllWallets(); },
+      "recordFinancialEvent": function(d, a) { return recordFinancialEvent(a[0] || d); },
       "updateFamilyTransactionById": function(d, a) { return updateFamilyTransactionById(a[0] || d); },
       "t1_isValidCardPassword": function(d, a) { return t1_isValidCardPassword(a[0] || d); },
       "setCardCustomPassword": function(d, a) { return setCardCustomPassword(a[0] || d); },
       "verifyCardPassword": function(d, a) { return verifyCardPassword(a[0] || d); },
+      "saveCardSecurityDetails": function(d, a) { return typeof saveCardSecurityDetails === 'function' ? saveCardSecurityDetails(a[0] || d) : { success: false, message: "Không tìm thấy hàm saveCardSecurityDetails" }; },
+      "migrateEncryptExistingCards": function(d, a) { return typeof migrateEncryptExistingCards === 'function' ? migrateEncryptExistingCards() : { success: false }; },
 
       // Tab 2 (Family Expenses)
       "getTab2Data": function(d, a) { return getTab2Data(a[0] || d.month, a[1] || d.year); },
@@ -198,9 +230,176 @@ function doPost(e) {
   }
 }
 
+/**
+ * 1. THỰC THI CHUẨN VỚI SCRIPT LOCK AN TOÀN
+ * Tách biệt rõ ràng giữa lỗi không lấy được khóa (SYSTEM_BUSY - retryable)
+ * và lỗi nghiệp vụ nội bộ (INTERNAL_ERROR - không retry mù quáng).
+ */
+function executeWithLock(lockTimeoutMs, actionCallback) {
+  const lock = (typeof LockService !== 'undefined' && LockService.getScriptLock) ? LockService.getScriptLock() : null;
+  let locked = false;
 
+  if (lock) {
+    try {
+      lock.waitLock(lockTimeoutMs || 15000);
+      locked = true;
+    } catch (lockErr) {
+      return {
+        success: false,
+        retryable: true,
+        code: "SYSTEM_BUSY",
+        message: "⏳ Máy chủ đang bận xử lý giao dịch khác, ứng dụng đang tự động thử lại..."
+      };
+    }
+  }
 
-// Dummy functions removed to avoid scope conflict with Server_Tab3.js and Server_Tab4.js
+  try {
+    return actionCallback();
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi executeWithLock: " + err);
+    return {
+      success: false,
+      retryable: false,
+      code: "INTERNAL_ERROR",
+      message: "❌ Lỗi hệ thống: " + (err && err.message ? err.message : err.toString())
+    };
+  } finally {
+    if (locked && lock) {
+      try { lock.releaseLock(); } catch(e) {}
+    }
+  }
+}
+
+/**
+ * 2. QUẢN LÝ PHIÊN BẢN DỮ LIỆU NGUYÊN TỬ (ATOMIC DATA VERSION COUNTER)
+ */
+function getAppVersion() {
+  try {
+    if (typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties) {
+      const val = PropertiesService.getScriptProperties().getProperty("DATA_VERSION");
+      return val ? parseInt(val, 10) : 1;
+    }
+  } catch(e) {}
+  return 1;
+}
+
+function incrementDataVersion() {
+  try {
+    if (typeof PropertiesService !== 'undefined' && PropertiesService.getScriptProperties) {
+      const props = PropertiesService.getScriptProperties();
+      const current = parseInt(props.getProperty("DATA_VERSION") || "1", 10);
+      const next = current + 1;
+      props.setProperty("DATA_VERSION", String(next));
+      return next;
+    }
+  } catch(e) {}
+  return 1;
+}
+
+/**
+ * 3. HỆ THỐNG IDEMPOTENCY THEO REQUEST ID (FAST CACHE + SHEET BACKED)
+ */
+var SHEET_PROCESSED_REQUESTS = "ProcessedRequests";
+
+function getProcessedRequest(requestId, ssTarget) {
+  if (!requestId) return null;
+  const key = "REQ_" + String(requestId).trim();
+
+  // 1. Kiểm tra CacheService siêu tốc
+  try {
+    if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+      const cached = CacheService.getScriptCache().get(key);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    }
+  } catch(e) {}
+
+  // 2. Fallback kiểm tra Sheet ProcessedRequests bền vững
+  try {
+    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    if (!ss) return null;
+    const sheet = ss.getSheetByName(SHEET_PROCESSED_REQUESTS);
+    if (!sheet || sheet.getLastRow() < 2) return null;
+
+    const lastRow = sheet.getLastRow();
+    const startRow = Math.max(2, lastRow - 500);
+    const numRows = lastRow - startRow + 1;
+    const data = sheet.getRange(startRow, 1, numRows, 5).getValues();
+
+    const targetReqId = String(requestId).trim().toLowerCase();
+    for (let i = data.length - 1; i >= 0; i--) {
+      const rReqId = String(data[i][0] || "").trim().toLowerCase();
+      if (rReqId === targetReqId) {
+        const status = String(data[i][1] || "DONE").trim().toUpperCase();
+        const resJsonStr = String(data[i][4] || "");
+        let resData = null;
+        try { if (resJsonStr) resData = JSON.parse(resJsonStr); } catch(eParse) {}
+        return {
+          requestId: data[i][0],
+          status: status,
+          createdAt: data[i][2],
+          result: resData
+        };
+      }
+    }
+  } catch(e) {}
+
+  return null;
+}
+
+function autoPruneProcessedRequests(sheet, keepCount) {
+  if (!sheet) return 0;
+  try {
+    const maxKeep = keepCount || 500;
+    const lastRow = sheet.getLastRow();
+    // Header is row 1, data starts at row 2
+    if (lastRow > maxKeep + 100) {
+      const deleteCount = lastRow - maxKeep - 1;
+      if (deleteCount > 0) {
+        sheet.deleteRows(2, deleteCount);
+        return deleteCount;
+      }
+    }
+  } catch(e) {}
+  return 0;
+}
+
+function recordProcessedRequest(requestId, status, resultObj, ssTarget) {
+  if (!requestId) return;
+  const reqStr = String(requestId).trim();
+  const resStr = resultObj ? JSON.stringify(resultObj) : "";
+  const nowIso = new Date().toISOString();
+
+  // 1. Lưu vào CacheService (TTL 6 giờ)
+  try {
+    if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+      CacheService.getScriptCache().put("REQ_" + reqStr, JSON.stringify({
+        requestId: reqStr,
+        status: status,
+        createdAt: nowIso,
+        result: resultObj
+      }), 21600);
+    }
+  } catch(e) {}
+
+  // 2. Lưu vào Sheet ProcessedRequests
+  try {
+    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    if (!ss) return;
+    let sheet = ss.getSheetByName(SHEET_PROCESSED_REQUESTS);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_PROCESSED_REQUESTS);
+      sheet.getRange(1, 1, 1, 5).setValues([["RequestId", "Status", "CreatedAt", "UpdatedAt", "ResultJson"]]);
+      sheet.getRange(1, 1, 1, 5).setFontWeight("bold").setBackground("#f1f5f9");
+    }
+    sheet.appendRow([reqStr, status, nowIso, nowIso, resStr]);
+
+    // 3. Tự động dọn dẹp (Rolling Window Auto-Clean):
+    // Giữ lại 500 bản ghi mới nhất, khi số dòng vượt quá 600 dòng thì tự động cắt tỉa các dòng cũ nhất
+    autoPruneProcessedRequests(sheet, 500);
+  } catch(e) {}
+}
 
 /**
  * HIGH-PERFORMANCE CHUNKED CACHE ENGINE
@@ -279,39 +478,46 @@ function getCachedAppDataStr(cacheKey) {
 }
 
 /**
- * XOÁ CACHE KHI CÓ THAY ĐỔI DỮ LIỆU (MUTATION)
+ * XOÁ CACHE KHI CÓ THAY ĐỔI DỮ LIỆU (MUTATION) - TỐI ƯU SIÊU TỐC
  */
 function clearAppDataCache(month, year) {
   try {
     if (typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
       const cache = CacheService.getScriptCache();
       const baseKeys = [];
-      const appVersions = ["", "V6_", "V11_", "V15_", "V16_", "V17_", "V18_"];
-      const bizVersions = ["", "v5_", "v15_", "v16_", "v17_"];
-      const months = ["ALL", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
-      const years = ["ALL", "2024", "2025", "2026", "2027"];
+      const appVersions = ["V29_", "V28_", "V27_", "V26_", "V25_", "V18_", ""];
+      const bizVersions = ["v17_"];
+
+      const targetMonths = (month && month !== "ALL" && month !== "All")
+        ? [String(month), "ALL"]
+        : ["ALL", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+      
+      const currentYear = new Date().getFullYear();
+      const targetYears = (year && year !== "ALL" && year !== "All")
+        ? [String(year), "ALL"]
+        : ["ALL", String(currentYear - 1), String(currentYear), String(currentYear + 1)];
 
       appVersions.forEach(v => {
-        months.forEach(m => {
-          years.forEach(y => {
+        targetMonths.forEach(m => {
+          targetYears.forEach(y => {
             baseKeys.push("APP_DATA_" + v + m + "_" + y);
           });
         });
       });
       bizVersions.forEach(v => {
-        months.forEach(m => {
-          years.forEach(y => {
+        targetMonths.forEach(m => {
+          targetYears.forEach(y => {
             baseKeys.push("biz_data_" + v + m + "_" + y);
           });
         });
       });
-      baseKeys.push("APP_DATA_GLOBAL_LATEST", "APP_DATA_GLOBAL_LATEST_V16", "APP_DATA_GLOBAL_LATEST_V17", "APP_DATA_GLOBAL_LATEST_V18", "tab5_data_v1");
+      baseKeys.push("APP_DATA_GLOBAL_LATEST", "APP_DATA_GLOBAL_LATEST_V18", "APP_DATA_GLOBAL_LATEST_V25", "APP_DATA_GLOBAL_LATEST_V26", "APP_DATA_GLOBAL_LATEST_V28", "APP_DATA_GLOBAL_LATEST_V29", "tab5_data_v1");
 
       const allKeys = [];
       baseKeys.forEach(k => {
         allKeys.push(k);
         allKeys.push(k + "_cnt");
-        for (let c = 0; c < 6; c++) {
+        for (let c = 0; c < 3; c++) {
           allKeys.push(k + "_c" + c);
         }
       });
@@ -328,14 +534,45 @@ function clearAppDataCache(month, year) {
 }
 
 /**
+ * THỰC HIỆN THAO TÁC GOOGLE SHEETS VỚI CƠ CHẾ TỰ ĐỘNG THỬ LẠI KHI BỊ XUNG ĐỘT CONCURRENCY
+ */
+function withSheetRetry(operationFn, maxRetries) {
+  const retries = maxRetries || 3;
+  let lastErr = null;
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return operationFn();
+    } catch (err) {
+      lastErr = err;
+      const errStr = String(err || "");
+      if (
+        errStr.includes("Spreadsheets") ||
+        errStr.includes("Lock") ||
+        errStr.includes("Service error") ||
+        errStr.includes("concurrent") ||
+        errStr.includes("simultaneous") ||
+        errStr.includes("quá nhiều")
+      ) {
+        if (typeof Utilities !== 'undefined' && Utilities.sleep) {
+          Utilities.sleep(200 * (attempt + 1));
+        }
+      } else {
+        throw err;
+      }
+    }
+  }
+  throw lastErr;
+}
+
+/**
  * UNIFIED INITIAL APP LOAD RPC - OPTIMIZED FOR REAL-TIME DATA & FAST PERFORMANCE
  */
 function getAppData(month, year, ssTarget, forceRefresh) {
-  const isAllMonth = (!month || month === "ALL" || String(month).toUpperCase() === "ALL");
-  const isAllYear = (!year || year === "ALL" || String(year).toUpperCase() === "ALL");
-  const m = isAllMonth ? "ALL" : month;
-  const y = isAllYear ? "ALL" : year;
-  const cacheKey = "APP_DATA_V18_" + m + "_" + y;
+  const isAllMonth = (!month || month === "All" || String(month).toUpperCase() === "ALL");
+  const isAllYear = (!year || year === "All" || String(year).toUpperCase() === "ALL");
+  const m = isAllMonth ? "ALL" : String(month).trim();
+  const y = isAllYear ? "ALL" : String(year).trim();
+  const cacheKey = "APP_DATA_V29_" + m + "_" + y;
 
   if (forceRefresh) {
     clearAppDataCache(m, y);
@@ -351,120 +588,163 @@ function getAppData(month, year, ssTarget, forceRefresh) {
   } catch(e) {}
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    return withSheetRetry(function() {
+      const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
 
-    // 1. Wallets & Pending Pre-orders (Always ALL for global cumulative balance & pending counts)
-    let wallets = [];
-    let pendingPreOrders = [];
-    let orderCounts = null;
-    if (typeof getWalletsFromSheet === 'function') {
-      const wRes = getWalletsFromSheet("ALL", "ALL", ss);
-      if (wRes) {
-        if (wRes.wallets) wallets = wRes.wallets;
-        if (wRes.pendingPreOrders) pendingPreOrders = wRes.pendingPreOrders;
-        if (wRes.orderCounts) orderCounts = wRes.orderCounts;
-      }
-    }
-
-    // 2. Categories / Initial Data
-    let categories = [];
-    let accounts = [];
-    if (typeof getInitialData === 'function') {
-      const catRes = getInitialData(ss);
-      if (catRes && catRes.categories) categories = catRes.categories;
-      if (catRes && catRes.accounts) accounts = catRes.accounts;
-    }
-
-    // 3. Tab 2 Data (ONLY module filtered by month/year)
-    let tab2 = { summary: { net: 0, income: 0, expense: 0 }, transactions: [], jars: [] };
-    if (typeof getTab2Data === 'function') {
-      const t2Res = getTab2Data(m, y, ss);
-      if (t2Res) tab2 = t2Res;
-    }
-
-    // 4. Quick Fixed Items (Always ALL)
-    let quickFixed = [];
-    if (typeof getQuickFixedItems === 'function') {
-      const qRes = getQuickFixedItems("ALL", "ALL", ss);
-      if (qRes && qRes.items) quickFixed = qRes.items;
-    }
-
-    // 5. Tab 3 Business Data (Always ALL for global inventory, sales, purchases)
-    let tab3 = null;
-    if (typeof getBusinessData === 'function') {
-      const t3Res = getBusinessData("ALL", "ALL", ss, forceRefresh);
-      if (t3Res && t3Res.success) tab3 = t3Res;
-    }
-
-    // 6. Tab 5 Cooldown Data (Always ALL)
-    let tab5 = null;
-    if (typeof getTab5Data === 'function') {
-      const t5Res = getTab5Data(ss);
-      if (t5Res && t5Res.success) tab5 = t5Res;
-    }
-
-    // 7. Tab 4 Debt Data (Always ALL for cumulative receivables & payables)
-    let tab4 = null;
-    try {
-      if (typeof getTab4Data === 'function') {
-        tab4 = getTab4Data("ALL", "ALL", ss, forceRefresh);
-      }
-    } catch (e) {
-      Logger.log("Error loading tab4: " + e.toString());
-    }
-
-    // 8. Tab 7 Split Families & Groups Data
-    let splitFamilies = [];
-    let splitGroups = [];
-    let rawFamilyMembers = [];
-    try {
-      if (typeof getSplitFamilies === 'function') {
-        const famRes = getSplitFamilies(ss);
-        if (famRes && famRes.families) {
-          splitFamilies = famRes.families;
-          if (famRes.rawMembers) rawFamilyMembers = famRes.rawMembers;
-        } else if (Array.isArray(famRes)) {
-          splitFamilies = famRes;
+      // 1. Wallets & Pending Pre-orders (Always "All" for global cumulative balance & pending counts)
+      let wallets = [];
+      let pendingPreOrders = [];
+      let orderCounts = null;
+      if (typeof getWalletsFromSheet === 'function') {
+        const wRes = getWalletsFromSheet("All", "All", ss);
+        if (wRes) {
+          if (wRes.wallets) wallets = wRes.wallets;
+          if (wRes.pendingPreOrders) pendingPreOrders = wRes.pendingPreOrders;
+          if (wRes.orderCounts) orderCounts = wRes.orderCounts;
         }
       }
-      if (typeof getSplitGroups === 'function') {
-        const grpRes = getSplitGroups(ss);
-        if (grpRes && grpRes.groups) {
-          splitGroups = grpRes.groups;
-        } else if (Array.isArray(grpRes)) {
-          splitGroups = grpRes;
+
+      // 2. Categories / Initial Data
+      let categories = [];
+      let accounts = [];
+      if (typeof getInitialData === 'function') {
+        const catRes = getInitialData(ss);
+        if (catRes && catRes.categories) categories = catRes.categories;
+        if (catRes && catRes.accounts) accounts = catRes.accounts;
+      }
+
+      // 3. Tab 2 Data (ONLY module filtered strictly by current month/year when "All" is selected)
+      let tab2 = { summary: { net: 0, income: 0, expense: 0 }, transactions: [], jars: [] };
+      if (typeof getTab2Data === 'function') {
+        const curM = (new Date().getMonth() + 1).toString();
+        const curY = new Date().getFullYear().toString();
+        const t2M = isAllMonth ? curM : m;
+        const t2Y = isAllYear ? curY : y;
+        const t2Res = getTab2Data(t2M, t2Y, ss);
+        if (t2Res) tab2 = t2Res;
+      }
+
+      // 4. Quick Fixed Items (Always "All")
+      let quickFixed = [];
+      if (typeof getQuickFixedItems === 'function') {
+        const qRes = getQuickFixedItems("All", "All", ss);
+        if (qRes && qRes.items) quickFixed = qRes.items;
+      }
+
+      // 5. Tab 3 Business Data (Filtered by month/year for sales & cogs summary; all-time for stock)
+      let tab3 = null;
+      if (typeof getBusinessData === 'function') {
+        const t3Res = getBusinessData(m, y, ss, forceRefresh);
+        if (t3Res && t3Res.success) tab3 = t3Res;
+      }
+
+      // 6. Tab 5 Cooldown Data (Always ALL)
+      let tab5 = null;
+      if (typeof getTab5Data === 'function') {
+        const t5Res = getTab5Data(ss);
+        if (t5Res && t5Res.success) tab5 = t5Res;
+      }
+
+      // 7. Tab 4 Debt Data (Active debts always included, completed filtered by month/year)
+      let tab4 = null;
+      try {
+        if (typeof getTab4Data === 'function') {
+          tab4 = getTab4Data(m, y, ss, forceRefresh);
         }
+      } catch (e) {
+        Logger.log("Error loading tab4: " + e.toString());
       }
-    } catch (e) {
-      Logger.log("Error loading Tab 7 in getAppData: " + e.toString());
-    }
 
-    const result = {
-      success: true,
-      wallets: wallets,
-      pendingPreOrders: pendingPreOrders,
-      orderCounts: orderCounts,
-      categories: categories,
-      accounts: accounts,
-      tab2: tab2,
-      tab3: tab3,
-      tab4: tab4,
-      tab5: tab5,
-      splitFamilies: splitFamilies,
-      rawFamilyMembers: rawFamilyMembers,
-      splitGroups: splitGroups,
-      quickFixed: quickFixed
-    };
-
-    try {
-      if (typeof CacheService !== 'undefined' && CacheService.getScriptCache && !ssTarget) {
-        const jsonStr = JSON.stringify(result);
-        setCachedAppDataStr(cacheKey, jsonStr, 600);
-        setCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V18", jsonStr, 600);
+      // 8. Tab 7 Split Families & Groups Data
+      let splitFamilies = [];
+      let splitGroups = [];
+      let rawFamilyMembers = [];
+      try {
+        if (typeof getSplitFamilies === 'function') {
+          const famRes = getSplitFamilies(ss);
+          if (famRes && famRes.families) {
+            splitFamilies = famRes.families;
+            if (famRes.rawMembers) rawFamilyMembers = famRes.rawMembers;
+          } else if (Array.isArray(famRes)) {
+            splitFamilies = famRes;
+          }
+        }
+        if (typeof getSplitGroups === 'function') {
+          const grpRes = getSplitGroups(ss);
+          if (grpRes && grpRes.groups) {
+            splitGroups = grpRes.groups;
+          } else if (Array.isArray(grpRes)) {
+            splitGroups = grpRes;
+          }
+        }
+      } catch (e) {
+        Logger.log("Error loading Tab 7 in getAppData: " + e.toString());
       }
-    } catch(e) {}
 
-    return result;
+      // Canonical calculation of orderCounts directly from tab3 data (Gom theo mã đơn hàng gốc)
+      if (tab3) {
+        const preOrderIdsSet = new Set((tab3.preOrders || []).map(it => String(it.id || '').trim()));
+        const refundIdsSet = new Set((tab3.cancelledRefundPending || []).map(it => String(it.id || '').trim()));
+
+        const choShipKeys = new Set();
+        (tab3.inventory || []).forEach(it => {
+          const rawId = String(it.id || '').trim();
+          if (refundIdsSet.has(rawId)) return;
+
+          const wh = String(it.trangThaiKho || '').trim().toLowerCase();
+          const isCancelled = wh.includes('hủy') || wh.includes('cancel');
+          if (isCancelled) return;
+
+          if (wh === 'chờ ship' || wh === 'cho ship') {
+            const match = rawId.match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+            const baseId = (match && match[1]) ? match[1] : rawId;
+            choShipKeys.add(baseId || rawId);
+          }
+        });
+
+        const preKeys = new Set();
+        (tab3.preOrders || []).forEach(it => {
+          const rawId = String(it.id || '').trim();
+          const match = rawId.match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+          const baseId = (match && match[1]) ? match[1] : rawId;
+          preKeys.add(baseId || rawId);
+        });
+
+        orderCounts = {
+          choShip: choShipKeys.size,
+          preorder: preKeys.size,
+          khachNo: (tab3.debtSales || []).length,
+          choHoan: (tab3.cancelledRefundPending || []).length
+        };
+      }
+
+      const result = {
+        success: true,
+        wallets: wallets,
+        pendingPreOrders: pendingPreOrders,
+        orderCounts: orderCounts,
+        categories: categories,
+        accounts: accounts,
+        tab2: tab2,
+        tab3: tab3,
+        tab4: tab4,
+        tab5: tab5,
+        splitFamilies: splitFamilies,
+        rawFamilyMembers: rawFamilyMembers,
+        splitGroups: splitGroups,
+        quickFixed: quickFixed
+      };
+
+      try {
+        if (typeof CacheService !== 'undefined' && CacheService.getScriptCache && !ssTarget) {
+          const jsonStr = JSON.stringify(result);
+          setCachedAppDataStr(cacheKey, jsonStr, 600);
+          setCachedAppDataStr("APP_DATA_GLOBAL_LATEST_V29", jsonStr, 600);
+        }
+      } catch(e) {}
+
+      return result;
+    });
   } catch (err) {
     return {
       success: false,
@@ -531,7 +811,7 @@ function standardizeAllSheetStatuses(ssTarget) {
     let updatedCountS = 0;
 
     // 1. Standardize Sheet Purchase (17 columns) & Fix PO- IDs
-    const pSheet = ss.getSheetByName("Purchase") || ss.getSheetByName("MuaHang");
+    const pSheet = ss.getSheetByName("Purchase");
     if (pSheet && pSheet.getLastRow() >= 2) {
       const lastColP = Math.max(pSheet.getLastColumn(), 17);
       const pRange = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP);
@@ -600,8 +880,8 @@ function standardizeAllSheetStatuses(ssTarget) {
       }
     }
 
-    // 2. Standardize Sheet Sales (BanHang) & Fix SO- IDs
-    const sSheet = ss.getSheetByName("Sales") || ss.getSheetByName("BanHang");
+    // 2. Standardize Sheet Sales & Fix SO- IDs
+    const sSheet = ss.getSheetByName("Sales");
     if (sSheet && sSheet.getLastRow() >= 2) {
       const lastColS = Math.max(sSheet.getLastColumn(), 11);
       const sRange = sSheet.getRange(2, 1, sSheet.getLastRow() - 1, lastColS);
@@ -624,31 +904,7 @@ function standardizeAllSheetStatuses(ssTarget) {
       }
     }
 
-    // 3. Standardize Sheet Business (KinhDoanh) & Fix BO- IDs
-    const bSheet = ss.getSheetByName("Business") || ss.getSheetByName("KinhDoanh");
-    if (bSheet && bSheet.getLastRow() >= 2) {
-      const lastColB = Math.max(bSheet.getLastColumn(), 7);
-      const bRange = bSheet.getRange(2, 1, bSheet.getLastRow() - 1, lastColB);
-      const bData = bRange.getValues();
-      let bChanged = false;
-
-      for (let i = 0; i < bData.length; i++) {
-        const row = bData[i];
-        const rawId = String(row[0] || "").trim();
-        const stdId = formatStandardID(rawId, "BO-");
-        if (rawId && stdId !== rawId) {
-          row[0] = stdId;
-          bChanged = true;
-          updatedCountB++;
-        }
-      }
-
-      if (bChanged) {
-        bRange.setValues(bData);
-      }
-    }
-
-    // 4. Standardize Sheet Family (11 columns)
+    // 3. Standardize Sheet Family (11 columns)
     const fSheet = ss.getSheetByName("Family") || ss.getSheetByName("ThuChi");
     if (fSheet && fSheet.getLastRow() >= 2) {
       const lastColF = Math.max(fSheet.getLastColumn(), 11);
@@ -721,9 +977,25 @@ function standardizeAllSheetStatuses(ssTarget) {
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
     return {
       success: true,
-      message: `✅ Đã chuẩn hóa toàn bộ database và Mã ID (Business BO-: ${updatedCountB}, Purchase PO-: ${updatedCountP}, Sales SO-: ${updatedCountS}, Family: ${updatedCountF}, Debt: ${updatedCountD}, SplitFamilies: OK)!`
+      message: `✅ Đã chuẩn hóa toàn bộ database và Mã ID (Purchase PO-: ${updatedCountP}, Sales SO-: ${updatedCountS}, Family: ${updatedCountF}, Debt: ${updatedCountD}, SplitFamilies: OK)!`
     };
   } catch (err) {
     return { success: false, message: "❌ Lỗi khi chuẩn hóa database: " + err.toString() };
   }
 }
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    executeWithLock,
+    getAppVersion,
+    incrementDataVersion,
+    getProcessedRequest,
+    recordProcessedRequest,
+    autoPruneProcessedRequests,
+    clearAppDataCache,
+    getCachedAppDataStr,
+    setCachedAppDataStr,
+    getAppData
+  };
+}
+

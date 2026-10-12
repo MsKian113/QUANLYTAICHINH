@@ -377,8 +377,17 @@ function processCreditCardSettlement(data) {
       familySheet.appendRow([maGD, now, "Chi", "----Tất toán thẻ", noiDung, amount, sourceWallet, "", note]);
     }
 
+    if (typeof clearAppDataCache === 'function') clearAppDataCache();
+
+    let freshWallets = null;
+    try {
+      const wRes = getWalletsFromSheet('ALL', 'ALL');
+      if (wRes && wRes.wallets) freshWallets = wRes.wallets;
+    } catch (eW) {}
+
     return {
       success: true,
+      wallets: freshWallets,
       message: "✅ Đã tất toán " + amount.toLocaleString() + " ¥ cho " + creditCard
     };
   } catch (error) {

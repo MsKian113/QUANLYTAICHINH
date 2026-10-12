@@ -22,6 +22,10 @@
           <option value="2025">Năm 2025</option>
           <option value="2026" selected>Năm 2026</option>
           <option value="2027">Năm 2027</option>
+          <option value="2028">Năm 2028</option>
+          <option value="2029">Năm 2029</option>
+          <option value="2030">Năm 2030</option>
+          <option value="2031">Năm 2031</option>
       </select>
   </div>
 </div>
@@ -48,6 +52,10 @@
   <!-- NÚT CHUYỂN TAB (GIAO DỊCH / HŨ) NẰM DƯỚI DASHBOARD -->
   <div class="flex p-1 bg-slate-200 rounded-xl">
       <button onclick="switchTab2('giaodich')" id="btn-t2-giaodich" class="flex-1 py-1.5 text-[11px] font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer transition">💸 Giao Dịch</button>
+      <button onclick="switchTab2('preorder')" id="btn-t2-preorder" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition relative flex items-center justify-center gap-1">
+          <span>⏳ Chờ Trừ Thẻ</span>
+          <span id="t2-badge-preorder-count" class="hidden bg-pink-600 text-white text-[9px] font-extrabold px-1.5 py-0.2 rounded-full leading-none">0</span>
+      </button>
       <button onclick="switchTab2('hu')" id="btn-t2-hu" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition">🍯 Quản Lý Hũ</button>
   </div>
 
@@ -95,6 +103,44 @@
   </div>
 
   <!-- TAB QUẢN LÝ HŨ -->
+  
+  <!-- TAB CHỜ TRỪ THẺ (PRE-ORDER THU CHI) -->
+  <div id="t2-preorder" class="space-y-3 hidden">
+      <div class="bg-white p-3 rounded-2xl shadow-xs border border-slate-200/90 space-y-2.5">
+          <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+              <div>
+                  <h3 class="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                      <span>⏳</span> <span>Khoản Chi Chờ Trừ Thẻ (Pre-order)</span>
+                  </h3>
+                  <p class="text-[10px] text-slate-500 font-medium">Chi tiêu gia đình dùng thẻ tín dụng đang chờ shop trừ tiền</p>
+              </div>
+              <span id="t2-preorder-checked-count" class="text-[10px] font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-lg border border-pink-200/60">0 Mục</span>
+          </div>
+
+          <!-- TÌM KIẾM & CHỌN TẤT CẢ -->
+          <div class="flex gap-2 items-center">
+              <div class="relative flex-1">
+                  <input type="text" id="t2-preorder-search-input" oninput="renderTab2PreOrders()" placeholder="🔍 Tìm theo nội dung, thẻ, ngày..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 pl-8 text-xs font-bold text-slate-700 outline-none focus:border-pink-400 focus:bg-white transition" />
+                  <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">🔍</span>
+              </div>
+              <label class="flex items-center gap-1 text-[11px] font-bold text-slate-600 cursor-pointer bg-slate-100 hover:bg-slate-200 px-2 py-1.5 rounded-xl border border-slate-200 shrink-0">
+                  <input type="checkbox" id="t2-chk-select-all" onchange="t2_toggleSelectAllPreOrders(this)" class="accent-pink-600 cursor-pointer" />
+                  <span>Tất cả</span>
+              </label>
+          </div>
+
+          <!-- NÚT XÁC NHẬN HÀNG LOẠT -->
+          <button id="btn-t2-batch-confirm" onclick="t2_batchConfirmPreOrders(this)" class="w-full py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white font-bold rounded-xl text-xs shadow-sm transition cursor-pointer hidden flex items-center justify-center gap-1">
+              <span>✅</span> <span>Xác Nhận Đã Trừ Thẻ Hàng Loạt (<span id="t2-batch-selected-count">0</span>)</span>
+          </button>
+      </div>
+
+      <!-- DANH SÁCH CÁC KHOẢN PRE-ORDER CHỜ TRỪ THẺ -->
+      <div id="t2-pending-preorders-list" class="space-y-2">
+          <!-- Rendered dynamically by renderTab2PreOrders() -->
+      </div>
+  </div>
+
   <div id="t2-hu" class="space-y-4 hidden">
       <div class="flex gap-2 mb-2">
           <button onclick="openConfigJar();" class="flex-1 py-1.5 bg-pink-50 text-pink-700 hover:bg-pink-100 transition rounded-lg text-[11px] font-bold border border-pink-200 shadow-2xs cursor-pointer">⚙️ Cấu Hình Tỷ Lệ %</button>
@@ -152,7 +198,7 @@
               <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">5. Thuộc Hũ</label>
               <div class="relative">
                   <input type="text" id="add-jar" autocomplete="off" placeholder="Chọn hũ..." oninput="renderSuggest('add-jar', 'jar', false)" onfocus="renderSuggest('add-jar', 'jar', true)" onclick="renderSuggest('add-jar', 'jar', true)" onblur="hideSuggest('add-jar')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-pink-400" />
-                  <div id="box-add-jar" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-2xl hidden max-h-32 overflow-y-auto z-50"></div>
+                  <div id="box-add-jar" class="suggest-box absolute right-0 min-w-full w-max max-w-[220px] top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-2xl hidden max-h-36 overflow-y-auto z-50"></div>
               </div>
           </div>
       </div>
@@ -219,7 +265,7 @@
           <div class="relative">
               <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">5. Thuộc Hũ</label>
               <input type="text" id="edit-jar" autocomplete="off" oninput="renderSuggest('edit-jar', 'jar', false)" onfocus="renderSuggest('edit-jar', 'jar', true)" onclick="renderSuggest('edit-jar', 'jar', true)" onblur="hideSuggest('edit-jar')" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400" />
-              <div id="box-edit-jar" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+              <div id="box-edit-jar" class="suggest-box absolute right-0 min-w-full w-max max-w-[220px] top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-36 overflow-y-auto z-50"></div>
           </div>
       </div>
 
@@ -409,7 +455,9 @@
 
 <!-- SCRIPT TAB 2 -->
 <script>
-  window.JAR_LIST = ["Đầu tư", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi"];
+  window.JAR_EXPENSE_LIST = ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư"];
+  window.JAR_OTHER_LIST = ["THU NHẬP", "CK NỘI BỘ", "CÔNG NỢ"];
+  window.JAR_LIST = ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư", "THU NHẬP", "CK NỘI BỘ", "CÔNG NỢ"];
   window.NGUON_LIST = window.NGUON_LIST || []; 
   window.DESC_LIST = ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"]; 
   window.CATEGORIES_RAW = []; 
@@ -452,22 +500,25 @@
       const yearSelect = document.getElementById('t2-filter-year');
       if(monthSelect) {
           const d = new Date();
-          let monthHTML = '<option value="ALL">Cả năm</option>';
+          let monthHTML = '<option value="All">Cả năm</option>';
           for (let i = 1; i <= 12; i++) { monthHTML += `<option value="${i}" ${i === d.getMonth() + 1 ? 'selected' : ''}>Tháng ${i}</option>`; }
           monthSelect.innerHTML = monthHTML;
           
-          let yearHTML = '<option value="ALL">🌐 Tất cả các năm</option>';
-          for (let y = 2024; y <= d.getFullYear() + 5; y++) { yearHTML += `<option value="${y}" ${y === d.getFullYear() ? 'selected' : ''}>Năm ${y}</option>`; }
+          let yearHTML = '<option value="All">🌐 Tất cả các năm</option>';
+          for (let y = 2024; y <= Math.max(2031, d.getFullYear() + 5); y++) { yearHTML += `<option value="${y}" ${y === d.getFullYear() ? 'selected' : ''}>Năm ${y}</option>`; }
           yearSelect.innerHTML = yearHTML;
       }
   }
 
   function initTab2() {
       t2_initDateFilters();
-      if (!window.SERVER_INITIAL_DATA && !window.t2_initialLoaded) {
-          if (typeof fetchCategories === 'function') fetchCategories();
-          fetchTab2Transactions(true);
-      }
+      try {
+          const cached = localStorage.getItem('T2_CACHE_DATA_LATEST');
+          if (cached) {
+              const cData = JSON.parse(cached);
+              if (cData && cData.success) applyTab2Data(cData);
+          }
+      } catch(e) {}
   }
 
   if (document.readyState === "loading") {
@@ -481,17 +532,150 @@
   }
 
   function switchTab2(tab) {
-      document.getElementById('t2-giaodich').classList.add('hidden');
-      document.getElementById('t2-hu').classList.add('hidden');
-      
-      document.getElementById('btn-t2-giaodich').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition";
-      document.getElementById('btn-t2-hu').className = "flex-1 py-2 text-xs font-bold text-slate-500 rounded-lg cursor-pointer transition";
-      
-      document.getElementById('t2-' + tab).classList.remove('hidden');
-      document.getElementById('btn-t2-' + tab).className = "flex-1 py-2 text-xs font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer transition";
-      
+      ['giaodich', 'hu', 'preorder'].forEach(t => {
+          const el = document.getElementById('t2-' + t);
+          if (el) el.classList.add('hidden');
+          const btn = document.getElementById('btn-t2-' + t);
+          if (btn) btn.className = "flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition relative flex items-center justify-center gap-1";
+      });
+
+      const activeEl = document.getElementById('t2-' + tab);
+      if (activeEl) activeEl.classList.remove('hidden');
+      const activeBtn = document.getElementById('btn-t2-' + tab);
+      if (activeBtn) activeBtn.className = "flex-1 py-1.5 text-[11px] font-bold bg-white text-pink-600 rounded-lg shadow-sm cursor-pointer transition relative flex items-center justify-center gap-1";
+
       if (tab === 'hu') {
           renderJarCards(GLOBAL_JARS_DATA);
+      } else if (tab === 'preorder') {
+          renderTab2PreOrders();
+      }
+  }
+
+  function renderTab2PreOrders() {
+      const listContainer = document.getElementById('t2-pending-preorders-list');
+      const badge = document.getElementById('t2-badge-preorder-count');
+      const fullList = (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab2 && window.SERVER_INITIAL_DATA.tab2.preorders)
+          ? window.SERVER_INITIAL_DATA.tab2.preorders
+          : (window.t2_preorderList || []);
+
+      if (badge) {
+          badge.innerText = fullList.length;
+          if (fullList.length > 0) badge.classList.remove('hidden');
+          else badge.classList.add('hidden');
+      }
+
+      if (!listContainer) return;
+
+      const query = (document.getElementById('t2-preorder-search-input')?.value || '').trim();
+      let list = fullList;
+      if (query) {
+          const qClean = removeAccents(query.toLowerCase());
+          list = fullList.filter(item => {
+              const fullText = `${item.noidung || ''} ${item.nguontien || ''} ${item.hu || ''} ${item.ngay || ''} ${item.ghichu || ''}`;
+              return removeAccents(fullText.toLowerCase()).includes(qClean);
+          });
+      }
+
+      if (list.length === 0) {
+          listContainer.innerHTML = query
+              ? '<div class="text-center py-6 text-xs text-slate-400">Không tìm thấy khoản chi nào phù hợp với tìm kiếm.</div>'
+              : '<div class="text-center py-6 text-xs text-slate-400">Không có khoản chi thu chi nào đang chờ trừ thẻ.</div>';
+          const btnBatch = document.getElementById('btn-t2-batch-confirm');
+          if (btnBatch) btnBatch.classList.add('hidden');
+          return;
+      }
+
+      let html = '';
+      list.forEach(item => {
+          const nameStr = item.noidung || 'Khoản chi Pre-order';
+          const safeName = String(nameStr).replace(/'/g, "\\'").replace(/"/g, "&quot;");
+          const amt = Number(item.sotien || 0);
+          const walletName = item.nguontien || 'Thẻ Tín Dụng';
+          const huName = item.hu || 'Thu Chi';
+          const dateStr = item.ngay || '--';
+
+          html += `
+          <div id="t2-pre-row-${item.id}" class="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 shadow-xs flex justify-between items-center gap-2">
+              <div class="flex items-center gap-2 min-w-0 flex-1">
+                  <input type="checkbox" value="${item.id}" onchange="t2_onPreOrderChkChange()" class="t2-pre-chk accent-pink-600 w-4 h-4 cursor-pointer shrink-0" />
+                  <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="text-[10px] font-bold bg-pink-100 text-pink-800 px-1.5 py-0.2 rounded border border-pink-200">💳 ${walletName}</span>
+                          <span class="text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded border border-amber-200">${huName}</span>
+                          <span class="text-[10px] text-slate-400">${dateStr}</span>
+                      </div>
+                      <h4 class="text-xs font-bold text-slate-800 truncate mt-0.5" title="${safeName}">${nameStr}</h4>
+                  </div>
+              </div>
+              <div class="text-right shrink-0 flex flex-col items-end gap-1">
+                  <span class="text-xs font-black text-rose-600">-${amt.toLocaleString()} ¥</span>
+                  <div class="flex items-center gap-1">
+                      <button onclick="t2_confirmSinglePreOrder('${item.id}', '${safeName}', this)" class="bg-pink-600 hover:bg-pink-700 active:scale-95 text-white font-bold px-2 py-0.5 rounded-lg text-[10px] shadow-xs cursor-pointer transition">
+                          ✔ Đã Phát Sinh (Đã Charge)
+                      </button>
+                  </div>
+              </div>
+          </div>`;
+      });
+
+      listContainer.innerHTML = html;
+      t2_onPreOrderChkChange();
+  }
+
+  function t2_onPreOrderChkChange() {
+      const allCheckboxes = document.querySelectorAll('.t2-pre-chk');
+      const checked = document.querySelectorAll('.t2-pre-chk:checked');
+      const countSpan = document.getElementById('t2-batch-selected-count');
+      const checkedCountElem = document.getElementById('t2-preorder-checked-count');
+      const btnBatch = document.getElementById('btn-t2-batch-confirm');
+      const masterChk = document.getElementById('t2-chk-select-all');
+
+      if (masterChk) {
+          masterChk.checked = (allCheckboxes.length > 0 && checked.length === allCheckboxes.length);
+      }
+      if (checkedCountElem) {
+          checkedCountElem.innerText = `${checked.length} / ${allCheckboxes.length} Mục`;
+      }
+      if (countSpan) countSpan.innerText = checked.length;
+      if (btnBatch) {
+          if (checked.length > 0) btnBatch.classList.remove('hidden');
+          else btnBatch.classList.add('hidden');
+      }
+  }
+
+  function t2_toggleSelectAllPreOrders(masterChk) {
+      const isChecked = masterChk ? masterChk.checked : false;
+      document.querySelectorAll('.t2-pre-chk').forEach(cb => {
+          cb.checked = isChecked;
+      });
+      t2_onPreOrderChkChange();
+  }
+
+  function t2_confirmSinglePreOrder(id, name, btn) {
+      if (typeof openConfirmPreorderDateModal === 'function') {
+          openConfirmPreorderDateModal({
+              type: 'single',
+              orderId: id,
+              itemName: name,
+              rowId: 't2-pre-row-' + id,
+              btnElem: btn
+          }, `Khoản chi: ${name || 'Pre-order'}`);
+      }
+  }
+
+  function t2_batchConfirmPreOrders(btnElem) {
+      const checked = document.querySelectorAll('.t2-pre-chk:checked');
+      if (checked.length === 0) {
+          showToast("⚠️ Vui lòng chọn ít nhất 1 khoản chi để xác nhận!", true);
+          return;
+      }
+      const itemIds = Array.from(checked).map(cb => cb.value);
+      if (typeof openConfirmPreorderDateModal === 'function') {
+          openConfirmPreorderDateModal({
+              type: 'batch',
+              itemIds: itemIds,
+              btnElem: btnElem
+          }, `Xác nhận ${itemIds.length} khoản chi đã chọn`);
       }
   }
 
@@ -516,6 +700,19 @@
       if (netEl) netEl.innerText = netSign + formatMoney(netVal);
       if (incEl) incEl.innerText = '+' + formatMoney(incVal);
       if (expEl) expEl.innerText = '-' + formatMoney(expVal);
+
+      if (res.preorders) {
+          window.t2_preorderList = res.preorders;
+          const badge = document.getElementById('t2-badge-preorder-count');
+          if (badge) {
+              badge.innerText = res.preorders.length;
+              if (res.preorders.length > 0) badge.classList.remove('hidden');
+              else badge.classList.add('hidden');
+          }
+          if (document.getElementById('t2-preorder') && !document.getElementById('t2-preorder').classList.contains('hidden')) {
+              renderTab2PreOrders();
+          }
+      }
 
       renderTransactionList(res.transactions);
 
@@ -654,6 +851,7 @@
           let incSum = 0;
           let expSum = 0;
           list.forEach(tx => {
+              if (tx.status === 'PRE-ORDER') return;
               const loaiLower = String(tx.loai || '').toLowerCase();
               const amt = Number(tx.sotien || 0);
               if (loaiLower === 'thu' || loaiLower === 'khoản thu' || loaiLower === 'thu nhập') {
@@ -699,9 +897,12 @@
               };
           }
           groupedByDate[dateStr].items.push(tx);
-          const isChi = String(tx.loai || 'CHI').toUpperCase() === 'CHI';
-          const amt = Number(tx.sotien || 0);
-          groupedByDate[dateStr].dayNet += (isChi ? -amt : amt);
+          const isPre = (tx.status === 'PRE-ORDER');
+          if (!isPre) {
+              const isChi = String(tx.loai || 'CHI').toUpperCase() === 'CHI';
+              const amt = Number(tx.sotien || 0);
+              groupedByDate[dateStr].dayNet += (isChi ? -amt : amt);
+          }
       });
 
       let html = '';
@@ -722,7 +923,8 @@
 
           group.items.forEach(tx => {
               const isChi = String(tx.loai || 'CHI').toUpperCase() === 'CHI';
-              const moneyColor = isChi ? 'text-rose-600' : 'text-emerald-600';
+              const isPre = (tx.status === 'PRE-ORDER');
+              const moneyColor = isChi ? (isPre ? 'text-amber-600' : 'text-rose-600') : 'text-emerald-600';
               const moneySign = isChi ? '-' : '+';
               const safeDesc = String(tx.noidung || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
               const safeSource = String(tx.nguon || tx.nguontien || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
@@ -733,13 +935,15 @@
               const isTemplate = tx.mau ? true : false;
               const rowId = tx.id || tx.row || '';
 
+              const badgePre = isPre ? '<span class="text-[8px] bg-amber-100 text-amber-700 px-1 rounded font-bold shrink-0">PRE-ORDER</span>' : '';
               const badgeFixed = isFixed ? '<span class="text-[8px] bg-amber-100 text-amber-700 px-1 rounded font-bold shrink-0">Cố định</span>' : '';
               const badgeTemplate = isTemplate ? '<span class="text-[8px] bg-slate-100 text-slate-500 px-1 rounded font-bold shrink-0">Mẫu</span>' : '';
 
               html += `
-              <div onclick="openEditTx('${safeDesc}', ${tx.sotien || 0}, '${safeSource}', '${safeJar}', '${safeDate}', '${txType}', ${isFixed}, ${isTemplate}, '${rowId}')" 
+              <div onclick="openEditTx('${safeDesc}', ${tx.sotien || 0}, '${safeSource}', '${safeJar}', '${safeDate}', '${txType}', ${isFixed}, ${isTemplate}, '${rowId}', ${isPre})" 
                    class="py-1 px-2.5 hover:bg-pink-50/50 transition flex justify-between items-center cursor-pointer gap-1.5">
                   <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+                      ${badgePre}
                       <span class="text-xs font-medium text-slate-800 truncate" title="${tx.noidung || ''}">${tx.noidung || ''}</span>
                       ${tx.nguon || tx.nguontien ? `<span class="text-[9px] text-slate-500 bg-slate-100 px-1 py-0.2 rounded border border-slate-200/60 font-semibold shrink-0">${tx.nguon || tx.nguontien}</span>` : ''}
                   </div>
@@ -762,14 +966,21 @@
       const btnChi = document.getElementById('add-btn-chi');
       const btnThu = document.getElementById('add-btn-thu');
       const iptMoney = document.getElementById('add-money');
+      const jarInput = document.getElementById('add-jar');
       if(type === 'CHI') {
           btnChi.className = "flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
           btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
           iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-pink-300";
+          if (jarInput && (jarInput.value === 'THU NHẬP' || jarInput.value === '----Thu nhập')) {
+              jarInput.value = '';
+          }
       } else {
           btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
           btnChi.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
           iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-amber-300";
+          if (jarInput && (!jarInput.value || (window.JAR_EXPENSE_LIST && window.JAR_EXPENSE_LIST.includes(jarInput.value)))) {
+              jarInput.value = 'THU NHẬP';
+          }
       }
   }
 
@@ -778,14 +989,21 @@
       const btnChi = document.getElementById('edit-btn-chi');
       const btnThu = document.getElementById('edit-btn-thu');
       const iptMoney = document.getElementById('edit-money');
+      const jarInput = document.getElementById('edit-jar');
       if(type === 'CHI') {
           btnChi.className = "flex-1 py-1.5 bg-white text-rose-500 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
           btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
           iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-rose-500 outline-none focus:ring-2 focus:ring-amber-300";
+          if (jarInput && (jarInput.value === 'THU NHẬP' || jarInput.value === '----Thu nhập')) {
+              jarInput.value = '';
+          }
       } else {
           btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition";
           btnChi.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition";
           iptMoney.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-lg font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-amber-300";
+          if (jarInput && (!jarInput.value || (window.JAR_EXPENSE_LIST && window.JAR_EXPENSE_LIST.includes(jarInput.value)))) {
+              jarInput.value = 'THU NHẬP';
+          }
       }
   }
 
@@ -802,7 +1020,9 @@
       if (document.getElementById('add-desc')) document.getElementById('add-desc').value = '';
       if (document.getElementById('add-money')) document.getElementById('add-money').value = '';
       if (document.getElementById('add-source')) document.getElementById('add-source').value = '';
-      if (document.getElementById('add-jar')) document.getElementById('add-jar').value = '';
+      if (document.getElementById('add-jar')) {
+          document.getElementById('add-jar').value = (type === 'THU') ? 'THU NHẬP' : '';
+      }
       
       if (!window.CATEGORIES_RAW || window.CATEGORIES_RAW.length === 0) {
           fetchCategories();
@@ -841,7 +1061,7 @@
       loadTab2Data(showLoading);
   }
 
-  function openEditTx(desc, money, source, jar, date, type, isFixed, isTemplate, rowId) {
+  function openEditTx(desc, money, source, jar, date, type, isFixed, isTemplate, rowId, isPreOrder) {
       document.getElementById('edit-row-id').value = rowId || '';
       toggleEditType(type || 'CHI');
       document.getElementById('edit-date').value = formatDateForDateInput(date);
@@ -851,6 +1071,9 @@
       document.getElementById('edit-jar').value = jar || '';
       document.getElementById('edit-chk-fixed').checked = !!isFixed; 
       document.getElementById('edit-chk-template').checked = !!isTemplate; 
+      if (document.getElementById('edit-chk-preorder')) {
+          document.getElementById('edit-chk-preorder').checked = !!isPreOrder;
+      }
       if (!window.CATEGORIES_RAW || window.CATEGORIES_RAW.length === 0) {
           fetchCategories();
       }
@@ -861,7 +1084,10 @@
   }
 
   function saveNewTransaction() {
+      const isPreOrder = document.getElementById('add-chk-preorder') ? document.getElementById('add-chk-preorder').checked : false;
+      const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_F_") : ("REQ_F_" + Date.now());
       const data = {
+        requestId: requestId,
         ngay: document.getElementById('add-date').value,
         loai: document.getElementById('add-tx-type').value,
         noidung: document.getElementById('add-desc').value,
@@ -870,6 +1096,8 @@
         hu: document.getElementById('add-jar').value,
         codinh: document.getElementById('add-chk-fixed').checked,
         mau: document.getElementById('add-chk-template').checked,
+        isPreOrder: isPreOrder,
+        status: isPreOrder ? "PRE-ORDER" : "HOAN_TAT",
         ghichu: ""
       };
       
@@ -891,7 +1119,9 @@
           nguontien: data.nguontien,
           codinh: data.codinh,
           mau: data.mau,
-          ghichu: ""
+          status: data.status,
+          ghichu: "",
+          isTemp: true
       };
       if (!window.rawTab2Transactions) window.rawTab2Transactions = [];
       window.rawTab2Transactions.unshift(tempTx);
@@ -907,22 +1137,51 @@
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveFamilyTransaction === 'function') {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
-                  loadTab2Data(false); // Background silent sync
+                  // Single-trip optimization: Replace tempId with real server ID
+                  if (res.savedItem && res.savedItem.id) {
+                      tempTx.id = res.savedItem.id;
+                      tempTx.isTemp = false;
+                      if (res.savedItem.rev !== undefined) tempTx.rev = res.savedItem.rev;
+                  }
+                  if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                      mergeUpdatedWallets(res.updatedWallets);
+                  }
+                  if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                      window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                  }
               } else {
+                  // Rollback optimistic transaction
+                  window.rawTab2Transactions = window.rawTab2Transactions.filter(function(t) { return t.id !== tempId; });
+                  filterTab2Transactions();
                   showToast("❌ Lỗi: " + (res ? res.message : "Lưu thất bại"), true);
-                  loadTab2Data(true);
               }
           }).withFailureHandler(function(err) {
-              showToast("❌ Lỗi: " + (err.message || err), true);
-              loadTab2Data(true);
+              // Rollback on network failure
+              window.rawTab2Transactions = window.rawTab2Transactions.filter(function(t) { return t.id !== tempId; });
+              filterTab2Transactions();
+              showToast("❌ Lỗi kết nối: " + (err.message || err), true);
           }).saveFamilyTransaction(data);
       }
   }
 
   function saveEditTransaction() {
+      const isPreOrder = document.getElementById('edit-chk-preorder') ? document.getElementById('edit-chk-preorder').checked : false;
+      const targetId = document.getElementById('edit-row-id').value;
+      const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_FE_") : ("REQ_FE_" + Date.now());
+
+      let origTxBackup = null;
+      if (window.rawTab2Transactions && Array.isArray(window.rawTab2Transactions)) {
+          const found = window.rawTab2Transactions.find(function(t, i) {
+              return (t.id === targetId) || (t.row === targetId) || (String(targetId).toUpperCase() === ("ROW_" + (i + 2)));
+          });
+          if (found) origTxBackup = Object.assign({}, found);
+      }
+
       const data = {
-          row: document.getElementById('edit-row-id').value,
-          id: document.getElementById('edit-row-id').value,
+          requestId: requestId,
+          rev: (origTxBackup && origTxBackup.rev !== undefined) ? origTxBackup.rev : 0,
+          row: targetId,
+          id: targetId,
           ngay: document.getElementById('edit-date').value,
           loai: document.getElementById('edit-tx-type').value,
           noidung: document.getElementById('edit-desc').value,
@@ -930,7 +1189,9 @@
           nguontien: document.getElementById('edit-source').value,
           hu: document.getElementById('edit-jar').value,
           codinh: document.getElementById('edit-chk-fixed').checked,
-          mau: document.getElementById('edit-chk-template').checked
+          mau: document.getElementById('edit-chk-template').checked,
+          isPreOrder: isPreOrder,
+          status: isPreOrder ? "PRE-ORDER" : "HOAN_TAT"
       };
 
       if (!data.ngay || !data.noidung || data.sotien <= 0 || !data.hu || !data.nguontien) {
@@ -938,7 +1199,6 @@
       }
 
       // Optimistic UI: Update item in local state and re-render list instantly (0ms)
-      const targetId = data.id || data.row;
       if (window.rawTab2Transactions && Array.isArray(window.rawTab2Transactions)) {
           for (let i = 0; i < window.rawTab2Transactions.length; i++) {
               const tx = window.rawTab2Transactions[i];
@@ -955,6 +1215,7 @@
                   tx.hu = data.hu;
                   tx.codinh = data.codinh;
                   tx.mau = data.mau;
+                  tx.status = data.status;
                   break;
               }
           }
@@ -967,30 +1228,69 @@
       if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
-                  loadTab2Data(false); // Background silent sync
+                  if (res.savedItem && res.savedItem.rev !== undefined) {
+                      const updatedItem = window.rawTab2Transactions.find(function(t) { return t.id === targetId; });
+                      if (updatedItem) updatedItem.rev = res.savedItem.rev;
+                  }
+                  if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                      mergeUpdatedWallets(res.updatedWallets);
+                  }
+                  if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                      window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                  }
               } else {
-                  showToast("❌ Lỗi Server: " + (res ? res.message : "Cập nhật thất bại"), true);
-                  loadTab2Data(true);
+                  // Rollback state on error
+                  if (origTxBackup && window.rawTab2Transactions) {
+                      for (let i = 0; i < window.rawTab2Transactions.length; i++) {
+                          if (window.rawTab2Transactions[i].id === targetId) {
+                              window.rawTab2Transactions[i] = origTxBackup;
+                              break;
+                          }
+                      }
+                      filterTab2Transactions();
+                  }
+                  showToast("❌ Lỗi: " + (res ? res.message : "Cập nhật thất bại"), true);
               }
           }).withFailureHandler(function(err) {
+              if (origTxBackup && window.rawTab2Transactions) {
+                  for (let i = 0; i < window.rawTab2Transactions.length; i++) {
+                      if (window.rawTab2Transactions[i].id === targetId) {
+                          window.rawTab2Transactions[i] = origTxBackup;
+                          break;
+                      }
+                  }
+                  filterTab2Transactions();
+              }
               showToast("❌ Lỗi: " + (err.message || err), true);
-              loadTab2Data(true);
           }).updateFamilyTransaction(data);
       }
   }
 
   function deleteTransaction() {
       const rowId = document.getElementById('edit-row-id').value;
+      const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_FD_") : ("REQ_FD_" + Date.now());
+
+      let deletedTxBackup = null;
+      let deletedIdx = -1;
+
       showConfirmModal("⚠️ Xóa Giao Dịch", "Bạn có chắc chắn muốn xóa giao dịch này không?", function() {
           // Optimistic UI: Remove item from local state and re-render list instantly (0ms)
           if (window.rawTab2Transactions && Array.isArray(window.rawTab2Transactions)) {
-              window.rawTab2Transactions = window.rawTab2Transactions.filter((tx, i) => {
+              for (let i = 0; i < window.rawTab2Transactions.length; i++) {
+                  const tx = window.rawTab2Transactions[i];
                   const isMatch = (tx.id === rowId) || (tx.row === rowId) || 
                                   (String(rowId).toUpperCase() === ("ROW_" + (i + 2))) ||
                                   (String(rowId).replace(/^ROW_/i, '') === String(i + 2));
-                  return !isMatch;
-              });
-              filterTab2Transactions();
+                  if (isMatch) {
+                      deletedTxBackup = tx;
+                      deletedIdx = i;
+                      break;
+                  }
+              }
+              if (deletedIdx !== -1) {
+                  window.rawTab2Transactions.splice(deletedIdx, 1);
+                  filterTab2Transactions();
+              }
           }
 
           closeModal('modal-edit-tx');
@@ -999,14 +1299,26 @@
           if (typeof google !== 'undefined' && google.script && google.script.run && rowId) {
               google.script.run.withSuccessHandler(function(res) {
                   if (res && res.success) {
-                      loadTab2Data(false); // Background silent sync
+                      if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                          mergeUpdatedWallets(res.updatedWallets);
+                      }
+                      if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                          window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                      }
                   } else {
+                      // Rollback deleted item
+                      if (deletedTxBackup) {
+                          window.rawTab2Transactions.splice(deletedIdx, 0, deletedTxBackup);
+                          filterTab2Transactions();
+                      }
                       showToast("❌ Lỗi: " + (res ? res.message : "Xóa thất bại"), true);
-                      loadTab2Data(true);
                   }
               }).withFailureHandler(function(err) {
+                  if (deletedTxBackup) {
+                      window.rawTab2Transactions.splice(deletedIdx, 0, deletedTxBackup);
+                      filterTab2Transactions();
+                  }
                   showToast("❌ Lỗi: " + (err.message || err), true);
-                  loadTab2Data(true);
               }).deleteTransaction(rowId);
           }
       }, "Xác Nhận Xóa");
@@ -1125,7 +1437,7 @@
       const container = document.getElementById('list-jars');
       if (!container) return;
 
-      const jarList = window.JAR_LIST || ["Đầu tư", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi"];
+      const jarList = window.JAR_EXPENSE_LIST || ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư"];
       const rawJars = dataJars || GLOBAL_JARS_DATA || [];
 
       const jars = jarList.map(name => {
@@ -1204,6 +1516,49 @@
       }
   }
 
+  function t2_formatIsoDate(val) {
+      if (!val) {
+          const d = new Date();
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      if (val instanceof Date) {
+          if (isNaN(val.getTime())) return t2_formatIsoDate(null);
+          const yyyy = val.getFullYear();
+          const mm = String(val.getMonth() + 1).padStart(2, '0');
+          const dd = String(val.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      const str = String(val).trim();
+      if (!str) return t2_formatIsoDate(null);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+          const parts = str.split(' ')[0].split('-');
+          const yyyy = parts[0];
+          const mm = parts[1].padStart(2, '0');
+          const dd = parts[2].padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
+          const parts = str.split(' ')[0].split('/');
+          const dd = parts[0].padStart(2, '0');
+          const mm = parts[1].padStart(2, '0');
+          let yyyy = parts[2];
+          if (yyyy.length === 2) yyyy = "20" + yyyy;
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, '0');
+          const dd = String(d.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+      }
+      return t2_formatIsoDate(null);
+  }
+
   function renderQuickFixedList(items) {
       const container = document.getElementById('quick-fixed-list');
       if (!container) return;
@@ -1225,7 +1580,7 @@
               <div class="flex items-center justify-between gap-1.5 w-full">
                   <div class="flex items-center gap-1 shrink-0">
                       <span class="text-[9px] font-bold text-slate-400 uppercase hidden sm:inline">Ngày:</span>
-                      <input type="date" id="qf-date-${idx}" value="${item.ngay || ''}" class="bg-white border border-slate-300 rounded-md px-1 py-0.5 text-[10px] font-bold text-slate-700 outline-none focus:border-amber-400 w-[100px] text-center shrink-0" />
+                      <input type="date" id="qf-date-${idx}" value="${t2_formatIsoDate(item.ngay)}" class="bg-white border border-slate-300 rounded-md px-1 py-0.5 text-[10px] font-bold text-slate-700 outline-none focus:border-amber-400 w-[100px] text-center shrink-0" />
                   </div>
                   <div class="flex items-center gap-1 min-w-0 justify-end flex-1">
                       ${item.prevAmount ? `<span class="text-[8px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded shrink-0 truncate" title="Tháng trước: ${formatMoney(item.prevAmount)}">T.Trước: ${formatMoney(item.prevAmount)}</span>` : ''}
@@ -1281,7 +1636,11 @@
               if (btn) { btn.innerText = "⚡ Lưu"; btn.disabled = false; }
               closeModal('modal-quick-fixed');
               showToast(res.message || "✅ Đã đóng tiền thành công các khoản cố định!");
-              reloadTab2Data();
+              if (res && res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                  mergeUpdatedWallets(res.updatedWallets);
+              }
+              if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+              else reloadTab2Data();
           }).withFailureHandler(function(err) {
               if (btn) { btn.innerText = "⚡ Lưu"; btn.disabled = false; }
               showToast("❌ Lỗi: " + err.message, true);
@@ -1290,7 +1649,8 @@
           if (btn) { btn.innerText = "⚡ Lưu"; btn.disabled = false; }
           closeModal('modal-quick-fixed');
           showToast("✅ Đã ghi nhận các khoản đóng tiền cố định (Demo)!");
-          reloadTab2Data();
+          if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+          else reloadTab2Data();
       }
   }
 

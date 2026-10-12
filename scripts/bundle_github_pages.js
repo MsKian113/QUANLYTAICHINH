@@ -20,7 +20,7 @@ tabs.forEach(tab => {
   if (fs.existsSync(tabPath)) {
     const tabContent = fs.readFileSync(tabPath, 'utf8');
     const regex = new RegExp(`<\\?!= include\\(['"]${tab}['"]\\); \\?>`, 'g');
-    indexHtml = indexHtml.replace(regex, tabContent);
+    indexHtml = indexHtml.replace(regex, () => tabContent);
   }
 });
 
@@ -106,7 +106,7 @@ const polyfillScript = `
   </script>
 `;
 
-indexHtml = indexHtml.replace('</head>', polyfillScript + '\n</head>');
+indexHtml = indexHtml.replace('</head>', () => polyfillScript + '\n</head>');
 
 const outputPath = path.join(outputDir, 'index.html');
 fs.writeFileSync(outputPath, indexHtml, 'utf8');

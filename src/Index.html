@@ -175,8 +175,9 @@
     // ==========================================
     window.CATEGORIES_RAW = [];
     window.DESC_LIST = ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"];
-    window.NGUON_LIST = window.NGUON_LIST || [];
-    window.JAR_LIST = ["Đầu tư", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi"];
+    window.JAR_EXPENSE_LIST = ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư"];
+    window.JAR_OTHER_LIST = ["THU NHẬP", "CK NỘI BỘ", "CÔNG NỢ"];
+    window.JAR_LIST = ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư", "THU NHẬP", "CK NỘI BỘ", "CÔNG NỢ"];
     window.GLOBAL_JARS_DATA = [];
     window.suggestTimeouts = {};
 
@@ -272,7 +273,17 @@
 
         let dataList = [];
         if (type === 'jar') {
-            dataList = window.JAR_LIST || [];
+            if (inputId.startsWith('tf-jar')) {
+                dataList = ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư"];
+            } else {
+                const isThu = (inputId.startsWith('add') && document.getElementById('add-tx-type')?.value === 'THU') ||
+                              (inputId.startsWith('edit') && document.getElementById('edit-tx-type')?.value === 'THU');
+                if (isThu) {
+                    dataList = ["THU NHẬP", "CÔNG NỢ", "CK NỘI BỘ", "Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư"];
+                } else {
+                    dataList = ["Thiết yếu", "Tiết kiệm", "Giáo dục", "Giải trí", "Cho đi", "Đầu tư", "THU NHẬP", "CK NỘI BỘ", "CÔNG NỢ"];
+                }
+            }
         } else if (type === 'noimua' || type === 'store' || type === 'cuahang') {
             const s1 = (window.bizSuggestData && window.bizSuggestData.purchasePlaces && window.bizSuggestData.purchasePlaces.length > 0) ? window.bizSuggestData.purchasePlaces : [];
             const s2 = (window.bizSuggestData && window.bizSuggestData.noimua && window.bizSuggestData.noimua.length > 0) ? window.bizSuggestData.noimua : [];
@@ -301,6 +312,12 @@
             dataList = Array.from(new Set([...accs].map(getItemName).filter(Boolean)));
         } else if (type === 'desc' || type === 'template') {
             dataList = (window.DESC_LIST && window.DESC_LIST.length > 0) ? window.DESC_LIST.map(getItemName).filter(Boolean) : ["Đổ xăng Eneos", "Đi siêu thị Aeon", "Tiền nhà Leo", "Đóng tiền mạng", "Nhận lương tháng", "Mua đồ Donki", "Ăn nhà hàng", "Cà phê Starbucks"];
+        } else if (type === 'sp' || type === 'product' || type === 'sanpham') {
+            const sp1 = (window.bizSuggestData && window.bizSuggestData.sp && window.bizSuggestData.sp.length > 0) ? window.bizSuggestData.sp : [];
+            const sp2 = (window.bizSuggestData && window.bizSuggestData.products && window.bizSuggestData.products.length > 0) ? window.bizSuggestData.products : [];
+            const sp3 = (window.TAB3_PRODUCTS && window.TAB3_PRODUCTS.length > 0) ? window.TAB3_PRODUCTS : [];
+            const sp4 = (window.TAB3_DATA && window.TAB3_DATA.products && window.TAB3_DATA.products.length > 0) ? window.TAB3_DATA.products : [];
+            dataList = Array.from(new Set([...sp1, ...sp2, ...sp3, ...sp4].map(getItemName).filter(Boolean)));
         } else {
             dataList = (window.bizSuggestData && window.bizSuggestData[type]) || (window.debtSuggestData && window.debtSuggestData[type]) || [];
             dataList = dataList.map(getItemName).filter(Boolean);
@@ -329,7 +346,10 @@
             "Tiết kiệm": "💰",
             "Giáo dục": "📚",
             "Giải trí": "☕",
-            "Cho đi": "❤️"
+            "Cho đi": "❤️",
+            "THU NHẬP": "💵",
+            "CK NỘI BỘ": "🔄",
+            "CÔNG NỢ": "🤝"
         };
 
         box.innerHTML = matches.map(item => {
@@ -337,17 +357,20 @@
             const safeItem = String(itemName || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
             if (type === 'jar') {
                 const jarObj = (window.GLOBAL_JARS_DATA || []).find(j => j && j.name && removeAccents(String(j.name).toLowerCase()) === removeAccents(itemName.toLowerCase()));
-                const icon = jarIcons[itemName] || "🍯";
-                const remainVal = jarObj ? Number(jarObj.remain || 0) : 0;
-                const remainText = typeof formatMoney === 'function' ? formatMoney(remainVal) : (remainVal.toLocaleString() + " ¥");
-                const badgeHtml = `<span class="text-[9px] font-bold ${remainVal > 0 ? 'text-emerald-600 bg-emerald-50 border-emerald-200/60' : 'text-rose-600 bg-rose-50 border-rose-200/60'} px-2 py-0.5 rounded-md border">Còn: ${remainText}</span>`;
-                return `<div class="px-3.5 py-2.5 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer text-xs font-bold flex justify-between items-center border-b border-slate-100 last:border-0"
+                const isOtherJar = ["THU NHẬP", "CK NỘI BỘ", "CÔNG NỢ"].includes(itemName);
+                let badgeHtml = '';
+                if (isOtherJar) {
+                    badgeHtml = `<span class="text-[10px] text-slate-400 font-medium shrink-0 whitespace-nowrap">Hũ Khác</span>`;
+                } else {
+                    const remainVal = jarObj ? Number(jarObj.remain || 0) : 0;
+                    const remainText = typeof formatMoney === 'function' ? formatMoney(remainVal) : (remainVal.toLocaleString() + " ¥");
+                    badgeHtml = `<span class="text-[10px] font-semibold ${remainVal > 0 ? 'text-emerald-600' : 'text-rose-500'} shrink-0 whitespace-nowrap">Còn: ${remainText}</span>`;
+                }
+                return `<div class="px-2.5 py-1.5 hover:bg-indigo-50 active:bg-indigo-100 cursor-pointer text-xs flex justify-between items-center gap-2 border-b border-slate-100 last:border-0 whitespace-nowrap"
                              ontouchstart="handleSuggestTouchStart(event);"
                              ontouchend="handleSuggestTouchEnd(event, function(){ selectSuggest('${inputId}', '${safeItem}', '${type}'); });"
                              onmousedown="event.preventDefault(); selectSuggest('${inputId}', '${safeItem}', '${type}');">
-                            <span class="text-slate-800 flex items-center gap-1.5">
-                                <span class="text-sm">${icon}</span> <span>${itemName}</span>
-                            </span>
+                            <span class="text-slate-800 font-semibold text-[11px] truncate flex-1 min-w-0">${itemName}</span>
                             ${badgeHtml}
                         </div>`;
             }
@@ -516,43 +539,66 @@
         if (res.pendingPreOrders) {
             window.t1_pendingPreOrders = res.pendingPreOrders;
         }
+        if (res.tab3 && res.tab3.summary) {
+            window.t1_tab3Summary = res.tab3.summary;
+        } else if (res.tab3Summary) {
+            window.t1_tab3Summary = res.tab3Summary;
+        }
+        if (res.tab4) {
+            window.t1_tab4Data = res.tab4;
+        }
+        if (res.accounts && res.accounts.length > 0) {
+            window.CATEGORIES_ACCOUNTS = res.accounts;
+            if (!window.bizSuggestData) window.bizSuggestData = {};
+            window.bizSuggestData.account = res.accounts;
+        }
         if (res.wallets && res.wallets.length > 0) {
             window.NGUON_LIST = res.wallets;
             if (window.bizSuggestData) window.bizSuggestData.nguon = res.wallets;
             if (window.debtSuggestData) window.debtSuggestData.nguon = res.wallets;
             window.t1_walletsData = res.wallets;
+            if (typeof t1_walletsData !== 'undefined') t1_walletsData = res.wallets;
         }
         if (typeof window.renderTab1Wallets === 'function') {
             window.renderTab1Wallets();
         } else if (typeof renderTab1Wallets === 'function') {
             renderTab1Wallets();
         }
+        if (typeof window.renderTab1PendingPreOrders === 'function') {
+            window.renderTab1PendingPreOrders();
+        } else if (typeof renderTab1PendingPreOrders === 'function') {
+            renderTab1PendingPreOrders();
+        }
         
         if (res.quickFixed && res.quickFixed.length > 0) {
             window.QUICK_FIXED_ITEMS = res.quickFixed;
         }
         if (res.tab2) {
-            const t2 = res.tab2;
-            if (t2.summary) {
-                const netVal = t2.summary.net ?? t2.summary.netBalance ?? 0;
-                const incVal = t2.summary.income ?? t2.summary.totalIncome ?? 0;
-                const expVal = t2.summary.expense ?? t2.summary.totalExpense ?? 0;
-                const netSign = netVal >= 0 ? '+' : '';
-                
-                const netEl = document.getElementById('dashboard-net');
-                const incEl = document.getElementById('dashboard-income');
-                const expEl = document.getElementById('dashboard-expense');
+            if (typeof applyTab2Data === 'function') {
+                applyTab2Data(res.tab2);
+            } else {
+                const t2 = res.tab2;
+                if (t2.summary) {
+                    const netVal = t2.summary.net ?? t2.summary.netBalance ?? 0;
+                    const incVal = t2.summary.income ?? t2.summary.totalIncome ?? 0;
+                    const expVal = t2.summary.expense ?? t2.summary.totalExpense ?? 0;
+                    const netSign = netVal >= 0 ? '+' : '';
+                    
+                    const netEl = document.getElementById('dashboard-net');
+                    const incEl = document.getElementById('dashboard-income');
+                    const expEl = document.getElementById('dashboard-expense');
 
-                if (netEl) netEl.innerText = netSign + (typeof formatMoney === 'function' ? formatMoney(netVal) : netVal + " ¥");
-                if (incEl) incEl.innerText = '+' + (typeof formatMoney === 'function' ? formatMoney(incVal) : incVal + " ¥");
-                if (expEl) expEl.innerText = '-' + (typeof formatMoney === 'function' ? formatMoney(expVal) : expVal + " ¥");
-            }
-            if (t2.transactions && typeof renderTransactionList === 'function') {
-                renderTransactionList(t2.transactions);
-            }
-            if (t2.jars && t2.jars.length > 0) {
-                window.GLOBAL_JARS_DATA = t2.jars;
-                if (typeof renderJarCards === 'function') renderJarCards(t2.jars);
+                    if (netEl) netEl.innerText = netSign + (typeof formatMoney === 'function' ? formatMoney(netVal) : netVal + " ¥");
+                    if (incEl) incEl.innerText = '+' + (typeof formatMoney === 'function' ? formatMoney(incVal) : incVal + " ¥");
+                    if (expEl) expEl.innerText = '-' + (typeof formatMoney === 'function' ? formatMoney(expVal) : expVal + " ¥");
+                }
+                if (t2.transactions && typeof renderTransactionList === 'function') {
+                    renderTransactionList(t2.transactions);
+                }
+                if (t2.jars && t2.jars.length > 0) {
+                    window.GLOBAL_JARS_DATA = t2.jars;
+                    if (typeof renderJarCards === 'function') renderJarCards(t2.jars);
+                }
             }
             window.t2_initialLoaded = true;
         }
@@ -602,41 +648,187 @@
         }
     }
 
-    function loadAppData() {
-        // 1. Instant 0ms pre-render from browser LocalStorage
+    window.CACHE_SCHEMA_V = "V26.8_205";
+    window.APP_CLIENT_VERSION = 0;
+    window.TAB_ID = "TAB_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5);
+
+    function generateClientRequestId(prefix) {
+        return (prefix || "REQ_") + Date.now().toString(36).toUpperCase() + "_" + Math.random().toString(36).substring(2, 7).toUpperCase();
+    }
+    window.generateClientRequestId = generateClientRequestId;
+
+    function mergeUpdatedWallets(updatedWallets) {
+        if (!updatedWallets || !Array.isArray(updatedWallets) || updatedWallets.length === 0) return;
+        if (!window.t1_walletsData) window.t1_walletsData = [];
+        
+        updatedWallets.forEach(function(u) {
+            if (!u) return;
+            const target = window.t1_walletsData.find(function(w) {
+                return (u.id && w.id === u.id) || 
+                       (u.name && String(w.name).trim().toLowerCase() === String(u.name).trim().toLowerCase());
+            });
+            const newBal = (u.currentBalance !== undefined) ? u.currentBalance : (u.current_balance !== undefined ? u.current_balance : 0);
+            if (target) {
+                target.current_balance = newBal;
+                if (u.total_increase !== undefined) target.total_increase = u.total_increase;
+                if (u.total_decrease !== undefined) target.total_decrease = u.total_decrease;
+            } else {
+                window.t1_walletsData.push({
+                    id: u.id,
+                    name: u.name,
+                    type: u.type || 'DEBIT',
+                    current_balance: newBal,
+                    total_increase: u.total_increase || 0,
+                    total_decrease: u.total_decrease || 0
+                });
+            }
+        });
+
+        if (window.SERVER_INITIAL_DATA) {
+            window.SERVER_INITIAL_DATA.wallets = window.t1_walletsData;
+        }
         try {
-            const cachedStr = localStorage.getItem("APP_LOCAL_CACHE_V18");
-            if (cachedStr) {
-                const cachedData = JSON.parse(cachedStr);
-                if (cachedData && cachedData.success) {
-                    applyAppData(cachedData);
+            localStorage.setItem('APP_LOCAL_CACHE_' + window.CACHE_SCHEMA_V, JSON.stringify(window.SERVER_INITIAL_DATA || { success: true, wallets: window.t1_walletsData }));
+            localStorage.setItem('T1_CACHE_LATEST', JSON.stringify({ success: true, wallets: window.t1_walletsData }));
+        } catch(e) {}
+
+        if (typeof window.renderTab1Wallets === 'function') {
+            window.renderTab1Wallets();
+        } else if (typeof renderTab1Wallets === 'function') {
+            renderTab1Wallets();
+        }
+    }
+    window.mergeUpdatedWallets = mergeUpdatedWallets;
+
+    function clearAllLocalTabCaches() {
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && (k.startsWith('T1_CACHE_') || k.startsWith('T2_CACHE_') || k.startsWith('T3_CACHE_') || k.startsWith('T4_CACHE_') || k.startsWith('T5_CACHE_') || k.startsWith('T7_CACHE_') || k.startsWith('APP_LOCAL_CACHE'))) {
+                    keysToRemove.push(k);
                 }
             }
-        } catch (e) {}
+            keysToRemove.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+        } catch(e) {}
+    }
+    window.clearAllLocalTabCaches = clearAllLocalTabCaches;
+
+    // Schema Check on Boot
+    (function initCacheSchema() {
+        try {
+            const currentSchema = localStorage.getItem("APP_SCHEMA_VERSION");
+            if (currentSchema !== window.CACHE_SCHEMA_V) {
+                clearAllLocalTabCaches();
+                localStorage.setItem("APP_SCHEMA_VERSION", window.CACHE_SCHEMA_V);
+            }
+        } catch(e) {}
+    })();
+
+    window.isAppDataLoading = false;
+    function loadAppData(forceRefresh) {
+        if (forceRefresh) {
+            clearAllLocalTabCaches();
+        }
+
+        // 1. Instant 0ms pre-render from browser LocalStorage
+        if (!forceRefresh) {
+            try {
+                const cachedStr = localStorage.getItem("APP_LOCAL_CACHE_" + window.CACHE_SCHEMA_V);
+                if (cachedStr) {
+                    const cachedData = JSON.parse(cachedStr);
+                    if (cachedData && cachedData.success) {
+                        applyAppData(cachedData);
+                    }
+                }
+            } catch (e) {}
+        }
 
         // 2. If server-side preloaded data exists
-        if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.success) {
+        if (!forceRefresh && window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.success) {
             applyAppData(window.SERVER_INITIAL_DATA);
-            try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(window.SERVER_INITIAL_DATA)); } catch(e) {}
+            try { localStorage.setItem("APP_LOCAL_CACHE_" + window.CACHE_SCHEMA_V, JSON.stringify(window.SERVER_INITIAL_DATA)); } catch(e) {}
         }
+
+        // In-flight debounce guard to eliminate duplicate concurrent calls
+        if (window.isAppDataLoading && !forceRefresh) return;
+        window.isAppDataLoading = true;
 
         // 3. Background RPC sync for guaranteed fresh data across all tabs
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
-            const now = new Date();
-            const curM = (now.getMonth() + 1).toString();
-            const curY = now.getFullYear().toString();
             google.script.run.withSuccessHandler(function(res) {
+                window.isAppDataLoading = false;
                 if (res && res.success) {
+                    if (res.dataVersion) window.APP_CLIENT_VERSION = Number(res.dataVersion);
                     applyAppData(res);
-                    try { localStorage.setItem("APP_LOCAL_CACHE_V18", JSON.stringify(res)); } catch(e) {}
+                    try { localStorage.setItem("APP_LOCAL_CACHE_" + window.CACHE_SCHEMA_V, JSON.stringify(res)); } catch(e) {}
                 }
             }).withFailureHandler(function(err) {
+                window.isAppDataLoading = false;
                 console.error("Error fetching app data:", err);
-            }).getAppData(curM, curY);
+            }).getAppData("All", "All", null, !!forceRefresh);
         } else {
-            fetchCategories();
+            window.isAppDataLoading = false;
+            if (typeof fetchCategories === 'function') fetchCategories();
         }
     }
+
+    window.loadAppData = loadAppData;
+    window.forceReloadAllAppData = function(forceRefresh = true) {
+        loadAppData(forceRefresh !== false);
+    };
+
+    // Leader election & background version checking
+    function isTabLeader() {
+        const now = Date.now();
+        try {
+            const leaderInfoStr = localStorage.getItem("APP_TAB_LEADER");
+            if (leaderInfoStr) {
+                const leaderInfo = JSON.parse(leaderInfoStr);
+                if (leaderInfo && leaderInfo.tabId === window.TAB_ID) {
+                    localStorage.setItem("APP_TAB_LEADER", JSON.stringify({ tabId: window.TAB_ID, lastHeartbeat: now }));
+                    return true;
+                }
+                if (leaderInfo && (now - leaderInfo.lastHeartbeat < 20000)) {
+                    return false; // Another tab is active leader
+                }
+            }
+            localStorage.setItem("APP_TAB_LEADER", JSON.stringify({ tabId: window.TAB_ID, lastHeartbeat: now }));
+            return true;
+        } catch(e) {
+            return true;
+        }
+    }
+
+    function checkAppVersionInBackground() {
+        if (document.hidden) return; // Pause when hidden
+        if (!isTabLeader()) return; // Leader tab only
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppVersion === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (res && res.success && res.version) {
+                    const sVer = Number(res.version);
+                    if (window.APP_CLIENT_VERSION && sVer > window.APP_CLIENT_VERSION) {
+                        console.log("[SWR Sync] Detected newer data version on server: " + sVer + " > " + window.APP_CLIENT_VERSION);
+                        window.APP_CLIENT_VERSION = sVer;
+                        loadAppData(true);
+                    } else if (!window.APP_CLIENT_VERSION) {
+                        window.APP_CLIENT_VERSION = sVer;
+                    }
+                }
+            }).withFailureHandler(function(err) {
+                // Ignore silent background check failure
+            }).getAppVersion();
+        }
+    }
+
+    setInterval(checkAppVersionInBackground, 30000);
+
+    document.addEventListener("visibilitychange", function() {
+        if (!document.hidden) {
+            checkAppVersionInBackground();
+        }
+    });
 
     window.openModal = function(id) {
         const el = typeof id === 'string' ? document.getElementById(id) : id;
@@ -1108,20 +1300,39 @@
             if (label) label.className = "text-[9px] font-bold";
         }
 
-        if (tabId === 'tab2' && typeof reloadTab2Data === 'function') {
-            reloadTab2Data();
-        } else if (tabId === 'tab3' && typeof reloadTab3Data === 'function') {
-            reloadTab3Data();
-        } else if (tabId === 'tab4' && typeof reloadTab4Data === 'function') {
-            reloadTab4Data();
-        } else if (tabId === 'tab5' && typeof t5_loadData === 'function') {
-            t5_loadData();
-        } else if (tabId === 'tab1' && typeof reloadTab1Data === 'function') {
-            reloadTab1Data();
-        } else if (tabId === 'tab7' && typeof t7_loadAllData === 'function') {
-            t7_loadAllData();
+        // Smooth local render without firing redundant network requests
+        if (tabId === 'tab1') {
+            if (typeof renderTab1Wallets === 'function') renderTab1Wallets();
+            if (typeof renderTab1PendingPreOrders === 'function') renderTab1PendingPreOrders();
+        } else if (tabId === 'tab2') {
+            if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab2 && typeof applyTab2Data === 'function') {
+                applyTab2Data(window.SERVER_INITIAL_DATA.tab2);
+            } else if (typeof renderTransactionList === 'function' && window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab2 && window.SERVER_INITIAL_DATA.tab2.transactions) {
+                renderTransactionList(window.SERVER_INITIAL_DATA.tab2.transactions);
+            }
+        } else if (tabId === 'tab3') {
+            if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3 && typeof applyTab3Data === 'function') {
+                applyTab3Data(window.SERVER_INITIAL_DATA.tab3);
+            } else if (typeof renderTab3UI === 'function') {
+                renderTab3UI();
+            }
+        } else if (tabId === 'tab4') {
+            if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4 && typeof applyTab4Data === 'function') {
+                applyTab4Data(window.SERVER_INITIAL_DATA.tab4);
+            } else if (typeof renderDebtCards === 'function') {
+                renderDebtCards();
+            }
+        } else if (tabId === 'tab5') {
+            if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab5 && typeof applyTab5Data === 'function') {
+                applyTab5Data(window.SERVER_INITIAL_DATA.tab5);
+            } else if (typeof t5_renderMatrix === 'function') {
+                t5_renderMatrix();
+            }
+        } else if (tabId === 'tab7' && typeof t7_renderUI === 'function') {
+            t7_renderUI();
         }
     }
+    window.switchAppTab = switchAppTab;
   </script>
 
 <!-- MODAL MÁY TÍNH TIỀN TỰ ĐỘNG -->
@@ -1600,7 +1811,6 @@
     resetIdleTimer();
     if (typeof loadAppData === 'function') loadAppData();
     if (typeof renderTab6Data === 'function') renderTab6Data();
-    if (typeof loadTab2Data === 'function') loadTab2Data(false);
   }
 
   function lockApp() {

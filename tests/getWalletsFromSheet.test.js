@@ -69,7 +69,15 @@ test('getWalletsFromSheet parses sheet rows into valid wallet objects with corre
     total_increase: 0,
     total_decrease: 25000,
     current_balance: -25000,
-    settle_source: 'Thẻ UFJ ATM'
+    debt: 25000,
+    statement_debt: 25000,
+    preorder: 0,
+    preorder_amount: 0,
+    available: 475000,
+    settle_source: 'Thẻ UFJ ATM',
+    checkpoint_date: '',
+    checkpoint_balance: 0,
+    balance_status: 'SYNCED'
   });
 
   // Assert UFJ Debit Wallet 11-col
@@ -84,7 +92,15 @@ test('getWalletsFromSheet parses sheet rows into valid wallet objects with corre
     total_increase: 200000,
     total_decrease: 50000,
     current_balance: 650000,
-    settle_source: ''
+    debt: 0,
+    statement_debt: 0,
+    preorder: 0,
+    preorder_amount: 0,
+    available: 650000,
+    settle_source: '',
+    checkpoint_date: '',
+    checkpoint_balance: 500000,
+    balance_status: 'SYNCED'
   });
 });
 
@@ -95,6 +111,5 @@ test('getWalletsFromSheet falls back gracefully when sheet is missing or empty',
 
   assert.equal(res.success, true);
   assert.ok(Array.isArray(res.wallets));
-  assert.ok(res.wallets.length > 0);
-  assert.ok(res.wallets[0].hasOwnProperty('name'));
+  assert.equal(res.wallets.length, 0);
 });

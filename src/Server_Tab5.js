@@ -36,30 +36,8 @@ function getAccountCleanKey(accName, storeName) {
 
 // ==========================================
 // FILE: Server_Tab5.js
-// NHIỆM VỤ: Quản Lý Lịch Mua Hàng, Giới Hạn Tài Khoản & Cooldown Đặt Hàng
+// NHIỆM VỤ: Quản Lý Lịch Mua Hàng, Giới Hạn Tài Khoản & Cooldown Đặt Hàng (Dựa trên Sheet Purchase)
 // ==========================================
-
-function getTab5Sheet(ssTarget) {
-  const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss ? (ss.getSheetByName("Calendar") || ss.getSheetByName("LichMua")) : null;
-  if (ss && !sheet) {
-    sheet = ss.insertSheet("Calendar");
-    sheet.appendRow([
-      "ID",             // A
-      "NgayMua",        // B
-      "TaiKhoan",       // C
-      "CuaHang",        // D
-      "TenSanPham",     // E
-      "SoNgayCooldown", // F
-      "NgayKhaDung",    // G
-      "TrangThai",      // H: THANH_CONG / DA_HUY
-      "MaDonTab3",      // I: ID đơn từ Tab 3 (nếu có)
-      "GhiChu"          // J
-    ]);
-    sheet.getRange(1, 1, 1, 10).setFontWeight("bold").setBackground("#e2e8f0");
-  }
-  return sheet;
-}
 
 function parseTab5Date(dateStr) {
   if (!dateStr) return new Date();
@@ -82,7 +60,7 @@ function formatDateTab5Standard(d) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function formatDateTab5Display(d) {
@@ -221,17 +199,12 @@ function getTab5Data(ssTarget) {
       }
     }
 
-    // Nếu Categories trống, nạp mặc định các tài khoản mẫu từ người dùng
-    if (accountsSet.size === 0) {
-      ["Joshin KA", "Joshin Chi", "Joshin Giao", "Edion Ka", "Edion Chi", "Yodo KA", "Yodo Chi", "Yodo Chít", "Yodo 602", "Yodo 303", "Yodo Trinh", "Yodo Giao"].forEach(a => accountsSet.add(a));
-    }
-
     const items = [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 1. ĐỌC TRỰC TIẾP TỪ SHEET PURCHASE (MUAHANG) 17 CỘT (ƯU TIÊN HÀNG ĐẦU)
-    const pSheet = ss ? (ss.getSheetByName("Purchase") || ss.getSheetByName("MuaHang")) : null;
+    // 1. ĐỌC TRỰC TIẾP TỪ SHEET PURCHASE 17 CỘT (ƯU TIÊN HÀNG ĐẦU)
+    const pSheet = ss ? ss.getSheetByName("Purchase") : null;
     if (pSheet && pSheet.getLastRow() >= 2) {
       const lastColP = Math.max(pSheet.getLastColumn(), 17);
       const pData = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP).getValues();
@@ -302,68 +275,6 @@ function getTab5Data(ssTarget) {
           ngayKhaDungDisplay: formatDateTab5Display(ngayKhaDungDate),
           trangThai: trangThai,
           maDonTab3: id,
-          ghiChu: ghiChu
-        });
-      });
-    }
-
-    // 2. ĐỌC DỰ PHÒNG TỪ SHEET CALENDAR (NẾU CÓ DỮ LIỆU CŨ)
-    const calSheet = ss ? (ss.getSheetByName("Calendar") || ss.getSheetByName("LichMua")) : null;
-    if (calSheet && calSheet.getLastRow() >= 2) {
-      const calData = calSheet.getRange(2, 1, calSheet.getLastRow() - 1, Math.max(calSheet.getLastColumn(), 10)).getValues();
-      const existingIds = new Set(items.map(it => it.id));
-
-      calData.forEach(row => {
-        if (!row || !row[0]) return;
-        const id = String(row[0]).trim();
-        if (existingIds.has(id)) return;
-
-        const ngayMuaDate = parseTab5Date(row[1]);
-        const ngayMua = formatDateTab5Standard(ngayMuaDate);
-        const taiKhoan = String(row[2] || "").trim();
-        const cuaHangRaw = String(row[3] || "").trim() || "Cửa Hàng Mặc Định";
-        const cuaHang = normalizeTab5Store(cuaHangRaw);
-        const tenSanPham = String(row[4] || "").trim();
-        const stLower = cuaHang.toLowerCase();
-        const isFilmCal = isFilmProduct(tenSanPham);
-        const cooldownDays = isFilmCal ? (parseInt(row[5], 10) || getDefaultCooldownDays(cuaHang, tenSanPham)) : 0;
-        
-        let ngayKhaDungDate = parseTab5Date(row[6]);
-        if (!isFilmCal) {
-          ngayKhaDungDate = new Date(ngayMuaDate.getTime());
-        } else if (!row[6]) {
-          ngayKhaDungDate = new Date(ngayMuaDate.getTime());
-          ngayKhaDungDate.setDate(ngayKhaDungDate.getDate() + cooldownDays);
-        }
-        const ngayKhaDung = formatDateTab5Standard(ngayKhaDungDate);
-        const rawTrangThai = String(row[7] || "").trim().toUpperCase();
-        let trangThai = "KET_THUC";
-        if (rawTrangThai === "DA_HUY" || rawTrangThai === "HUY" || rawTrangThai === "KET_THUC") {
-          trangThai = "KET_THUC";
-        } else if (isFilmCal && ngayKhaDungDate.getTime() > today.getTime()) {
-          trangThai = "DANG_CHO";
-        } else {
-          trangThai = "KET_THUC";
-        }
-        const maDonTab3 = String(row[8] || "").trim();
-        const ghiChu = String(row[9] || "").trim();
-
-        accountsSet.add(taiKhoan);
-        storesSet.add(cuaHang);
-
-        items.push({
-          id: id,
-          ngayMua: ngayMua,
-          ngayMuaDisplay: formatDateTab5Display(ngayMuaDate),
-          taiKhoan: taiKhoan,
-          cuaHang: cuaHang,
-          tenSanPham: tenSanPham,
-          category: getProductCategory(tenSanPham, cuaHang),
-          cooldownDays: cooldownDays,
-          ngayKhaDung: ngayKhaDung,
-          ngayKhaDungDisplay: formatDateTab5Display(ngayKhaDungDate),
-          trangThai: trangThai,
-          maDonTab3: maDonTab3,
           ghiChu: ghiChu
         });
       });
@@ -563,13 +474,10 @@ function savePurchaseLimitRecord(formData, ssTarget) {
     const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
     if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet!" };
 
-    let pSheet = ss.getSheetByName("Purchase") || ss.getSheetByName("MuaHang");
-    let isPurchaseSheet = true;
+    let pSheet = ss.getSheetByName("Purchase");
     if (!pSheet) {
-      pSheet = getTab5Sheet(ss);
-      isPurchaseSheet = false;
+      pSheet = ss.insertSheet("Purchase");
     }
-    if (!pSheet) return { success: false, error: "Không tìm thấy sheet lưu trữ" };
 
     const baseId = formData.id || ((typeof generateUniqueMaGD === 'function') ? generateUniqueMaGD("PO-") : ("PO-" + Date.now().toString().slice(-6)));
     const ngayMuaDate = parseTab5Date(formData.ngayMua || new Date());
@@ -615,80 +523,51 @@ function savePurchaseLimitRecord(formData, ssTarget) {
       return { success: false, error: "Không có sản phẩm hợp lệ để lưu!" };
     }
 
-    if (isPurchaseSheet) {
-      const lastColP = Math.max(pSheet.getLastColumn(), 17);
-      const pData = pSheet.getLastRow() >= 2 ? pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP).getValues() : [];
+    const lastColP = Math.max(pSheet.getLastColumn(), 17);
+    const pData = pSheet.getLastRow() >= 2 ? pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP).getValues() : [];
 
-      const rowsToAdd = [];
-      items.forEach((it, idx) => {
-        const itemId = items.length > 1 ? `${baseId}-${idx + 1}` : baseId;
-        const itemTotal = it.qty * it.price;
+    const rowsToAdd = [];
+    items.forEach((it, idx) => {
+      const itemId = items.length > 1 ? `${baseId}-${idx + 1}` : baseId;
+      const itemTotal = it.qty * it.price;
 
-        let foundRowIndex = -1;
-        for (let i = 0; i < pData.length; i++) {
-          if (String(pData[i][0]).trim() === itemId || (maDonTab3 && String(pData[i][12]).trim() === maDonTab3)) {
-            foundRowIndex = i + 2;
-            break;
-          }
+      let foundRowIndex = -1;
+      for (let i = 0; i < pData.length; i++) {
+        if (String(pData[i][0]).trim() === itemId || (maDonTab3 && String(pData[i][12]).trim() === maDonTab3)) {
+          foundRowIndex = i + 2;
+          break;
         }
-
-        const rowData = [
-          itemId,              // 1: ID
-          ngayMua,             // 2: Ngày Mua
-          cuaHang,             // 3: Nơi mua
-          "Chờ Ship",          // 4: Trạng Thái Kho
-          it.tenSP,            // 5: Tên Sản Phẩm
-          it.qty,              // 6: Số Lượng
-          it.price,            // 7: Giá Mua (1 cái)
-          itemTotal,           // 8: Tổng Tiền
-          "Ví Tiền Mặt",       // 9: Nguồn Tiền Mua
-          "HOAN_TAT",          // 10: Trạng thái thẻ
-          ghiChu,              // 11: Note
-          0,                   // 12: Tồn kho
-          ngayMua,             // 13: Ngày Sao kê / SubID
-          taiKhoan,            // 14: Thông tin tài khoản mua
-          cooldownDays,        // 15: SoNgayCooldown
-          ngayKhaDung,         // 16: NgayKhaDung
-          trangThai            // 17: TrangThai (THANH_CONG)
-        ];
-
-        if (foundRowIndex > 0) {
-          pSheet.getRange(foundRowIndex, 1, 1, 17).setValues([rowData]);
-        } else {
-          rowsToAdd.push(rowData);
-        }
-      });
-
-      if (rowsToAdd.length > 0) {
-        if (pSheet.getLastRow() <= 1) {
-          const headers = ["MÃ ĐƠN", "Ngày Mua", "Nơi mua", "Trạng Thái Kho", "Tên Sản Phẩm", "Số Lượng", "Giá Mua (1 cái)", "Tổng Tiền", "Nguồn Tiền Mua", "Tình trạng thẻ", "Note", "Tồn kho", "Ngày sao kê", "Tài khoản mua", "SoNgayCooldown", "NgayKhaDung", "Tình trạngCooldown"];
-          pSheet.getRange(1, 1, 1, 17).setValues([headers]);
-        }
-        pSheet.getRange(pSheet.getLastRow() + 1, 1, rowsToAdd.length, 17).setValues(rowsToAdd);
       }
-    } else {
-      // Fallback LichMua sheet
-      const data = pSheet.getDataRange().getValues();
-      const rowsToAdd = [];
-      items.forEach((it, idx) => {
-        const itemId = items.length > 1 ? `${baseId}-${idx + 1}` : baseId;
-        let foundRowIndex = -1;
-        for (let i = 1; i < data.length; i++) {
-          if (String(data[i][0]).trim() === itemId || (maDonTab3 && String(data[i][8]).trim() === maDonTab3)) {
-            foundRowIndex = i + 1;
-            break;
-          }
-        }
-        const rowData = [itemId, ngayMua, taiKhoan, cuaHang, it.tenSP, cooldownDays, ngayKhaDung, trangThai, maDonTab3, ghiChu];
-        if (foundRowIndex > 0) {
-          pSheet.getRange(foundRowIndex, 1, 1, 10).setValues([rowData]);
-        } else {
-          rowsToAdd.push(rowData);
-        }
-      });
-      if (rowsToAdd.length > 0) {
-        pSheet.getRange(pSheet.getLastRow() + 1, 1, rowsToAdd.length, 10).setValues(rowsToAdd);
+
+      const rowData = [
+        itemId,              // 1: ID
+        ngayMua,             // 2: Ngày Mua
+        cuaHang,             // 3: Nơi mua
+        "Chờ Ship",          // 4: Trạng Thái Kho
+        it.tenSP,            // 5: Tên Sản Phẩm
+        it.qty,              // 6: Số Lượng
+        it.price,            // 7: Giá Mua (1 cái)
+        itemTotal,           // 8: Tổng Tiền
+        "Ví Tiền Mặt",       // 9: Nguồn Tiền Mua
+        "HOAN_TAT",          // 10: Trạng thái thẻ
+        ghiChu,              // 11: Note
+        0,                   // 12: Tồn kho
+        ngayMua,             // 13: Ngày Sao kê / SubID
+        taiKhoan,            // 14: Thông tin tài khoản mua
+        cooldownDays,        // 15: SoNgayCooldown
+        ngayKhaDung,         // 16: NgayKhaDung
+        trangThai            // 17: TrangThai (THANH_CONG)
+      ];
+
+      if (foundRowIndex > 0) {
+        pSheet.getRange(foundRowIndex, 1, 1, 17).setValues([rowData]);
+      } else {
+        rowsToAdd.push(rowData);
       }
+    });
+
+    if (rowsToAdd.length > 0) {
+      pSheet.getRange(pSheet.getLastRow() + 1, 1, rowsToAdd.length, 17).setValues(rowsToAdd);
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -704,9 +583,9 @@ function updatePurchaseLimitStatus(id, newStatus, ssTarget) {
     const targetStatus = String(newStatus || "DA_HUY").trim().toUpperCase();
     let updated = false;
 
-    // 1. Cập nhật trực tiếp Cột Q (Col 17) trong Sheet Purchase / MuaHang
+    // Cập nhật trực tiếp Cột Q (Col 17) trong Sheet Purchase
     if (ss) {
-      const pSheet = ss.getSheetByName("Purchase") || ss.getSheetByName("MuaHang");
+      const pSheet = ss.getSheetByName("Purchase");
       if (pSheet && pSheet.getLastRow() >= 2) {
         const lastColP = Math.max(pSheet.getLastColumn(), 17);
         const pData = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP).getValues();
@@ -731,22 +610,6 @@ function updatePurchaseLimitStatus(id, newStatus, ssTarget) {
           pSheet.getRange(2, 1, pData.length, lastColP).setValues(pData);
         }
       }
-
-      // 2. Cập nhật trong Sheet Calendar (nếu có)
-      const calSheet = ss.getSheetByName("Calendar") || ss.getSheetByName("LichMua");
-      if (calSheet && calSheet.getLastRow() >= 2) {
-        const calData = calSheet.getDataRange().getValues();
-        let calUpdated = false;
-        for (let i = 1; i < calData.length; i++) {
-          if (String(calData[i][0]).trim() === id || String(calData[i][8]).trim() === id) {
-            calData[i][7] = targetStatus;
-            calUpdated = true;
-          }
-        }
-        if (calUpdated) {
-          calSheet.getRange(1, 1, calData.length, calData[0].length).setValues(calData);
-        }
-      }
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -756,72 +619,27 @@ function updatePurchaseLimitStatus(id, newStatus, ssTarget) {
   }
 }
 
-function deletePurchaseLimitRecord(id) {
+function deletePurchaseLimitRecord(id, ssTarget) {
   try {
-    const sheet = getTab5Sheet();
+    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet!" };
+    const sheet = ss.getSheetByName("Purchase");
+    if (!sheet || sheet.getLastRow() < 2) return { success: false, error: "Không tìm thấy sheet Purchase!" };
+
     const data = sheet.getDataRange().getValues();
 
     for (let i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim() === id) {
+      const rowId = String(data[i][0] || "").trim();
+      const subId = String(data[i][12] || "").trim();
+      if (rowId === id || subId === id) {
         sheet.deleteRow(i + 1);
+        if (typeof clearAppDataCache === 'function') clearAppDataCache();
         return { success: true, id: id };
       }
     }
     return { success: false, error: "Không tìm thấy mã bản ghi: " + id };
   } catch (err) {
     return { success: false, error: err.toString() };
-  }
-}
-
-/**
- * TỰ ĐỘNG ĐỒNG BỘ ĐƠN MUA HÀNG TỪ TAB 3 SANG SHEET CALENDAR (TAB 5)
- */
-function syncPurchaseToTab5(formData, rowsToAppend, ssTarget) {
-  try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-    if (!ss) return;
-
-    const taiKhoanMua = String(formData.taiKhoanMua || "").trim();
-    if (!taiKhoanMua) return; // Không chọn tài khoản mua thì không cần đẩy sang Lịch Mua Cooldown Tab 5
-
-    const calSheet = getTab5Sheet(ss);
-    if (!calSheet) return;
-
-    const calRows = [];
-    const dateVal = formatBizDateServer ? formatBizDateServer(formData.ngay) : String(formData.ngay || "");
-    const storeName = String(formData.noiMua || "").trim();
-
-    rowsToAppend.forEach(r => {
-      const itemId = String(r[0]);
-      const tenSP = String(r[4]);
-      const cardStatus = String(r[9] || "HOAN_TAT");
-      const ghiChu = String(r[10] || "");
-      const tkMua = String(r[13] || taiKhoanMua);
-      const cooldownDays = Number(r[14]) || getDefaultCooldownDays(storeName);
-      const ngayKhaDung = String(r[15] || "");
-      const recStatus = (cardStatus === "PRE-ORDER") ? "PRE-ORDER" : "THANH_CONG";
-
-      calRows.push([
-        "CAL_" + itemId,     // A: ID
-        dateVal,            // B: NgayMua
-        tkMua,              // C: TaiKhoan
-        storeName,          // D: CuaHang
-        tenSP,              // E: TenSanPham
-        cooldownDays,       // F: SoNgayCooldown
-        ngayKhaDung,        // G: NgayKhaDung
-        recStatus,          // H: TrangThai
-        itemId,             // I: MaDonTab3
-        ghiChu              // J: GhiChu
-      ]);
-    });
-
-    if (calRows.length > 0) {
-      const startRow = calSheet.getLastRow() + 1;
-      calSheet.getRange(startRow, 1, calRows.length, 10).setValues(calRows);
-      if (typeof clearAppDataCache === 'function') clearAppDataCache();
-    }
-  } catch(err) {
-    console.error("Lỗi syncPurchaseToTab5: " + err.toString());
   }
 }
 

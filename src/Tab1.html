@@ -5,8 +5,29 @@
     <div class="pt-3 pb-3 px-4 text-white bg-blue-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
       <h1 class="text-base font-bold">🏦 Ngân Hàng</h1>
       <div class="flex gap-2 items-center">
-          <select id="t1-filter-month" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
-          <select id="t1-filter-year" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+          <select id="t1-filter-month" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer">
+              <option value="All" selected>All</option>
+              <option value="1">Tháng 1</option>
+              <option value="2">Tháng 2</option>
+              <option value="3">Tháng 3</option>
+              <option value="4">Tháng 4</option>
+              <option value="5">Tháng 5</option>
+              <option value="6">Tháng 6</option>
+              <option value="7">Tháng 7</option>
+              <option value="8">Tháng 8</option>
+              <option value="9">Tháng 9</option>
+              <option value="10">Tháng 10</option>
+              <option value="11">Tháng 11</option>
+              <option value="12">Tháng 12</option>
+          </select>
+          <select id="t1-filter-year" onchange="reloadTab1Data()" class="bg-blue-700/80 border border-blue-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer">
+              <option value="All" selected>All</option>
+              <option value="2024">Năm 2024</option>
+              <option value="2025">Năm 2025</option>
+              <option value="2026">Năm 2026</option>
+              <option value="2027">Năm 2027</option>
+              <option value="2028">Năm 2028</option>
+          </select>
       </div>
     </div>
 
@@ -15,8 +36,9 @@
       <div id="subtab-nav-bar" class="flex p-1 bg-slate-200 rounded-xl mb-3 shrink-0">
         <button onclick="switchSubTab('stats')" id="btn-stats" class="flex-1 py-1.5 text-[11px] font-bold bg-white text-blue-600 rounded-lg shadow-sm cursor-pointer transition">📊 Thống Kê</button>
         <button onclick="switchSubTab('card')" id="btn-card" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition">💳 Thẻ</button>
+        
         <button onclick="switchSubTab('card-info')" id="btn-card-info" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg cursor-pointer transition flex items-center justify-center gap-1">
-          <span>🔒 Thông Tin Thẻ</span>
+          <span>🔒 Bảo Mật</span>
         </button>
       </div>
 
@@ -89,25 +111,25 @@
              
              <div class="grid grid-cols-4 gap-1.5 text-center">
                  <!-- 🚚 Đơn Đợi Ship -->
-                 <div class="bg-amber-50/80 border border-amber-200/80 p-1.5 rounded-xl">
+                 <div onclick="navigateToBizStatus('cho_ship')" class="bg-amber-50/80 border border-amber-200/80 p-1.5 rounded-xl cursor-pointer hover:bg-amber-100 hover:border-amber-400 active:scale-95 transition-all shadow-2xs select-none" title="Xem danh sách đơn Đợi Ship">
                      <p class="text-[9px] font-bold text-amber-700">🚚 Đợi Ship</p>
                      <p id="t1-count-cho-ship" class="text-xs font-black text-amber-900 mt-0.5">0 đơn</p>
                  </div>
                  
                  <!-- ⏳ Đơn Pre-Order -->
-                 <div class="bg-indigo-50/80 border border-indigo-200/80 p-1.5 rounded-xl">
-                     <p class="text-[9px] font-bold text-indigo-700">⏳ Pre-Order</p>
+                 <div onclick="navigateToBizStatus('preorder')" class="bg-indigo-50/80 border border-indigo-200/80 p-1.5 rounded-xl cursor-pointer hover:bg-indigo-100 hover:border-indigo-400 active:scale-95 transition-all shadow-2xs select-none" title="Xem danh sách đơn Pre-Order">
+                      <p class="text-[9px] font-bold text-indigo-700">⏳ Đặt trước</p>
                      <p id="t1-count-preorder" class="text-xs font-black text-indigo-900 mt-0.5">0 đơn</p>
                  </div>
                  
                  <!-- 🤝 Đơn Khách Nợ -->
-                 <div class="bg-rose-50/80 border border-rose-200/80 p-1.5 rounded-xl">
+                 <div onclick="navigateToBizStatus('khach_no')" class="bg-rose-50/80 border border-rose-200/80 p-1.5 rounded-xl cursor-pointer hover:bg-rose-100 hover:border-rose-400 active:scale-95 transition-all shadow-2xs select-none" title="Xem danh sách đơn Khách Nợ">
                      <p class="text-[9px] font-bold text-rose-700">🤝 Khách Nợ</p>
                      <p id="t1-count-khach-no" class="text-xs font-black text-rose-900 mt-0.5">0 đơn</p>
                  </div>
                  
                  <!-- 🔄 Đơn Chờ Hoàn -->
-                 <div class="bg-purple-50/80 border border-purple-200/80 p-1.5 rounded-xl">
+                 <div onclick="navigateToBizStatus('cho_hoan')" class="bg-purple-50/80 border border-purple-200/80 p-1.5 rounded-xl cursor-pointer hover:bg-purple-100 hover:border-purple-400 active:scale-95 transition-all shadow-2xs select-none" title="Xem danh sách đơn Chờ Hoàn Tiền">
                      <p class="text-[9px] font-bold text-purple-700">🔄 Chờ Hoàn</p>
                      <p id="t1-count-cho-hoan" class="text-xs font-black text-purple-900 mt-0.5">0 đơn</p>
                  </div>
@@ -147,21 +169,29 @@
       </div>
 
       <!-- NỘI DUNG TAB: THÔNG TIN THẺ BẢO MẬT (PASSWORD PROTECTED) -->
-      <div id="subtab-card-info" class="space-y-3 hidden">
+            <div id="subtab-card-info" class="space-y-3 hidden">
         <div id="card-info-locked-placeholder" class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 text-center space-y-3">
           <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-inner">🔐</div>
           <h3 class="text-sm font-bold text-slate-800">Thông Tin Thẻ Đã Bị Khóa</h3>
           <p class="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">Vui lòng nhập mật khẩu để giải mã số thẻ, ngày hết hạn và mã CVV/CSV.</p>
-          <button onclick="openCardInfoAuthModal()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer">
-            🔓 Nhập Mật Khẩu Xem Thẻ
-          </button>
+          <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <button onclick="openCardInfoAuthModal()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer">
+              🔓 Nhập Mật Khẩu Xem Thẻ
+            </button>
+            <button onclick="t1_triggerMigrateCards()" class="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 border border-emerald-300 text-xs font-bold rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1">
+              <span>🛡️</span> <span>Mã Hóa Sheet Ngay</span>
+            </button>
+          </div>
         </div>
 
         <div id="card-info-unlocked-content" class="space-y-3 hidden">
           <div class="flex justify-between items-center bg-white p-2.5 px-3 rounded-xl border border-slate-200/90 shadow-xs">
             <h3 class="text-xs font-black text-slate-800 flex items-center gap-1 shrink-0">💳 Thông tin thẻ</h3>
             <div class="flex items-center gap-1 text-[10px] font-bold">
-              <button onclick="openAddCardSecurityModal()" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 border border-emerald-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
+              <button onclick="t1_triggerMigrateCards()" title="Mã hóa toàn bộ dữ liệu thẻ trên Google Sheet" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 border border-emerald-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
+                <span>🛡️</span> <span>Mã Hóa Sheet</span>
+              </button>
+              <button onclick="openAddCardSecurityModal()" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 active:scale-95 text-blue-700 border border-blue-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
                 <span>➕</span> <span>Thẻ</span>
               </button>
               <button id="btn-toggle-faceid-setting" onclick="t1_changeCustomPassword()" class="px-2 py-1 bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-700 border border-purple-200 rounded-lg transition cursor-pointer flex items-center gap-0.5 shrink-0">
@@ -171,6 +201,15 @@
                 <span>🔒</span> <span>Khóa</span>
               </button>
             </div>
+          </div>
+
+          <!-- SECURITY BADGE: 2-LAYER ENCRYPTION INDICATOR -->
+          <div class="flex items-center justify-between bg-emerald-50/80 border border-emerald-200/90 rounded-xl px-2.5 py-1.5 text-[10px] text-emerald-800">
+            <div class="flex items-center gap-1.5 font-bold">
+              <span class="text-xs">🛡️</span>
+              <span>Bảo mật 2 lớp: Database mã hóa HMAC-SHA256 • UI tự động Mask CVV & Số thẻ</span>
+            </div>
+            <span class="text-[9px] font-semibold text-emerald-600 bg-white px-1.5 py-0.5 rounded border border-emerald-200 shadow-2xs">Auto-lock 60s</span>
           </div>
 
           <!-- BAR TÌM KIẾM & BỘ LỌC DROPDOWN (KẾ BÊN Ô TÌM KIẾM) -->
@@ -304,7 +343,7 @@
 
   <!-- SỔ PHỤ VÍ DEBIT -->
   <div id="modal-statement-debit" class="modal-overlay">
-    <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
+    <div class="modal-content !p-0 h-[85%] max-h-[calc(100%-40px)] flex flex-col mb-0 rounded-b-none mt-auto">
       <div class="p-3 border-b bg-blue-50 flex justify-between items-center rounded-t-2xl">
         <div>
             <p class="text-[9px] uppercase text-blue-500 font-bold tracking-wider">Chi Tiết Giao Dịch</p>
@@ -312,14 +351,58 @@
         </div>
         <button type="button" onclick="closeModal('modal-statement-debit')" class="text-blue-600 hover:bg-blue-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
       </div>
-      <div class="flex-1 overflow-y-auto p-3 bg-white">
-        <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
+
+      <!-- Balance Header & Filters -->
+      <div class="p-2.5 px-3 bg-white border-b border-slate-100 space-y-2">
+        <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center border border-slate-200/80">
             <div class="flex items-center gap-1.5 truncate">
                 <span class="text-xs font-medium text-slate-500">Số dư trên App:</span>
                 <span id="debit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
             </div>
-            <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+            <div class="flex items-center gap-1">
+                <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-1.5 py-0.5 rounded-lg text-slate-700 font-bold shadow-xs cursor-pointer transition flex items-center gap-0.5" title="Điều chỉnh chênh lệch">🛠️ Lệch</button>
+                <button type="button" onclick="openCheckpointModalFromStatement()" class="shrink-0 text-[10px] bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-500 text-emerald-700 px-1.5 py-0.5 rounded-lg font-bold shadow-xs cursor-pointer transition flex items-center gap-0.5" title="Chốt số dư kỳ này làm mốc mới">📑 Chốt Sổ</button>
+                <button type="button" onclick="triggerRebuildWalletFromStatement()" class="shrink-0 text-[10px] bg-sky-50 border border-sky-300 hover:bg-sky-100 hover:border-sky-500 text-sky-700 px-1.5 py-0.5 rounded-lg font-bold shadow-xs cursor-pointer transition flex items-center gap-0.5" title="Rebuild lại số dư từ mốc chốt">🔄 Rebuild</button>
+            </div>
         </div>
+
+        <!-- Bộ Lọc Tháng - Năm & Tìm Kiếm -->
+        <div class="flex gap-1.5 items-center">
+            <div class="relative flex-1">
+                <input type="text" id="debit-st-search" oninput="filterStatementTransactions('debit')" placeholder="🔍 Tìm nội dung, tiền..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition" />
+            </div>
+            <select id="debit-st-month" onchange="filterStatementTransactions('debit')" class="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1 outline-none cursor-pointer focus:border-blue-500">
+                <option value="ALL">Cả năm</option>
+                <option value="1">Tháng 1</option>
+                <option value="2">Tháng 2</option>
+                <option value="3">Tháng 3</option>
+                <option value="4">Tháng 4</option>
+                <option value="5">Tháng 5</option>
+                <option value="6">Tháng 6</option>
+                <option value="7">Tháng 7</option>
+                <option value="8">Tháng 8</option>
+                <option value="9">Tháng 9</option>
+                <option value="10">Tháng 10</option>
+                <option value="11">Tháng 11</option>
+                <option value="12">Tháng 12</option>
+            </select>
+            <select id="debit-st-year" onchange="filterStatementTransactions('debit')" class="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1 outline-none cursor-pointer focus:border-blue-500">
+                <option value="ALL">Tất cả</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+                <option value="2031">2031</option>
+            </select>
+        </div>
+        <!-- Thống kê tổng sau lọc -->
+        <div id="debit-st-summary" class="flex justify-between items-center text-[10px] text-slate-500 px-0.5 font-medium"></div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 bg-white">
         <div id="debit-statement-list" class="space-y-2">
             <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
         </div>
@@ -329,7 +412,7 @@
 
   <!-- SỔ PHỤ THẺ TÍN DỤNG (CREDIT) -->
   <div id="modal-statement-credit" class="modal-overlay">
-    <div class="modal-content !p-0 h-[80%] max-h-[calc(100%-50px)] flex flex-col mb-0 rounded-b-none mt-auto">
+    <div class="modal-content !p-0 h-[85%] max-h-[calc(100%-40px)] flex flex-col mb-0 rounded-b-none mt-auto">
       <div class="p-3 border-b bg-rose-50 flex justify-between items-center rounded-t-2xl">
         <div>
             <p class="text-[9px] uppercase text-rose-500 font-bold tracking-wider">Lịch Sử Giao Dịch Thẻ</p>
@@ -337,14 +420,67 @@
         </div>
         <button type="button" onclick="closeModal('modal-statement-credit')" class="text-rose-600 hover:bg-rose-100 p-1.5 rounded-full font-bold text-base cursor-pointer leading-none">&times;</button>
       </div>
-      <div class="flex-1 overflow-y-auto p-3 bg-white">
-        <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center mb-2.5 border border-slate-200/80">
-            <div class="flex items-center gap-1.5 truncate">
-                <span class="text-xs font-medium text-slate-500">Dư nợ trên App:</span>
-                <span id="credit-statement-balance" class="text-xs font-bold text-slate-900">0 ¥</span>
+
+      <!-- Balance Header & Filters -->
+      <div class="p-2.5 px-3 bg-white border-b border-slate-100 space-y-2">
+        <div class="p-2 px-2.5 bg-slate-50 rounded-xl flex justify-between items-center border border-slate-200/80 gap-1.5">
+            <div id="credit-statement-balance" class="text-[11px] font-bold text-slate-900 flex items-center gap-1.5">
+                0 ¥
             </div>
-            <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-sm cursor-pointer transition flex items-center gap-1">🛠️ Sửa Chênh lệch</button>
+            <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="openAdjustModalFromStatement()" class="shrink-0 text-[10px] bg-white border border-slate-300 hover:border-amber-400 hover:text-amber-600 px-2 py-0.5 rounded-lg text-slate-700 font-bold shadow-xs cursor-pointer transition flex items-center gap-0.5" title="Điều chỉnh chênh lệch số dư">🛠️ Lệch</button>
+                <button type="button" onclick="openCheckpointModalFromStatement()" class="shrink-0 text-[10px] bg-emerald-50 border border-emerald-300 hover:bg-emerald-100 hover:border-emerald-500 text-emerald-700 px-2 py-0.5 rounded-lg font-bold shadow-xs cursor-pointer transition flex items-center gap-0.5" title="Chốt số dư kỳ này làm mốc an toàn">📑 Chốt Sổ</button>
+                <button type="button" onclick="triggerRebuildWalletFromStatement()" class="shrink-0 text-[10px] bg-sky-50 border border-sky-300 hover:bg-sky-100 hover:border-sky-500 text-sky-700 px-2 py-0.5 rounded-lg font-bold shadow-xs cursor-pointer transition flex items-center gap-0.5" title="Tính lại số dư chính xác từ mốc chốt gần nhất">🔄 Rebuild</button>
+            </div>
         </div>
+
+        <!-- Tab chuyển đổi Nợ Đã Sao Kê vs Pre-order -->
+        <div class="flex bg-slate-100 p-1 rounded-xl gap-1">
+            <button type="button" id="btn-credit-tab-debt" onclick="switchCreditStatementTab('debt')" class="flex-1 py-1.5 text-[11px] font-bold bg-white text-rose-600 rounded-lg shadow-xs transition flex items-center justify-center gap-1 cursor-pointer">
+                📑 Nợ Đã Sao Kê (<span id="credit-tab-debt-count">0</span>)
+            </button>
+            <button type="button" id="btn-credit-tab-preorder" onclick="switchCreditStatementTab('preorder')" class="flex-1 py-1.5 text-[11px] font-bold text-slate-600 hover:text-slate-900 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer">
+                ⏳ Pre-order (<span id="credit-tab-preorder-count">0</span>)
+            </button>
+        </div>
+
+        <!-- Bộ Lọc Tháng - Năm & Tìm Kiếm -->
+        <div class="flex gap-1.5 items-center">
+            <div class="relative flex-1">
+                <input type="text" id="credit-st-search" oninput="filterStatementTransactions('credit')" placeholder="🔍 Tìm nội dung, tiền..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-700 outline-none focus:border-rose-500 focus:bg-white transition" />
+            </div>
+            <select id="credit-st-month" onchange="filterStatementTransactions('credit')" class="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1 outline-none cursor-pointer focus:border-rose-500">
+                <option value="ALL">Cả năm</option>
+                <option value="1">Tháng 1</option>
+                <option value="2">Tháng 2</option>
+                <option value="3">Tháng 3</option>
+                <option value="4">Tháng 4</option>
+                <option value="5">Tháng 5</option>
+                <option value="6">Tháng 6</option>
+                <option value="7">Tháng 7</option>
+                <option value="8">Tháng 8</option>
+                <option value="9">Tháng 9</option>
+                <option value="10">Tháng 10</option>
+                <option value="11">Tháng 11</option>
+                <option value="12">Tháng 12</option>
+            </select>
+            <select id="credit-st-year" onchange="filterStatementTransactions('credit')" class="bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-bold rounded-lg px-2 py-1 outline-none cursor-pointer focus:border-rose-500">
+                <option value="ALL">Tất cả</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+                <option value="2031">2031</option>
+            </select>
+        </div>
+        <!-- Thống kê tổng sau lọc -->
+        <div id="credit-st-summary" class="flex justify-between items-center text-[10px] text-slate-500 px-0.5 font-medium"></div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 bg-white">
         <div id="credit-statement-list" class="space-y-2">
             <div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>
         </div>
@@ -416,6 +552,40 @@
     </div>
   </div>
 
+  <!-- MODAL CHỐT SỔ KỲ (CHECKPOINT SNAPSHOT) -->
+  <div id="modal-checkpoint-wallet" class="modal-overlay" style="z-index: 230;">
+    <div class="modal-content rounded-2xl border-t-4 border-emerald-500 !p-3.5 max-w-[340px] w-full">
+      <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
+        <h3 class="text-xs font-bold text-slate-900 flex items-center gap-1">📑 Chốt Sổ Kỳ (Checkpoint)</h3>
+        <button type="button" onclick="closeModal('modal-checkpoint-wallet')" class="text-slate-400 font-bold text-base cursor-pointer hover:text-slate-600">&times;</button>
+      </div>
+      <div class="space-y-2.5 text-xs">
+        <div class="bg-emerald-50/90 p-2.5 rounded-xl border border-emerald-200 text-emerald-900 space-y-1">
+            <p class="font-bold text-slate-800" id="cp-wallet-name-txt">Ví / Thẻ: --</p>
+            <p class="text-slate-600 text-[11px]" id="cp-wallet-last-checkpoint-txt">Thời gian đã chốt: <strong class="text-slate-700">Chưa chốt lần nào</strong></p>
+            <p class="text-[10px] text-slate-500 mt-1 leading-snug">
+              Sau khi chốt sổ, số tiền này sẽ trở thành <b>Số Dư Mốc Chốt Mới</b>. Hệ thống sẽ bắt đầu tính toán chu kỳ phát sinh mới từ mốc này, không cần quét lại lịch sử cũ.
+            </p>
+        </div>
+
+        <div>
+            <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số Dư Thực Tế Muốn Chốt Mốc (¥)</label>
+            <input type="number" id="cp-wallet-balance-input" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-emerald-800 outline-none focus:ring-1 focus:ring-emerald-500" placeholder="Nhập số dư thực tế..." />
+        </div>
+
+        <div>
+            <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Mốc Ngày Giờ Chốt Sổ</label>
+            <input type="text" id="cp-wallet-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-emerald-500" />
+        </div>
+
+        <div class="flex gap-2 pt-1">
+            <button type="button" onclick="closeModal('modal-checkpoint-wallet')" class="flex-1 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer">Hủy</button>
+            <button type="button" id="btn-submit-checkpoint" onclick="submitCheckpointWallet()" class="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white transition shadow-xs cursor-pointer">Xác Nhận Chốt</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL TẤT TOÁN THẺ TÍN DỤNG -->
   <div id="modal-settle-card" class="modal-overlay" style="z-index: 220;">
     <div class="modal-content rounded-2xl border-t-4 border-blue-500 !p-3.5 max-w-[340px] w-full">
@@ -427,6 +597,10 @@
         <div>
           <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Thẻ cần trả</label>
           <input type="text" id="settle-card-name" readonly class="w-full bg-blue-50 border border-blue-200 text-blue-700 font-bold rounded-lg px-2 py-1 text-xs outline-none cursor-not-allowed" />
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Ngày thanh toán / tất toán</label>
+          <input type="date" id="settle-date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 focus:ring-1 focus:ring-blue-400 outline-none" />
         </div>
         <div class="relative z-40">
           <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">Nguồn tiền lấy ra để trả</label>
@@ -542,10 +716,16 @@
 
         <!-- Section: Thẻ chính (Main Card: Cols L, M, N) -->
         <div class="bg-blue-50/70 border border-blue-200 p-2.5 rounded-xl space-y-2">
-          <p class="text-[10px] font-extrabold text-blue-800 uppercase flex items-center gap-1">💳 Thẻ Chính (Cột L, M, N)</p>
+          <p class="text-[10px] font-extrabold text-blue-800 uppercase flex items-center justify-between">
+            <span class="flex items-center gap-1">💳 Thẻ Chính (Cột L, M, N)</span>
+            <span class="text-[9px] text-blue-600 font-medium lowercase">🔒 tự động mã hóa</span>
+          </p>
           <div>
             <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số thẻ chính (16 số)</label>
-            <input type="text" id="sec-card-number" placeholder="XXXX XXXX XXXX XXXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+            <div class="relative">
+              <input type="password" id="sec-card-number" placeholder="XXXX XXXX XXXX XXXX" class="w-full bg-white border border-slate-300 rounded-lg pl-2 pr-7 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+              <button type="button" onclick="t1_toggleInputPassword('sec-card-number', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] cursor-pointer" title="Ẩn/Hiện">👁</button>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -554,21 +734,30 @@
             </div>
             <div>
               <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Mã CVV / CSV</label>
-              <input type="text" id="sec-card-cvv" placeholder="XXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+              <div class="relative">
+                <input type="password" id="sec-card-cvv" placeholder="XXX" maxlength="4" class="w-full bg-white border border-slate-300 rounded-lg pl-2 pr-7 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-blue-500" />
+                <button type="button" onclick="t1_toggleInputPassword('sec-card-cvv', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] cursor-pointer" title="Ẩn/Hiện">👁</button>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Section: Thẻ ảo (Virtual Card RevoChi: Cols O, P, Q, R) -->
         <div class="bg-purple-50/70 border border-purple-200 p-2.5 rounded-xl space-y-2">
-          <p class="text-[10px] font-extrabold text-purple-800 uppercase flex items-center gap-1">✨ Thẻ Ảo (RevoChi / Virtual Card: Cột O, P, Q, R)</p>
+          <p class="text-[10px] font-extrabold text-purple-800 uppercase flex items-center justify-between">
+            <span class="flex items-center gap-1">✨ Thẻ Ảo (RevoChi: Cột O, P, Q, R)</span>
+            <span class="text-[9px] text-purple-600 font-medium lowercase">🔒 tự động mã hóa</span>
+          </p>
           <div>
             <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Tên Thẻ Ảo</label>
             <input type="text" id="sec-vcard-name" placeholder="VD: RevoChi Shopping..." class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
           </div>
           <div>
             <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">Số Thẻ Ảo</label>
-            <input type="text" id="sec-vcard-number" placeholder="XXXX XXXX XXXX XXXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+            <div class="relative">
+              <input type="password" id="sec-vcard-number" placeholder="XXXX XXXX XXXX XXXX" class="w-full bg-white border border-slate-300 rounded-lg pl-2 pr-7 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+              <button type="button" onclick="t1_toggleInputPassword('sec-vcard-number', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] cursor-pointer" title="Ẩn/Hiện">👁</button>
+            </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -577,13 +766,16 @@
             </div>
             <div>
               <label class="block text-[9px] font-bold text-slate-600 uppercase mb-0.5">CVV / CSV Thẻ Ảo</label>
-              <input type="text" id="sec-vcard-cvv" placeholder="XXX" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+              <div class="relative">
+                <input type="password" id="sec-vcard-cvv" placeholder="XXX" maxlength="4" class="w-full bg-white border border-slate-300 rounded-lg pl-2 pr-7 py-1 font-mono text-xs font-bold text-slate-800 outline-none focus:ring-1 focus:ring-purple-500" />
+                <button type="button" onclick="t1_toggleInputPassword('sec-vcard-cvv', this)" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-[10px] cursor-pointer" title="Ẩn/Hiện">👁</button>
+              </div>
             </div>
           </div>
         </div>
 
         <button id="btn-submit-sec-details" onclick="submitCardSecurityDetails()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer transition">
-          💾 Lưu Thông Tin Bảo Mật
+          💾 Mã Hóa & Lưu Bảo Mật Vào Database
         </button>
       </div>
     </div>
@@ -634,18 +826,80 @@
         const d = new Date();
         const currYear = d.getFullYear();
 
-        let monthHTML = '<option value="ALL" selected>ALL</option>';
-        for (let i = 1; i <= 12; i++) {
-            monthHTML += `<option value="${i}">Tháng ${i}</option>`;
+        if (monthSelect.options.length === 0) {
+            let monthHTML = '<option value="All" selected>All</option>';
+            for (let i = 1; i <= 12; i++) {
+                monthHTML += `<option value="${i}">Tháng ${i}</option>`;
+            }
+            monthSelect.innerHTML = monthHTML;
+            monthSelect.value = "All";
         }
-        monthSelect.innerHTML = monthHTML;
 
-        let yearHTML = '<option value="ALL" selected>ALL</option>';
-        for (let y = 2024; y <= currYear + 5; y++) {
-            yearHTML += `<option value="${y}">Năm ${y}</option>`;
+        if (yearSelect.options.length === 0) {
+            let yearHTML = '<option value="All" selected>All</option>';
+            for (let y = 2024; y <= Math.max(2031, currYear + 5); y++) {
+                yearHTML += `<option value="${y}">Năm ${y}</option>`;
+            }
+            yearSelect.innerHTML = yearHTML;
+            yearSelect.value = "All";
         }
-        yearSelect.innerHTML = yearHTML;
     }
+
+    function t1_extractBaseOrderId(rawId) {
+        if (!rawId) return '';
+        const str = String(rawId).trim();
+        const match = str.match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+        if (match && match[1]) {
+            return match[1];
+        }
+        return str;
+    }
+    if (typeof window.extractBaseOrderId !== 'function') {
+        window.extractBaseOrderId = t1_extractBaseOrderId;
+    }
+
+    function t1_getCanonicalTab3Counts(t3) {
+        if (!t3) return null;
+        const extractId = typeof t1_extractBaseOrderId === 'function' ? t1_extractBaseOrderId : (typeof window.extractBaseOrderId === 'function' ? window.extractBaseOrderId : function(id) {
+            if (!id) return '';
+            const m = String(id).trim().match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+            return m ? m[1] : String(id).trim();
+        });
+
+        const preOrderIdsSet = new Set((t3.preOrders || []).map(it => String(it.id || '').trim()));
+        const refundIdsSet = new Set((t3.cancelledRefundPending || []).map(it => String(it.id || '').trim()));
+
+        const choShipKeys = new Set();
+        (t3.inventory || []).forEach(it => {
+            const rawId = String(it.id || '').trim();
+            if (refundIdsSet.has(rawId)) return;
+            if (preOrderIdsSet.has(rawId)) return;
+
+            const wh = String(it.trangThaiKho || '').trim().toLowerCase();
+            const isCancelled = wh.includes('hủy') || wh.includes('cancel');
+            if (isCancelled) return;
+
+            if (wh === 'chờ ship' || wh === 'cho ship') {
+                const baseId = extractId(rawId) || rawId;
+                choShipKeys.add(baseId);
+            }
+        });
+
+        const preKeys = new Set();
+        (t3.preOrders || []).forEach(it => {
+            const rawId = String(it.id || '').trim();
+            const baseId = extractId(rawId) || rawId;
+            preKeys.add(baseId);
+        });
+
+        return {
+            choShip: choShipKeys.size,
+            preorder: preKeys.size,
+            khachNo: (t3.debtSales || []).length,
+            choHoan: (t3.cancelledRefundPending || []).length
+        };
+    }
+    window.t1_getCanonicalTab3Counts = t1_getCanonicalTab3Counts;
 
     function initTab1() {
         t1_initDateFilters();
@@ -659,18 +913,30 @@
     function forceReloadAllAppData() {
       const monthSelect = document.getElementById('t1-filter-month');
       const yearSelect = document.getElementById('t1-filter-year');
-      const month = monthSelect ? monthSelect.value : 'ALL';
-      const year = yearSelect ? yearSelect.value : 'ALL';
+      const month = monthSelect ? monthSelect.value : 'All';
+      const year = yearSelect ? yearSelect.value : 'All';
       showToast("🔄 Đang làm mới dữ liệu từ Google Sheet...");
+
+      if (typeof clearAllLocalTabCaches === 'function') clearAllLocalTabCaches();
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
           google.script.run.withSuccessHandler(function(res) {
               if (res && res.success) {
                   window.SERVER_INITIAL_DATA = res;
-                  if (res.wallets) window.t1_walletsData = res.wallets;
+                  if (res.wallets) {
+                      window.t1_walletsData = res.wallets;
+                      t1_walletsData = res.wallets;
+                  }
                   if (res.tab3 && res.tab3.summary) window.t1_tab3Summary = res.tab3.summary;
+                  else if (res.tab3Summary) window.t1_tab3Summary = res.tab3Summary;
+                  if (res.tab4) window.t1_tab4Data = res.tab4;
                   if (res.pendingPreOrders) window.t1_pendingPreOrders = res.pendingPreOrders;
                   if (res.orderCounts) window.t1_orderCounts = res.orderCounts;
+                  try {
+                      localStorage.setItem('APP_LOCAL_CACHE_V25', JSON.stringify(res));
+                      localStorage.setItem('T1_CACHE_V25_' + month + '_' + year, JSON.stringify(res));
+                      localStorage.setItem('T1_CACHE_V25_LATEST', JSON.stringify(res));
+                  } catch(e) {}
                   renderTab1Wallets();
                   renderTab1PendingPreOrders();
                   if (typeof applyTab3Data === 'function' && res.tab3) applyTab3Data(res.tab3);
@@ -691,21 +957,21 @@
       const mSel = document.getElementById('t1-filter-month');
       const ySel = document.getElementById('t1-filter-year');
       if (mSel && mSel.options.length === 0) {
-          let htmlM = '<option value="ALL">ALL</option>';
+          let htmlM = '<option value="All">All</option>';
           for (let i = 1; i <= 12; i++) {
               htmlM += `<option value="${i}">Tháng ${i}</option>`;
           }
           mSel.innerHTML = htmlM;
-          mSel.value = "ALL";
+          mSel.value = "All";
       }
       if (ySel && ySel.options.length === 0) {
-          let htmlY = '<option value="ALL">ALL</option>';
+          let htmlY = '<option value="All">All</option>';
           const currentY = new Date().getFullYear();
-          for (let y = currentY - 2; y <= currentY + 2; y++) {
+          for (let y = 2024; y <= Math.max(2031, currentY + 5); y++) {
               htmlY += `<option value="${y}">Năm ${y}</option>`;
           }
           ySel.innerHTML = htmlY;
-          ySel.value = "ALL";
+          ySel.value = "All";
       }
   }
 
@@ -714,46 +980,70 @@
         t1_initMonthYearFilters();
         const monthSelect = document.getElementById('t1-filter-month');
         const yearSelect = document.getElementById('t1-filter-year');
-        const month = (monthSelect && monthSelect.value && monthSelect.value !== '') ? monthSelect.value : 'ALL';
-        const year = (yearSelect && yearSelect.value && yearSelect.value !== '') ? yearSelect.value : 'ALL';
+        const month = (monthSelect && monthSelect.value && monthSelect.value !== '') ? monthSelect.value : 'All';
+        const year = (yearSelect && yearSelect.value && yearSelect.value !== '') ? yearSelect.value : 'All';
 
-        // Instant render from local cache if available
-        try {
-            const cached = localStorage.getItem('T1_CACHE_V18_' + month + '_' + year) || localStorage.getItem('T1_CACHE_V18_LATEST');
-            if (cached) {
-                const cData = JSON.parse(cached);
-                if (cData && Array.isArray(cData.wallets)) {
-                    t1_walletsData = cData.wallets;
-                    if (cData.tab3 && cData.tab3.summary) window.t1_tab3Summary = cData.tab3.summary;
-                    else if (cData.tab3Summary) window.t1_tab3Summary = cData.tab3Summary;
-                    if (cData.pendingPreOrders) window.t1_pendingPreOrders = cData.pendingPreOrders;
-                    if (cData.orderCounts) window.t1_orderCounts = cData.orderCounts;
+        // Instant render from local cache ONLY on cold start if t1_walletsData is empty
+        if (!window.t1_walletsData || window.t1_walletsData.length === 0) {
+            try {
+                const cached = localStorage.getItem('T1_CACHE_V25_' + month + '_' + year) || localStorage.getItem('T1_CACHE_V25_LATEST');
+                if (cached) {
+                    const cData = JSON.parse(cached);
+                    if (cData && Array.isArray(cData.wallets) && cData.wallets.length > 0) {
+                        t1_walletsData = cData.wallets;
+                        window.t1_walletsData = cData.wallets;
+                        if (cData.tab3 && cData.tab3.summary) window.t1_tab3Summary = cData.tab3.summary;
+                        else if (cData.tab3Summary) window.t1_tab3Summary = cData.tab3Summary;
+                        if (cData.tab4) window.t1_tab4Data = cData.tab4;
+                        if (cData.pendingPreOrders) window.t1_pendingPreOrders = cData.pendingPreOrders;
+                        if (cData.orderCounts) window.t1_orderCounts = cData.orderCounts;
+                        renderTab1Wallets();
+                        renderTab1PendingPreOrders();
+                    }
+                }
+            } catch(e) {}
+
+            if (window.SERVER_INITIAL_DATA && Array.isArray(window.SERVER_INITIAL_DATA.wallets) && window.SERVER_INITIAL_DATA.wallets.length > 0) {
+                t1_walletsData = window.SERVER_INITIAL_DATA.wallets;
+                window.t1_walletsData = window.SERVER_INITIAL_DATA.wallets;
+                if (window.SERVER_INITIAL_DATA.tab3 && window.SERVER_INITIAL_DATA.tab3.summary) window.t1_tab3Summary = window.SERVER_INITIAL_DATA.tab3.summary;
+                else if (window.SERVER_INITIAL_DATA.tab3Summary) window.t1_tab3Summary = window.SERVER_INITIAL_DATA.tab3Summary;
+                if (window.SERVER_INITIAL_DATA.tab4) window.t1_tab4Data = window.SERVER_INITIAL_DATA.tab4;
+                if (window.SERVER_INITIAL_DATA.pendingPreOrders) window.t1_pendingPreOrders = window.SERVER_INITIAL_DATA.pendingPreOrders;
+                if (window.SERVER_INITIAL_DATA.orderCounts) window.t1_orderCounts = window.SERVER_INITIAL_DATA.orderCounts;
+                renderTab1Wallets();
+                renderTab1PendingPreOrders();
+            }
+        }
+
+        // Avoid concurrent duplicate getAppData when Index.html is already loading global data
+        const isDefaultAll = (!month || month === 'All' || String(month).toUpperCase() === 'ALL') && (!year || year === 'All' || String(year).toUpperCase() === 'ALL');
+        if (isDefaultAll && window.isAppDataLoading) {
+            const checkDone = setInterval(function() {
+                if (!window.isAppDataLoading) {
+                    clearInterval(checkDone);
                     renderTab1Wallets();
                     renderTab1PendingPreOrders();
                 }
-            }
-        } catch(e) {}
-
-        if (window.SERVER_INITIAL_DATA && Array.isArray(window.SERVER_INITIAL_DATA.wallets) && window.SERVER_INITIAL_DATA.wallets.length > 0) {
-            t1_walletsData = window.SERVER_INITIAL_DATA.wallets;
-            if (window.SERVER_INITIAL_DATA.tab3 && window.SERVER_INITIAL_DATA.tab3.summary) window.t1_tab3Summary = window.SERVER_INITIAL_DATA.tab3.summary;
-            if (window.SERVER_INITIAL_DATA.pendingPreOrders) window.t1_pendingPreOrders = window.SERVER_INITIAL_DATA.pendingPreOrders;
-            if (window.SERVER_INITIAL_DATA.orderCounts) window.t1_orderCounts = window.SERVER_INITIAL_DATA.orderCounts;
-            renderTab1Wallets();
-            renderTab1PendingPreOrders();
+            }, 300);
+            setTimeout(function() { clearInterval(checkDone); }, 15000);
+            return;
         }
 
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
             google.script.run.withSuccessHandler(function(res) {
                 if (res && res.success) {
                     window.SERVER_INITIAL_DATA = res;
-                    t1_walletsData = res.wallets || [];
+                    window.t1_walletsData = res.wallets || [];
+                    t1_walletsData = window.t1_walletsData;
                     if (res.tab3 && res.tab3.summary) window.t1_tab3Summary = res.tab3.summary;
+                    else if (res.tab3Summary) window.t1_tab3Summary = res.tab3Summary;
+                    if (res.tab4) window.t1_tab4Data = res.tab4;
                     if (res.pendingPreOrders) window.t1_pendingPreOrders = res.pendingPreOrders;
                     if (res.orderCounts) window.t1_orderCounts = res.orderCounts;
                     try {
-                        localStorage.setItem('T1_CACHE_V18_' + month + '_' + year, JSON.stringify(res));
-                        localStorage.setItem('T1_CACHE_V18_LATEST', JSON.stringify(res));
+                        localStorage.setItem('T1_CACHE_V25_' + month + '_' + year, JSON.stringify(res));
+                        localStorage.setItem('T1_CACHE_V25_LATEST', JSON.stringify(res));
                     } catch(e) {}
                 }
                 renderTab1Wallets();
@@ -770,7 +1060,11 @@
                 { id: "W002", name: "Thẻ Ufj (ATM)", type: "DEBIT", credit_limit: 0, closing_date: "", due_date: "", current_balance: 800000 },
                 { id: "W003", name: "Ví Tiền Mặt", type: "DEBIT", credit_limit: 0, closing_date: "", due_date: "", current_balance: 500000 }
             ];
+            window.t1_walletsData = t1_walletsData;
             renderTab1Wallets();
+        } else {
+            renderTab1Wallets();
+            renderTab1PendingPreOrders();
         }
     }
 
@@ -783,44 +1077,36 @@
     }
 
     function getCreditCardMetrics(w) {
-        const rawBal = parseMoneyNumber(w.current_balance);
         const limit = parseMoneyNumber(w.credit_limit || w.limit || 0);
-
         let debt = 0;
-        let available = limit;
-
-        if (rawBal < 0) {
-            debt = Math.abs(rawBal);
-            available = limit > 0 ? Math.max(0, limit - debt) : 0;
-        } else if (rawBal > 0) {
-            if (limit > 0 && rawBal > limit / 2 && rawBal <= limit) {
-                // If rawBal stored available credit
-                available = rawBal;
-                debt = Math.max(0, limit - available);
-            } else {
-                debt = rawBal;
-                available = limit > 0 ? Math.max(0, limit - debt) : 0;
-            }
+        if (w.debt !== undefined) {
+            debt = parseMoneyNumber(w.debt);
+        } else if (w.statement_debt !== undefined) {
+            debt = parseMoneyNumber(w.statement_debt);
         } else {
-            debt = 0;
-            available = limit;
+            const raw = parseMoneyNumber(w.current_balance);
+            debt = raw < 0 ? Math.abs(raw) : (raw > 0 && raw < limit ? raw : 0);
         }
 
-        const percent = limit > 0 ? Math.min(100, Math.max(0, Math.round((debt / limit) * 100))) : 0;
+        const preorder = Math.max(0, parseMoneyNumber(w.preorder !== undefined ? w.preorder : (w.pending_preorder !== undefined ? w.pending_preorder : (w.preorder_amount || 0))));
+        let available = 0;
+        if (limit > 0) {
+            available = Math.max(0, limit - debt - preorder);
+        }
+
+        const percent = limit > 0 ? Math.min(100, Math.max(0, Math.round(((debt + preorder) / limit) * 100))) : 0;
 
         return {
-            rawBal: rawBal,
+            rawBal: parseMoneyNumber(w.current_balance),
             limit: limit,
             debt: debt,
+            preorder: preorder,
             available: available,
             percent: percent
         };
     }
 
-        function renderTab1Wallets() {
-        const cardContainer = document.getElementById('subtab-card');
-        if (!cardContainer) return;
-
+    function renderTab1Wallets() {
         const searchQ = (document.getElementById('t1-search-input')?.value || '').toLowerCase().trim();
         const filterType = document.getElementById('t1-filter-type')?.value || 'ALL';
 
@@ -828,7 +1114,17 @@
         let totalCashDebit = 0;
         let totalCreditLimit = 0;
 
-        (t1_walletsData || []).forEach(w => {
+        const walletsSource = (window.t1_walletsData && window.t1_walletsData.length > 0) 
+            ? window.t1_walletsData 
+            : ((t1_walletsData && t1_walletsData.length > 0) 
+                ? t1_walletsData 
+                : ((window.SERVER_INITIAL_DATA && Array.isArray(window.SERVER_INITIAL_DATA.wallets) && window.SERVER_INITIAL_DATA.wallets.length > 0) 
+                    ? window.SERVER_INITIAL_DATA.wallets 
+                    : ((window.NGUON_LIST && window.NGUON_LIST.length > 0) ? window.NGUON_LIST : [])));
+        window.t1_walletsData = walletsSource;
+        t1_walletsData = walletsSource;
+
+        walletsSource.forEach(w => {
             const rawBal = parseMoneyNumber(w.current_balance);
             if (w.type === 'CREDIT') {
                 const metrics = getCreditCardMetrics(w);
@@ -839,8 +1135,17 @@
             }
         });
 
-        const netWorthCashOnly = totalCashDebit - totalCreditDebt;
-        
+        if (t1_activeWalletForStatement && walletsSource.length > 0) {
+            const activeMatch = walletsSource.find(w => String(w.name || '').trim().toLowerCase() === String(t1_activeWalletForStatement.name || '').trim().toLowerCase());
+            if (activeMatch) {
+                t1_activeWalletForStatement = Object.assign({}, activeMatch);
+                const debBalEl = document.getElementById('debit-statement-balance');
+                if (debBalEl) debBalEl.innerText = Number(activeMatch.current_balance || 0).toLocaleString() + ' ¥';
+                const credBalEl = document.getElementById('credit-statement-balance');
+                if (credBalEl) credBalEl.innerText = Math.abs(Number(activeMatch.current_balance || 0)).toLocaleString() + ' ¥';
+            }
+        }
+
         let inventoryValue = 0;
         let receivables = 0;
         let payables = 0;
@@ -849,13 +1154,16 @@
         let netProfit = 0;
 
         const monthSelect = document.getElementById('t1-filter-month');
-        const monthVal = monthSelect ? monthSelect.value : 'ALL';
+        const monthVal = monthSelect ? monthSelect.value : 'All';
         const badgeEl = document.getElementById('t1-biz-summary-badge');
         if (badgeEl) {
-            badgeEl.innerText = monthVal === 'ALL' ? 'ALL' : ('Tháng ' + monthVal);
+            badgeEl.innerText = (!monthVal || monthVal === 'All' || String(monthVal).toUpperCase() === 'ALL') ? 'All' : ('Tháng ' + monthVal);
         }
 
-        const tab3Summary = window.t1_tab3Summary || (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3 ? window.SERVER_INITIAL_DATA.tab3.summary : null);
+        const tab3Summary = window.t1_tab3Summary || 
+                            (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3 ? window.SERVER_INITIAL_DATA.tab3.summary : null) || 
+                            (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab3Summary ? window.SERVER_INITIAL_DATA.tab3Summary : null) || 
+                            (window.lastTab3Res ? window.lastTab3Res.summary : null);
         if (tab3Summary) {
             inventoryValue = tab3Summary.stockValue || 0;
             totalSales = tab3Summary.sales || 0;
@@ -863,34 +1171,42 @@
             netProfit = tab3Summary.net || 0;
         }
 
-        const initialTab4 = (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4) ? window.SERVER_INITIAL_DATA.tab4 : null;
+        const initialTab4 = window.t1_tab4Data || 
+                            (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab4 ? window.SERVER_INITIAL_DATA.tab4 : null) || 
+                            window.lastTab4Data || 
+                            window.rawTab4Data || 
+                            null;
         if (initialTab4) {
-            // Thử lấy từ backend summary trước
             if (initialTab4.summary) {
                 receivables = initialTab4.summary.receivables || 0;
                 payables = initialTab4.summary.payables || 0;
             }
             
-            // NẾU backend trả về 0, ta tính lại trên frontend hệt như Tab 4 để dự phòng
-            if (receivables === 0 && payables === 0 && Array.isArray(initialTab4.allDebts)) {
-                let sumThu = 0;
-                let sumTra = 0;
-                initialTab4.allDebts.forEach(d => {
-                    if (d.trangThai === 'DANG_NO' || d.duNo > 0) {
-                        const lUp = String(d.loai || '').toUpperCase();
-                        const tUp = (String(d.ten || '') + ' ' + String(d.noidung || '')).toUpperCase();
-                        const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
-                        if (isThu) sumThu += (d.duNo || 0);
-                        else sumTra += (d.duNo || 0);
-                    }
-                });
-                receivables = sumThu;
-                payables = sumTra;
+            if (receivables === 0 && payables === 0) {
+                const debtList = initialTab4.allDebts || initialTab4.debts || [];
+                if (Array.isArray(debtList) && debtList.length > 0) {
+                    let sumThu = 0;
+                    let sumTra = 0;
+                    debtList.forEach(d => {
+                        if (d.trangThai === 'DANG_NO' || d.duNo > 0) {
+                            const lUp = String(d.loai || '').toUpperCase();
+                            const tUp = (String(d.ten || '') + ' ' + String(d.noidung || '')).toUpperCase();
+                            const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+                            if (isThu) sumThu += (d.duNo || 0);
+                            else sumTra += (d.duNo || 0);
+                        }
+                    });
+                    receivables = sumThu;
+                    payables = sumTra;
+                }
             }
         }
 
-        const totalAssets = totalCashDebit + receivables;
+        // TỔNG TÀI SẢN = Tiền mặt/Ví + Tồn kho + Khách nợ/Cho vay
+        const totalAssets = totalCashDebit + inventoryValue + receivables;
+        // TỔNG NỢ = Nợ thẻ tín dụng + Nợ phải trả/vay
         const totalLiabilities = totalCreditDebt + payables;
+        // TÀI SẢN RÒNG (VỐN THỰC CÓ) = Tổng tài sản - Tổng nợ
         const netWorth = totalAssets - totalLiabilities;
 
         const setTxt = (id, val, colorClass = '') => {
@@ -920,24 +1236,31 @@
         setTxt('t6-net-profit', netProfit, 'text-emerald-600');
 
         // Cập nhật số lượng 4 loại đơn hàng & công nợ cho phần Thống kê
-        const counts = window.t1_orderCounts || (window.SERVER_INITIAL_DATA ? window.SERVER_INITIAL_DATA.orderCounts : null) || {};
+        const t3Source = window.lastTab3Res || (window.SERVER_INITIAL_DATA ? window.SERVER_INITIAL_DATA.tab3 : null);
+        const canonCounts = (typeof t1_getCanonicalTab3Counts === 'function') ? t1_getCanonicalTab3Counts(t3Source) : null;
+        const counts = canonCounts || window.t1_orderCounts || (window.SERVER_INITIAL_DATA ? window.SERVER_INITIAL_DATA.orderCounts : null) || {};
         const choShipEl = document.getElementById('t1-count-cho-ship');
         const preorderEl = document.getElementById('t1-count-preorder');
         const khachNoEl = document.getElementById('t1-count-khach-no');
         const choHoanEl = document.getElementById('t1-count-cho-hoan');
 
-        const valChoShip = counts.choShip !== undefined ? counts.choShip : (tab3Summary && tab3Summary.choShipCount !== undefined ? tab3Summary.choShipCount : 0);
-        const valPreorder = counts.preorder !== undefined ? counts.preorder : (window.t1_pendingPreOrders ? window.t1_pendingPreOrders.length : (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.pendingPreOrders ? window.SERVER_INITIAL_DATA.pendingPreOrders.length : 0));
-        const valKhachNo = counts.khachNo !== undefined ? counts.khachNo : (tab3Summary && tab3Summary.debtSalesCount !== undefined ? tab3Summary.debtSalesCount : 0);
-        const valChoHoan = counts.choHoan !== undefined ? counts.choHoan : (tab3Summary && tab3Summary.pendingRefundCount !== undefined ? tab3Summary.pendingRefundCount : 0);
+        const valChoShip = (canonCounts && canonCounts.choShip !== undefined) ? canonCounts.choShip : (counts.choShip !== undefined ? counts.choShip : (tab3Summary && tab3Summary.choShipCount !== undefined ? tab3Summary.choShipCount : 0));
+        const preList = window.t1_pendingPreOrders || (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.pendingPreOrders ? window.SERVER_INITIAL_DATA.pendingPreOrders : []);
+        const fallbackPreorderCount = preList && preList.length > 0 ? (new Set(preList.map(it => (typeof t1_extractBaseOrderId === 'function' ? t1_extractBaseOrderId(it.id) : (typeof window.extractBaseOrderId === 'function' ? window.extractBaseOrderId(it.id) : it.id)) || it.id))).size : 0;
+        const valPreorder = (canonCounts && canonCounts.preorder !== undefined) ? canonCounts.preorder : (counts.preorder !== undefined ? counts.preorder : fallbackPreorderCount);
+        const valKhachNo = (canonCounts && canonCounts.khachNo !== undefined) ? canonCounts.khachNo : (counts.khachNo !== undefined ? counts.khachNo : (tab3Summary && tab3Summary.debtSalesCount !== undefined ? tab3Summary.debtSalesCount : 0));
+        const valChoHoan = (canonCounts && canonCounts.choHoan !== undefined) ? canonCounts.choHoan : (counts.choHoan !== undefined ? counts.choHoan : (tab3Summary && tab3Summary.pendingRefundCount !== undefined ? tab3Summary.pendingRefundCount : 0));
 
         if (choShipEl) choShipEl.innerText = valChoShip + ' đơn';
         if (preorderEl) preorderEl.innerText = valPreorder + ' đơn';
         if (khachNoEl) khachNoEl.innerText = valKhachNo + ' đơn';
         if (choHoanEl) choHoanEl.innerText = valChoHoan + ' đơn';
 
-        let creditList = (t1_walletsData || []).filter(w => w.type === 'CREDIT');
-        let debitList = (t1_walletsData || []).filter(w => w.type !== 'CREDIT');
+        const cardContainer = document.getElementById('subtab-card');
+        if (!cardContainer) return;
+
+        let creditList = walletsSource.filter(w => w.type === 'CREDIT');
+        let debitList = walletsSource.filter(w => w.type !== 'CREDIT');
 
         if (searchQ) {
             creditList = creditList.filter(w => (w.name || '').toLowerCase().includes(searchQ));
@@ -958,6 +1281,7 @@
                 creditList.forEach(w => {
                     const metrics = getCreditCardMetrics(w);
                     const debt = metrics.debt;
+                    const preorder = metrics.preorder;
                     const available = metrics.available;
                     const percent = metrics.percent;
                     const limit = metrics.limit;
@@ -981,13 +1305,15 @@
                             </div>
                         </div>
                         
-                        <div class="flex justify-between items-center text-[10px] pt-1 border-t border-slate-100 gap-1 flex-wrap">
-                            <div class="flex items-center gap-2">
+                        <div class="flex justify-between items-center text-[9px] pt-1 border-t border-slate-100 gap-1 overflow-x-auto no-scrollbar whitespace-nowrap">
+                            <div class="flex items-center gap-1.5 shrink-0">
                                 <span>Nợ: <b class="text-rose-600 font-bold">${debt.toLocaleString()} ¥</b></span>
+                                <span class="text-slate-300">|</span>
+                                <span>Pre-order: <b class="text-amber-600 font-bold">${preorder.toLocaleString()} ¥</b></span>
                                 <span class="text-slate-300">|</span>
                                 <span>KD: <b class="text-emerald-700 font-bold">${available.toLocaleString()} ¥</b></span>
                             </div>
-                            <div class="text-[9px] text-slate-400">
+                            <div class="text-[9px] text-slate-400 shrink-0 pl-1">
                                 Hạn mức: ${limit.toLocaleString()} ¥ (${percent}%)
                             </div>
                         </div>
@@ -1126,6 +1452,89 @@
         reloadTab1Data();
     });
 
+    function navigateToBizStatus(type) {
+        if (typeof switchAppTab === 'function') {
+            switchAppTab('tab3', 'text-amber-500');
+        }
+
+        setTimeout(() => {
+            if (type === 'cho_ship') {
+                if (typeof switchBizTab === 'function') {
+                    switchBizTab('donhang');
+                }
+                const whSelect = document.getElementById('filter-combined-wh');
+                if (whSelect) {
+                    let foundVal = '';
+                    for (let i = 0; i < whSelect.options.length; i++) {
+                        const optVal = whSelect.options[i].value.toLowerCase();
+                        if (optVal.includes('chờ ship') || optVal.includes('cho ship')) {
+                            foundVal = whSelect.options[i].value;
+                            break;
+                        }
+                    }
+                    if (!foundVal) {
+                        const opt = document.createElement('option');
+                        opt.value = 'Chờ Ship';
+                        opt.text = '🚚 Chờ Ship';
+                        whSelect.appendChild(opt);
+                        foundVal = 'Chờ Ship';
+                    }
+                    whSelect.value = foundVal;
+                }
+                const typeSelect = document.getElementById('filter-combined-type');
+                if (typeSelect) typeSelect.value = 'PURCHASE';
+                const searchInput = document.getElementById('search-combined-orders');
+                if (searchInput) searchInput.value = '';
+                if (typeof filterCombinedOrdersList === 'function') {
+                    filterCombinedOrdersList(1);
+                }
+                const ordersCont = document.getElementById('biz-donhang');
+                if (ordersCont) ordersCont.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (typeof showToast === 'function') showToast("🚚 Đang lọc: Danh sách đơn Đợi Ship");
+            } else if (type === 'preorder') {
+                if (typeof switchBizTab === 'function') {
+                    switchBizTab('choxuly');
+                }
+                setTimeout(() => {
+                    const card = document.getElementById('pre-order-container')?.closest('.bg-white');
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        card.classList.add('ring-2', 'ring-blue-500', 'transition-all');
+                        setTimeout(() => card.classList.remove('ring-2', 'ring-blue-500'), 1500);
+                    }
+                }, 100);
+                if (typeof showToast === 'function') showToast("⏳ Đơn Pre-order (Chờ Trừ Thẻ)");
+            } else if (type === 'khach_no') {
+                if (typeof switchBizTab === 'function') {
+                    switchBizTab('choxuly');
+                }
+                setTimeout(() => {
+                    const card = document.getElementById('debt-sales-container')?.closest('.bg-white');
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        card.classList.add('ring-2', 'ring-rose-500', 'transition-all');
+                        setTimeout(() => card.classList.remove('ring-2', 'ring-rose-500'), 1500);
+                    }
+                }, 100);
+                if (typeof showToast === 'function') showToast("🤝 Đơn Khách Nợ (Chờ Thu)");
+            } else if (type === 'cho_hoan') {
+                if (typeof switchBizTab === 'function') {
+                    switchBizTab('choxuly');
+                }
+                setTimeout(() => {
+                    const card = document.getElementById('cancelled-refund-container')?.closest('.bg-white');
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        card.classList.add('ring-2', 'ring-amber-500', 'transition-all');
+                        setTimeout(() => card.classList.remove('ring-2', 'ring-amber-500'), 1500);
+                    }
+                }, 100);
+                if (typeof showToast === 'function') showToast("🔄 Đơn Hủy Chờ Hoàn Tiền");
+            }
+        }, 80);
+    }
+    window.navigateToBizStatus = navigateToBizStatus;
+
     function switchSubTab(tab) {
         if (tab === 'credit') {
             tab = 'card';
@@ -1135,11 +1544,9 @@
             tab = 'card';
             const sel = document.getElementById('t1-filter-type');
             if (sel) sel.value = 'DEBIT';
-        } else if (tab === 'confirm') {
-            tab = 'card-info';
         }
 
-        ['stats', 'card', 'card-info', 'confirm'].forEach(t => {
+        ['stats', 'card', 'card-info'].forEach(t => {
             const el = document.getElementById('subtab-' + t);
             if (el) el.classList.add('hidden');
             const btn = document.getElementById('btn-' + t);
@@ -1153,7 +1560,7 @@
 
         const searchContainer = document.getElementById('t1-search-container');
         if (searchContainer) {
-            if (tab === 'stats' || tab === 'card-info' || tab === 'confirm') searchContainer.classList.add('hidden');
+            if (tab === 'stats' || tab === 'card-info') searchContainer.classList.add('hidden');
             else searchContainer.classList.remove('hidden');
         }
 
@@ -1459,7 +1866,9 @@
         const btn = document.getElementById('btn-submit-wallet');
         btn.innerText = "Đang lưu..."; btn.disabled = true;
 
+        const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_W_") : ("REQ_W_" + Date.now());
         const payload = {
+            requestId: requestId,
             id: document.getElementById('wa-id').value || ("W" + Date.now().toString().slice(-5)),
             name: name,
             type: type,
@@ -1474,16 +1883,35 @@
                 btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
                 closeModal('modal-add-wallet');
                 showToast(res.message || "✅ Đã lưu ví/thẻ thành công!");
-                reloadTab1Data();
+                const cleanName = String(name).trim().toLowerCase();
+                if (window.t1_statementCache) delete window.t1_statementCache[cleanName];
+                const wList = res.wallets || res.updatedWallets;
+                if (wList && Array.isArray(wList)) {
+                    if (typeof mergeUpdatedWallets === 'function') {
+                        mergeUpdatedWallets(wList);
+                    } else {
+                        window.t1_walletsData = wList;
+                        renderTab1Wallets();
+                    }
+                    if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                        window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                    }
+                }
+                if (typeof forceReloadAllAppData === 'function') {
+                    forceReloadAllAppData(true);
+                } else {
+                    reloadTab1Data();
+                }
             }).withFailureHandler(function(err) {
                 btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
-                showToast("❌ Lỗi: " + err.message, true);
+                showToast("❌ Lỗi: " + (err ? (err.message || err) : "Lưu thất bại"), true);
             }).saveWalletToSheet(payload);
         } else {
             btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
             closeModal('modal-add-wallet');
             showToast("✅ Đã lưu ví/thẻ thành công (Demo)!");
-            reloadTab1Data();
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
         }
     }
 
@@ -1503,138 +1931,731 @@
     }
 
     function deleteWalletById(id) {
+        const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_WD_") : ("REQ_WD_" + Date.now());
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.deleteWalletFromSheet === 'function') {
             google.script.run.withSuccessHandler(function(res) {
                 showToast(res.message || "✅ Đã xoá ví/thẻ!");
                 closeModal('modal-add-wallet');
-                reloadTab1Data();
+                const wList = res.wallets || res.updatedWallets;
+                if (wList && Array.isArray(wList)) {
+                    window.t1_walletsData = wList;
+                    if (window.SERVER_INITIAL_DATA) window.SERVER_INITIAL_DATA.wallets = wList;
+                    renderTab1Wallets();
+                    if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                        window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                    }
+                }
+                if (typeof forceReloadAllAppData === 'function') {
+                    forceReloadAllAppData(true);
+                } else {
+                    reloadTab1Data();
+                }
             }).withFailureHandler(function(err) {
-                showToast("❌ Lỗi: " + err.message, true);
-            }).deleteWalletFromSheet(id);
+                showToast("❌ Lỗi: " + (err ? (err.message || err) : "Xoá thất bại"), true);
+            }).deleteWalletFromSheet({ id: id, requestId: requestId });
         } else {
             showToast("✅ Đã xoá ví thành công (Demo)!");
             closeModal('modal-add-wallet');
-            reloadTab1Data();
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
         }
     }
 
     // Modal Sổ Phụ Chi Tiết
+    // Modal Sổ Phụ Chi Tiết
     function openStatement(walletName, walletType) {
-        t1_activeWalletForStatement = t1_walletsData.find(w => w.name === walletName) || { name: walletName, current_balance: 0 };
+        const cleanName = String(walletName || "").trim().toLowerCase();
+        const walletsSource = (window.t1_walletsData && window.t1_walletsData.length > 0) ? window.t1_walletsData : t1_walletsData;
+        t1_activeWalletForStatement = walletsSource.find(w => String(w.name || '').trim().toLowerCase() === cleanName) || { name: walletName, current_balance: 0, type: walletType };
         
-        if (walletType === 'CREDIT') {
+        const isCredit = (walletType === 'CREDIT' || (t1_activeWalletForStatement && t1_activeWalletForStatement.type === 'CREDIT'));
+        const prefix = isCredit ? 'credit' : 'debit';
+
+        // Khởi tạo bộ lọc tháng/năm mặc định là tháng và năm hiện tại trên hệ thống
+        const now = new Date();
+        const sysMonth = String(now.getMonth() + 1);
+        const sysYear = String(now.getFullYear());
+        const mainMonth = document.getElementById('t1-filter-month')?.value;
+        const mainYear = document.getElementById('t1-filter-year')?.value;
+
+        const monthEl = document.getElementById(prefix + '-st-month');
+        const yearEl = document.getElementById(prefix + '-st-year');
+        const searchEl = document.getElementById(prefix + '-st-search');
+
+        if (monthEl) monthEl.value = (mainMonth && mainMonth !== 'All') ? mainMonth : sysMonth;
+        if (yearEl) yearEl.value = (mainYear && mainYear !== 'All') ? mainYear : sysYear;
+        if (searchEl) searchEl.value = '';
+
+        // 1. Tức thì: Tự động tổng hợp từ bộ nhớ in-memory (0ms)
+        const immediateList = buildLocalWalletHistory(walletName);
+        window.t1_statementCache[cleanName] = immediateList;
+        window.t1_activeStatementFullList = immediateList || [];
+
+        if (isCredit) {
+            const metrics = getCreditCardMetrics(t1_activeWalletForStatement);
             document.getElementById('credit-statement-title').innerText = walletName;
-            document.getElementById('credit-statement-balance').innerText = (Number(t1_activeWalletForStatement.current_balance) || 0).toLocaleString() + ' ¥';
+            document.getElementById('credit-statement-balance').innerHTML = `<span class="whitespace-nowrap">Nợ: <b class="text-rose-600 font-bold">${metrics.debt.toLocaleString()} ¥</b></span> <span class="text-slate-300">|</span> <span class="whitespace-nowrap">Pre: <b class="text-amber-600 font-bold">${metrics.preorder.toLocaleString()} ¥</b></span>`;
             const listEl = document.getElementById('credit-statement-list');
-            listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>';
+            switchCreditStatementTab('debt');
             openModal('modal-statement-credit');
-            fetchStatementHistory(walletName, listEl);
+            fetchStatementHistory(walletName, listEl, 'CREDIT', true);
         } else {
             document.getElementById('debit-statement-title').innerText = walletName;
             document.getElementById('debit-statement-balance').innerText = (Number(t1_activeWalletForStatement.current_balance) || 0).toLocaleString() + ' ¥';
             const listEl = document.getElementById('debit-statement-list');
-            listEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 animate-pulse">Đang tải lịch sử giao dịch...</div>';
             openModal('modal-statement-debit');
-            fetchStatementHistory(walletName, listEl);
+            filterStatementTransactions('DEBIT');
+            fetchStatementHistory(walletName, listEl, 'DEBIT', true);
         }
     }
 
     window.t1_statementCache = window.t1_statementCache || {};
+    window.t1_activeStatementFullList = [];
 
-    function fetchStatementHistory(walletName, containerEl) {
+    function parseTxDateParts(val) {
+        if (!val) return { month: null, year: null, day: null };
+        if (val instanceof Date) {
+            if (isNaN(val.getTime())) return { month: null, year: null, day: null };
+            return { month: val.getMonth() + 1, year: val.getFullYear(), day: val.getDate() };
+        }
+        const str = String(val).trim();
+        if (!str) return { month: null, year: null, day: null };
+
+        // dd/MM/yyyy or d/M/yyyy
+        if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
+            const spaceParts = str.split(' ');
+            const parts = spaceParts[0].split('/');
+            const d = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            let y = parseInt(parts[2], 10);
+            if (y < 100) y += 2000;
+            return { month: m, year: y, day: d };
+        }
+
+        // yyyy-MM-dd or yyyy/MM/dd
+        if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(str)) {
+            const spaceParts = str.includes('T') ? str.split('T') : str.split(' ');
+            const sep = spaceParts[0].includes('-') ? '-' : '/';
+            const parts = spaceParts[0].split(sep);
+            const y = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+            const d = parseInt(parts[2], 10);
+            return { month: m, year: y, day: d };
+        }
+
+        try {
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return { month: d.getMonth() + 1, year: d.getFullYear(), day: d.getDate() };
+            }
+        } catch(e) {}
+
+        return { month: null, year: null, day: null };
+    }
+
+    function formatStatementDate(val) {
+        if (!val) return '';
+        const dp = parseTxDateParts(val);
+        if (dp.day !== null && dp.month !== null && dp.year !== null) {
+            return `${String(dp.day).padStart(2, '0')}/${String(dp.month).padStart(2, '0')}/${dp.year}`;
+        }
+        return String(val).trim();
+    }
+
+    function cleanTransactionDetailNote(rawNote, hu, isChi) {
+        let text = String(rawNote || "").trim();
+        text = text.replace(/^📦\s*/, '');
+
+        // Bóc tiền tố [Thu Chi] hoặc Thu Chi [...]
+        text = text.replace(/^\[\s*Thu\s*Chi\s*\]\s*[-–—:]*\s*/gi, '');
+        text = text.replace(/^Thu\s*Chi\s*\[[^\]]+\]\s*[-–—:]*\s*/gi, '');
+
+        // Bóc tiền tố trong ngoặc vuông của 6 hũ chi + 3 hũ khác + hệ thống
+        text = text
+            .replace(/^(\[\s*[-–—]*\s*(?:Thu\s*nhập|CK\s*Nội\s*Bộ|Công\s*nợ|Tất\s*toán\s*thẻ|Hoàn\s*tiền|Đơn\s*mua|Đơn\s*bán|Thiết\s*yếu|Giải\s*trí|Tiết\s*kiệm|Giáo\s*dục|Cho\s*đi|Đầu\s*tư|Hưởng\s*thụ|Tự\s*do\s*tài\s*chính|Thiện\s*tâm|Phát\s*triển|Khác|Hũ\s*[^\]]+)\s*\]\s*[-–—:]*\s*)+/gi, '')
+            .replace(/^[-–—]*\s*(?:Thu\s*nhập|CK\s*Nội\s*Bộ|Công\s*nợ|Tất\s*toán\s*thẻ|Hoàn\s*tiền|Đơn\s*mua|Đơn\s*bán|Thiết\s*yếu|Giải\s*trí|Tiết\s*kiệm|Giáo\s*dục|Cho\s*đi|Đầu\s*tư|Hưởng\s*thụ|Tự\s*do\s*tài\s*chính|Thiện\s*tâm|Phát\s*triển)\s*[:\s-]+/gi, '')
+            .replace(/\s*\(\+?[0-9,.]+\s*¥\)$/i, '')
+            .trim();
+
+        if (hu) {
+            let cleanHu = String(hu).replace(/^Thu\s*Chi\s*\[/i, '').replace(/\]$/, '').replace(/^[-–—]+/,'').trim();
+            if (cleanHu) {
+                const escapedHu = cleanHu.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const huRegex = new RegExp(`^(\\[\\s*${escapedHu}\\s*\\]\\s*[-–—:]*|${escapedHu}\\s*[-–—:]+)\\s*`, 'i');
+                text = text.replace(huRegex, '').trim();
+            }
+        }
+
+        if (!text) {
+            text = isChi ? "Chi Tiêu" : "Thu Nhập";
+        }
+        return text;
+    }
+
+    function formatCleanModule(moduleOrHu, isPos) {
+        let mod = String(moduleOrHu || '').trim();
+        mod = mod.replace(/^Thu\s*Chi\s*\[\s*/i, '').replace(/\s*\]$/, '').trim();
+        mod = mod.replace(/^[-–—]+\s*/, '').trim();
+
+        const lower = mod.toLowerCase();
+        if (!mod || lower === 'thu chi' || lower.includes('thu nhập')) {
+            return isPos ? "Thu Nhập" : "Chi Tiêu";
+        }
+        if (lower.includes('ck nội bộ') || lower.includes('ck noi bo')) {
+            return "CK Nội Bộ";
+        }
+        if (lower.includes('công nợ') || lower.includes('cong no')) {
+            return "Công Nợ";
+        }
+        if (lower.includes('tất toán thẻ') || lower.includes('tat toan the')) {
+            return "Tất Toán Thẻ";
+        }
+        if (lower.includes('hoàn tiền') || lower.includes('hoan tien')) {
+            return "Hoàn Tiền";
+        }
+        if (lower.includes('đơn mua') || lower.includes('don mua')) {
+            return "Đơn Mua";
+        }
+        if (lower.includes('đơn bán') || lower.includes('don ban')) {
+            return "Đơn Bán";
+        }
+        // 6 hũ chi tiêu chuẩn
+        if (lower.includes('thiết yếu') || lower.includes('thiet yeu')) return "Thiết yếu";
+        if (lower.includes('giải trí') || lower.includes('giai tri') || lower.includes('hưởng thụ')) return "Giải trí";
+        if (lower.includes('tiết kiệm') || lower.includes('tiet kiem')) return "Tiết kiệm";
+        if (lower.includes('giáo dục') || lower.includes('giao duc') || lower.includes('phát triển')) return "Giáo dục";
+        if (lower.includes('đầu tư') || lower.includes('dau tu') || lower.includes('tự do tài chính')) return "Đầu tư";
+        if (lower.includes('cho đi') || lower.includes('cho di') || lower.includes('thiện tâm')) return "Cho đi";
+
+        return mod || (isPos ? "Thu Nhập" : "Chi Tiêu");
+    }
+
+    function buildLocalWalletHistory(walletName) {
+        const cleanName = String(walletName || "").trim().toLowerCase();
+        if (!cleanName) return [];
+
+        function normalizeWalletName(str) {
+            if (!str) return '';
+            return String(str)
+                .trim()
+                .toLowerCase()
+                .replace(/^(?:c[\s\-_:]*|thẻ\s+|ví\s+)/i, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        const normTarget = normalizeWalletName(cleanName);
+
+        function matchWallet(val) {
+            if (!val) return false;
+            const s = String(val).trim().toLowerCase();
+            if (s === cleanName) return true;
+            const normS = normalizeWalletName(s);
+            if (normS && normTarget && normS === normTarget) return true;
+            return false;
+        }
+
+        const recordedBizIds = new Set();
+        const history = [];
+
+        const walletObj = (window.t1_walletsData || []).find(w => matchWallet(w.name));
+        let isTargetCreditCard = walletObj ? (walletObj.type === 'CREDIT') : false;
+        if (!isTargetCreditCard && (/^c-\s*/i.test(cleanName) || cleanName.includes("credit") || cleanName.includes("tín dụng"))) {
+            isTargetCreditCard = true;
+        }
+
+        // 1. Tab 2 Thu Chi
+        const txList = window.rawTab2Transactions || window.SERVER_INITIAL_DATA?.tab2?.transactions || [];
+        txList.forEach(t => {
+            const src = String(t.nguon || t.nguontien || "").trim();
+            const statusVal = String(t.status || "").trim().toUpperCase();
+            const noiDung = t.noidung || t.note || '';
+            const hu = t.hu ? String(t.hu).trim() : '';
+            const loaiStr = String(t.loai || '').toUpperCase();
+            const isChi = (loaiStr === 'CHI' || loaiStr === 'KHOẢN CHI' || t.loai === '-');
+            const rawNote = noiDung || (isChi ? "Chi Tiêu" : "Thu Nhập");
+
+            let cleanRawNote = cleanTransactionDetailNote(rawNote, hu, isChi);
+
+            let cleanModule = formatCleanModule(hu, !isChi);
+
+            if (matchWallet(src)) {
+                const isPreorder = isTargetCreditCard ? (statusVal.includes("PRE-ORDER") || statusVal.includes("PREORDER") || noiDung.includes("[Pre-order")) : false;
+
+                if (isChi) {
+                    history.push({
+                        id: t.id || "",
+                        rawNote: cleanRawNote,
+                        date: formatStatementDate(t.ngay),
+                        rawDate: t.ngay,
+                        module: cleanModule,
+                        type: "-",
+                        amount: Number(t.sotien || t.amount || 0),
+                        note: cleanRawNote,
+                        isPreorder: isPreorder,
+                        status: isPreorder ? "PRE-ORDER" : (statusVal || "HOAN_TAT")
+                    });
+                } else {
+                    history.push({
+                        id: t.id || "",
+                        rawNote: cleanRawNote,
+                        date: formatStatementDate(t.ngay),
+                        rawDate: t.ngay,
+                        module: cleanModule,
+                        type: "+",
+                        amount: Number(t.sotien || t.amount || 0),
+                        note: cleanRawNote,
+                        isPreorder: false,
+                        status: statusVal || "HOAN_TAT"
+                    });
+                }
+            } else if (isTargetCreditCard && hu && hu.includes("Tất toán thẻ")) {
+                if (noiDung.toLowerCase().includes(cleanName) || (normTarget && noiDung.toLowerCase().includes(normTarget))) {
+                    history.push({
+                        id: t.id || "",
+                        rawNote: noiDung,
+                        date: formatStatementDate(t.ngay),
+                        rawDate: t.ngay,
+                        module: "Tất Toán Thẻ",
+                        type: "+",
+                        amount: Number(t.sotien || t.amount || 0),
+                        note: `[Tất toán thẻ] Thanh toán từ ${src || 'Ví nguồn'} (+${Number(t.sotien || t.amount || 0).toLocaleString()} ¥)`,
+                        isPreorder: false,
+                        status: "HOAN_TAT"
+                    });
+                }
+            }
+        });
+
+        // 2. Tab 3 Purchases (Đơn Mua Hàng & Hoàn Tiền)
+        const bizPurchases = window.lastTab3Res?.inventory || window.SERVER_INITIAL_DATA?.tab3?.inventory || [];
+        bizPurchases.forEach(p => {
+            const pId = String(p.id || "").trim();
+            const statusWh = String(p.trangThaiKho || p.trangThai || p.status || "").trim().toLowerCase();
+            const statusValP = String(p.trangThaiThe || p.status || p.trangThai || "").trim().toUpperCase();
+            const lowerCardStatus = String(p.trangThaiThe || p.status || p.trangThai || "").trim().toLowerCase();
+            const isCancelled = statusWh.includes("hủy") || statusWh.includes("cancel");
+            const isCardDone = statusValP === "HOAN_TAT" || statusValP.includes("HOÀN TẤT") || statusValP.includes("ĐÃ TRỪ") || lowerCardStatus.includes("da_tru") || lowerCardStatus.includes("đã trừ") || statusValP === "ĐÃ SAO KÊ";
+            const isCardRefunded = statusValP === "DA_HOAN" || lowerCardStatus.includes("đã hoàn") || lowerCardStatus.includes("da_hoan") || statusWh === "đã hoàn tiền";
+            const ghiChu = String(p.ghiChu || p.note || '').trim();
+            const tenSP = String(p.tenSP || p.productName || 'Hàng hóa').trim();
+            const qty = Number(p.soLuong || p.qty || 1);
+            const total = Number(p.total || p.tongTien || (qty * Number(p.giaMua || p.price || 0)));
+
+            // Bỏ qua đơn hủy nếu thẻ chưa bị charge
+            if (isCancelled && (!isCardDone && !isCardRefunded)) return;
+
+            // Nếu đơn đã hoàn tiền: kiểm tra xem ví nào nhận tiền hoàn
+            if (isCardRefunded) {
+                let refundWallet = String(p.nguonTien || p.nguon || "").trim();
+                const m = ghiChu.match(/Ví:\s*([^\]]+)/i);
+                if (m && m[1]) refundWallet = m[1].trim();
+
+                if (matchWallet(refundWallet)) {
+                    history.push({
+                        id: (pId ? (pId + '_REFUND') : ''),
+                        rawNote: `Hoàn tiền đơn hủy: ${tenSP}`,
+                        date: formatStatementDate(p.ngayMua || p.date),
+                        rawDate: p.ngayMua || p.date,
+                        module: "Hoàn Tiền Đơn Hủy",
+                        type: "+",
+                        amount: total,
+                        note: `[Hoàn Tiền] ${tenSP} (+${total.toLocaleString()} ¥)`,
+                        isPreorder: false,
+                        status: "HOAN_TAT"
+                    });
+                }
+                return;
+            }
+
+            const src = String(p.nguonTien || p.nguon || "").trim();
+            if (matchWallet(src)) {
+                if (pId && recordedBizIds.has(pId)) return;
+
+                const noiMua = String(p.noiMua || '').trim();
+                const isPreorderP = isTargetCreditCard ? (!isCancelled && !isCardDone) : false;
+
+                let noteText = `[Đơn Mua] ${tenSP}`;
+                if (isCancelled) noteText = `[HỦY - Chờ Hoàn] ${tenSP}`;
+                if (noiMua) noteText += ` (${noiMua})`;
+                if (qty > 1) noteText += ` x${qty}`;
+                if (ghiChu) noteText += ` - ${ghiChu}`;
+
+                history.push({
+                    id: pId,
+                    rawNote: noteText,
+                    date: formatStatementDate(p.ngayMua || p.date),
+                    rawDate: p.ngayMua || p.date,
+                    module: isCancelled ? "Đơn Hủy Chờ Hoàn" : "Đơn Mua Hàng",
+                    type: "-",
+                    amount: total,
+                    note: noteText,
+                    isPreorder: isPreorderP,
+                    status: isCancelled ? "CHO_HOAN" : (isPreorderP ? "PRE-ORDER" : "HOAN_TAT")
+                });
+            }
+        });
+
+        // 3. Tab 3 Sales (Đơn Bán Hàng - Chỉ áp dụng cho Ví Debit / Tiền mặt)
+        if (!isTargetCreditCard) {
+            const bizSales = window.lastTab3Res?.sales || window.SERVER_INITIAL_DATA?.tab3?.sales || [];
+            bizSales.forEach(s => {
+                const sId = String(s.id || "").trim();
+                if (sId && recordedBizIds.has(sId)) return;
+                const nhanTien = String(s.viNhan || s.nhanTien || s.wallet || "").trim();
+                if (matchWallet(nhanTien)) {
+                    const tenSP = String(s.tenSP || s.productName || 'Hàng hóa').trim();
+                    const totalAmt = Number(s.tongTien || s.total || 0);
+                    const noteText = `[Đơn Bán] ${tenSP} (+${totalAmt.toLocaleString()} ¥)`;
+                    history.push({
+                        id: sId,
+                        rawNote: noteText,
+                        date: formatStatementDate(s.ngayBan || s.date),
+                        rawDate: s.ngayBan || s.date,
+                        module: "Đơn Bán Hàng",
+                        type: "+",
+                        amount: totalAmt,
+                        note: noteText,
+                        isPreorder: false,
+                        status: "HOAN_TAT"
+                    });
+                }
+            });
+        }
+
+        // 4. Tab 4 Debts (Công Nợ)
+        const debts = window.rawTab4Debts || window.SERVER_INITIAL_DATA?.tab4?.debts || [];
+        debts.forEach(d => {
+            const src = String(d.nguon || d.wallet || "").trim();
+            if (matchWallet(src)) {
+                const loai = String(d.loai || "").trim().toUpperCase();
+                const isChoVay = (loai === "CHO_VAY" || loai === "THU" || loai.includes("CHO_VAY") || loai.includes("CHO VAY"));
+                const person = String(d.nguoiLienQuan || d.person || "Đối tác").trim();
+                const noiDung = String(d.noiDung || d.note || "").trim();
+                const noteText = `[Công Nợ] ${isChoVay ? 'Cho vay' : 'Vay từ'}: ${person} (${noiDung})`;
+                history.push({
+                    id: d.id || "",
+                    rawNote: noteText,
+                    date: formatStatementDate(d.ngay),
+                    rawDate: d.ngay,
+                    module: "Công Nợ",
+                    type: isChoVay ? "-" : "+",
+                    amount: Number(d.soTien || d.amount || 0),
+                    note: noteText,
+                    isPreorder: false,
+                    status: "HOAN_TAT"
+                });
+            }
+        });
+
+        // Sort descending by date
+        history.sort((a, b) => {
+            const parseD = (dt, raw) => {
+                if (raw instanceof Date) return raw.getTime();
+                if (!dt) return 0;
+                const str = String(dt).trim();
+                if (str.includes('/')) {
+                    const parts = str.split('/');
+                    if (parts.length === 3) return new Date(parts[2], parts[1]-1, parts[0]).getTime();
+                }
+                const t = new Date(str).getTime();
+                return isNaN(t) ? 0 : t;
+            };
+            return parseD(b.date, b.rawDate) - parseD(a.date, a.rawDate);
+        });
+
+        return history;
+    }
+
+    function fetchStatementHistory(walletName, containerEl, walletType = 'DEBIT', forceRefresh = false) {
         const cleanName = String(walletName || "").trim().toLowerCase();
         
-        if (window.t1_statementCache[cleanName] && window.t1_statementCache[cleanName].length > 0) {
-            renderStatementList(window.t1_statementCache[cleanName], containerEl);
+        if (!forceRefresh && window.t1_statementCache[cleanName] && window.t1_statementCache[cleanName].length > 0) {
+            window.t1_activeStatementFullList = window.t1_statementCache[cleanName];
+            filterStatementTransactions(walletType);
             return;
         }
 
-        let txList = [];
-        if (window.rawTab2Transactions && window.rawTab2Transactions.length > 0) {
-            txList = window.rawTab2Transactions;
-        } else if (window.SERVER_INITIAL_DATA && window.SERVER_INITIAL_DATA.tab2 && Array.isArray(window.SERVER_INITIAL_DATA.tab2.transactions)) {
-            txList = window.SERVER_INITIAL_DATA.tab2.transactions;
-        }
-
-        let initialTx = [];
-        if (txList.length > 0) {
-            initialTx = txList.filter(t => {
-                const src = String(t.nguon || t.nguontien || "").trim().toLowerCase();
-                const note = String(t.noidung || "").trim().toLowerCase();
-                const hu = String(t.hu || "").trim().toLowerCase();
-                const gc = String(t.ghiChu || t.ghichu || "").trim().toLowerCase();
-                return src === cleanName || note.includes(cleanName) || hu.includes(cleanName) || gc.includes(cleanName);
-            }).map(t => ({
-                id: t.id || "",
-                date: t.ngay || "",
-                module: t.hu || (String(t.loai).toUpperCase() === 'THU' ? "Khoản Thu" : "Khoản Chi"),
-                type: (String(t.loai).toUpperCase() === "THU" || t.loai === "+") ? "+" : "-",
-                amount: Number(t.sotien || t.amount || 0),
-                note: (t.hu ? `[${t.hu}] ` : "") + (t.noidung || t.note || "")
-            }));
-        }
-
-        if (initialTx.length > 0) {
-            window.t1_statementCache[cleanName] = initialTx;
-            renderStatementList(initialTx, containerEl);
-            return;
+        // If nothing is displayed yet, show loading spinner
+        if (!window.t1_activeStatementFullList || window.t1_activeStatementFullList.length === 0) {
+            containerEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400 font-medium animate-pulse">⏳ Đang tải lịch sử giao dịch...</div>';
         }
 
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getWalletTransactionHistory === 'function') {
             google.script.run.withSuccessHandler(function(history) {
-                if (history && history.length > 0) {
-                    window.t1_statementCache[cleanName] = history;
-                    renderStatementList(history, containerEl);
-                } else {
-                    containerEl.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-medium">Chưa có lịch sử giao dịch nào.</div>';
+                const list = history || [];
+                window.t1_statementCache[cleanName] = list;
+                if (t1_activeWalletForStatement && String(t1_activeWalletForStatement.name || '').trim().toLowerCase() === cleanName) {
+                    window.t1_activeStatementFullList = list;
+                    filterStatementTransactions(walletType);
                 }
             }).withFailureHandler(function(err) {
-                containerEl.innerHTML = '<div class="text-center py-6 text-xs text-rose-400 font-medium">Không thể tải lịch sử giao dịch.</div>';
+                if (!window.t1_activeStatementFullList || window.t1_activeStatementFullList.length === 0) {
+                    containerEl.innerHTML = '<div class="text-center py-6 text-xs text-rose-400 font-medium">Không thể tải lịch sử: ' + err + '</div>';
+                }
             }).getWalletTransactionHistory(walletName);
-        } else if (initialTx.length === 0) {
-            containerEl.innerHTML = '<div class="text-center py-6 text-xs text-slate-400 font-medium">Chưa có lịch sử giao dịch nào.</div>';
+        } else {
+            // Local dev / preview fallback
+            const localList = buildLocalWalletHistory(walletName);
+            window.t1_statementCache[cleanName] = localList;
+            window.t1_activeStatementFullList = localList;
+            filterStatementTransactions(walletType);
+        }
+    }
+
+    window.t1_creditStatementActiveTab = 'debt'; // 'debt' or 'preorder'
+
+    function switchCreditStatementTab(tab) {
+        window.t1_creditStatementActiveTab = tab;
+        const btnDebt = document.getElementById('btn-credit-tab-debt');
+        const btnPreorder = document.getElementById('btn-credit-tab-preorder');
+        if (tab === 'debt') {
+            if (btnDebt) btnDebt.className = "flex-1 py-1.5 text-[11px] font-bold bg-white text-rose-600 rounded-lg shadow-xs transition flex items-center justify-center gap-1 cursor-pointer";
+            if (btnPreorder) btnPreorder.className = "flex-1 py-1.5 text-[11px] font-bold text-slate-600 hover:text-slate-900 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer";
+        } else {
+            if (btnDebt) btnDebt.className = "flex-1 py-1.5 text-[11px] font-bold text-slate-600 hover:text-slate-900 rounded-lg transition flex items-center justify-center gap-1 cursor-pointer";
+            if (btnPreorder) btnPreorder.className = "flex-1 py-1.5 text-[11px] font-bold bg-white text-amber-600 rounded-lg shadow-xs transition flex items-center justify-center gap-1 cursor-pointer";
+        }
+        filterStatementTransactions('credit');
+    }
+
+    function filterStatementTransactions(walletType, page = 1) {
+        const isCredit = (String(walletType).toUpperCase() === 'CREDIT');
+        const prefix = isCredit ? 'credit' : 'debit';
+        const monthEl = document.getElementById(prefix + '-st-month');
+        const yearEl = document.getElementById(prefix + '-st-year');
+        const searchEl = document.getElementById(prefix + '-st-search');
+        const summaryEl = document.getElementById(prefix + '-st-summary');
+        const containerEl = document.getElementById(prefix + '-statement-list');
+
+        if (!containerEl) return;
+
+        const selectedMonth = monthEl ? monthEl.value : 'ALL';
+        const selectedYear = yearEl ? yearEl.value : 'ALL';
+        const query = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+        const fullList = window.t1_activeStatementFullList || [];
+
+        const filtered = fullList.filter(item => {
+            const dp = parseTxDateParts(item.date || item.rawDate);
+
+            if (selectedMonth !== 'ALL') {
+                if (dp.month === null || dp.month !== parseInt(selectedMonth, 10)) {
+                    return false;
+                }
+            }
+            if (selectedYear !== 'ALL') {
+                if (dp.year === null || dp.year !== parseInt(selectedYear, 10)) {
+                    return false;
+                }
+            }
+
+            if (query) {
+                const noteText = String(item.note || item.rawNote || '').toLowerCase();
+                const modText = String(item.module || '').toLowerCase();
+                const amtText = String(item.amount || '');
+                const dateText = String(item.date || '').toLowerCase();
+                const match = noteText.includes(query) || modText.includes(query) || amtText.includes(query) || dateText.includes(query);
+                if (!match) return false;
+            }
+
+            return true;
+        });
+
+        const STATEMENT_PAGE_SIZE = 10;
+
+        if (isCredit) {
+            const debtList = filtered.filter(it => !it.isPreorder);
+            const preorderList = filtered.filter(it => !!it.isPreorder);
+
+            const countDebtEl = document.getElementById('credit-tab-debt-count');
+            const countPreorderEl = document.getElementById('credit-tab-preorder-count');
+            if (countDebtEl) countDebtEl.innerText = debtList.length;
+            if (countPreorderEl) countPreorderEl.innerText = preorderList.length;
+
+            const activeList = (window.t1_creditStatementActiveTab === 'preorder') ? preorderList : debtList;
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+            activeList.forEach(it => {
+                const amt = Number(it.amount || 0);
+                if (it.type === '+') totalIncome += amt;
+                else totalExpense += amt;
+            });
+
+            if (summaryEl) {
+                if (window.t1_creditStatementActiveTab === 'preorder') {
+                    summaryEl.innerHTML = `
+                        <span><strong>${activeList.length}</strong> đơn Pre-order</span>
+                        <span>Tổng Pre-order: <strong class="text-amber-600">-${totalExpense.toLocaleString()} ¥</strong></span>
+                    `;
+                } else {
+                    summaryEl.innerHTML = `
+                        <span><strong>${activeList.length}</strong> / ${fullList.filter(it => !it.isPreorder).length} giao dịch sao kê</span>
+                        <span>
+                            Chi: <strong class="text-rose-600">-${totalExpense.toLocaleString()} ¥</strong>
+                            ${totalIncome > 0 ? ` | Tất toán/Thu: <strong class="text-emerald-600">+${totalIncome.toLocaleString()} ¥</strong>` : ''}
+                        </span>
+                    `;
+                }
+            }
+
+            const totalPages = Math.ceil(activeList.length / STATEMENT_PAGE_SIZE) || 1;
+            const curPage = Math.min(Math.max(1, page), totalPages);
+            const startIdx = (curPage - 1) * STATEMENT_PAGE_SIZE;
+            const pageList = activeList.slice(startIdx, startIdx + STATEMENT_PAGE_SIZE);
+
+            renderStatementList(pageList, containerEl, true, curPage, totalPages, 'credit');
+        } else {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            filtered.forEach(it => {
+                const amt = Number(it.amount || 0);
+                if (it.type === '+') totalIncome += amt;
+                else totalExpense += amt;
+            });
+
+            if (summaryEl) {
+                summaryEl.innerHTML = `
+                    <span><strong>${filtered.length}</strong> / ${fullList.length} giao dịch</span>
+                    <span>
+                        Chi: <strong class="text-rose-600">-${totalExpense.toLocaleString()} ¥</strong>
+                        ${totalIncome > 0 ? ` | Thu: <strong class="text-emerald-600">+${totalIncome.toLocaleString()} ¥</strong>` : ''}
+                    </span>
+                `;
+            }
+
+            const totalPages = Math.ceil(filtered.length / STATEMENT_PAGE_SIZE) || 1;
+            const curPage = Math.min(Math.max(1, page), totalPages);
+            const startIdx = (curPage - 1) * STATEMENT_PAGE_SIZE;
+            const pageList = filtered.slice(startIdx, startIdx + STATEMENT_PAGE_SIZE);
+
+            renderStatementList(pageList, containerEl, false, curPage, totalPages, 'debit');
         }
     }
 
     let t1_statementHistoryCache = [];
 
-    function renderStatementList(history, containerEl) {
+    function renderStatementList(history, containerEl, isCredit = false, curPage = 1, totalPages = 1, walletType = 'debit') {
         t1_statementHistoryCache = history || [];
         if (!t1_statementHistoryCache || t1_statementHistoryCache.length === 0) {
-            containerEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400">Chưa có giao dịch nào trong khoảng thời gian này.</div>';
+            const isPreTab = isCredit && (window.t1_creditStatementActiveTab === 'preorder');
+            containerEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-400 font-medium">Không có ${isPreTab ? 'đơn Pre-order nào đang chờ trừ thẻ' : 'giao dịch nào'} khớp với bộ lọc.</div>`;
             return;
         }
 
         let html = '';
         t1_statementHistoryCache.forEach((item, index) => {
             const isPos = item.type === '+';
-            html += `
-            <div onclick="handleClickStatementTx(${index})"
-                 class="flex justify-between items-center py-2.5 px-3 mb-1.5 border border-slate-200/80 rounded-xl hover:border-blue-400 transition cursor-pointer ${isPos ? 'bg-emerald-50/40' : 'bg-white'}" title="Bấm để sửa giao dịch này">
-                <div class="pr-2 max-w-[70%]">
-                    <p class="text-[9px] text-slate-400 font-bold mb-0.5">${item.date || ''} ⬢ ${item.module || ''}</p>
-                    <p class="text-xs text-slate-800 font-medium leading-snug truncate">${item.note || ''}</p>
-                </div>
-                <div class="text-right shrink-0 flex items-center gap-1.5">
-                    <p class="text-xs font-bold ${isPos ? 'text-emerald-600' : 'text-rose-500'}">${isPos ? '+' : '-'}${Number(item.amount || 0).toLocaleString()} ¥</p>
-                    <span class="text-[10px] text-slate-400 hover:text-blue-600">✏️ Sửa</span>
-                </div>
-            </div>`;
+            const isPre = !!item.isPreorder;
+            
+            // Clean note from placeholder tags and Hu prefixes
+            let cleanNote = cleanTransactionDetailNote(item.note || item.rawNote || '', item.module, !isPos);
+            cleanNote = cleanNote.replace(/^📦\s*/, '').replace(/\s*\(\+?[0-9,.]+\s*¥\)$/i, '').trim();
+            if (!cleanNote) cleanNote = isPos ? "Thu nhập" : "Chi tiêu";
+
+            // Clean module label
+            let cleanMod = formatCleanModule(item.module, isPos);
+
+            let badgeColorClass = "bg-slate-100 text-slate-700 border border-slate-200/80";
+            if (cleanMod.includes("Thu Nhập") || isPos) {
+                badgeColorClass = "bg-emerald-50 text-emerald-700 border border-emerald-200";
+            } else if (cleanMod.includes("Chi") || cleanMod.includes("Thiết yếu")) {
+                badgeColorClass = "bg-rose-50 text-rose-700 border border-rose-200";
+            } else if (cleanMod.includes("Giải trí")) {
+                badgeColorClass = "bg-purple-50 text-purple-700 border border-purple-200";
+            } else if (cleanMod.includes("Tiết kiệm")) {
+                badgeColorClass = "bg-blue-50 text-blue-700 border border-blue-200";
+            } else if (cleanMod.includes("Giáo dục")) {
+                badgeColorClass = "bg-amber-50 text-amber-700 border border-amber-200";
+            } else if (cleanMod.includes("Đầu tư")) {
+                badgeColorClass = "bg-cyan-50 text-cyan-700 border border-cyan-200";
+            } else if (cleanMod.includes("Cho đi")) {
+                badgeColorClass = "bg-pink-50 text-pink-700 border border-pink-200";
+            } else if (cleanMod.includes("Tất Toán") || cleanMod.includes("Công Nợ")) {
+                badgeColorClass = "bg-indigo-50 text-indigo-700 border border-indigo-200";
+            } else if (cleanMod.includes("CK")) {
+                badgeColorClass = "bg-sky-50 text-sky-700 border border-sky-200";
+            } else if (cleanMod.includes("Đơn Bán") || cleanMod.includes("Hoàn Tiền")) {
+                badgeColorClass = "bg-teal-50 text-teal-700 border border-teal-200";
+            }
+
+            const safeName = cleanNote.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+            if (isPre) {
+                html += `
+                <div onclick="handleClickStatementTx(${index})"
+                     class="py-2 px-3 mb-1.5 border border-amber-300/90 bg-amber-50/50 rounded-xl hover:border-amber-500 transition cursor-pointer shadow-2xs group" title="Bấm để sửa giao dịch này">
+                    <div class="flex justify-between items-start gap-2">
+                        <p class="text-xs text-slate-800 font-bold leading-snug truncate flex-1 min-w-0" title="${safeName}">${cleanNote}</p>
+                        <span class="text-xs font-black text-amber-600 shrink-0 whitespace-nowrap">-${Number(item.amount || 0).toLocaleString()} ¥</span>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 mt-1">
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium truncate">
+                            <span>${item.date || ''}</span>
+                            <span>•</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded ${badgeColorClass}">${cleanMod}</span>
+                            <span class="text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded-md shrink-0">⏳ Chờ trừ thẻ</span>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button onclick="event.stopPropagation(); t1_confirmSinglePreOrder('${item.id}', '${safeName}', this)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-0.5 rounded-lg text-[9px] shadow-xs cursor-pointer transition">
+                                ✅ Đã Trừ Thẻ
+                            </button>
+                            <span class="text-[10px] text-slate-300 group-hover:text-blue-500 transition ml-0.5">✏️</span>
+                        </div>
+                    </div>
+                </div>`;
+            } else {
+                html += `
+                <div onclick="handleClickStatementTx(${index})"
+                     class="py-2 px-3 mb-1.5 border border-slate-200/90 rounded-xl hover:border-blue-400 transition cursor-pointer ${isPos ? 'bg-emerald-50/30' : 'bg-white'} shadow-2xs hover:shadow-xs group" title="Bấm để sửa giao dịch này">
+                    <div class="flex justify-between items-start gap-2">
+                        <p class="text-xs text-slate-800 font-bold leading-snug truncate flex-1 min-w-0" title="${safeName}">${cleanNote}</p>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <span class="text-xs font-black ${isPos ? 'text-emerald-600' : 'text-rose-600'} whitespace-nowrap">${isPos ? '+' : '-'}${Number(item.amount || 0).toLocaleString()} ¥</span>
+                            <span class="text-[10px] text-slate-300 group-hover:text-blue-500 transition opacity-0 group-hover:opacity-100">✏️</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 mt-1">
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-medium truncate">
+                            <span>${item.date || ''}</span>
+                            <span>•</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded ${badgeColorClass}">${cleanMod}</span>
+                        </div>
+                    </div>
+                </div>`;
+            }
         });
-        containerEl.innerHTML = html;
+
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml = `
+            <div class="flex items-center justify-center gap-2 pt-2.5 pb-1 select-none">
+                <button onclick="filterStatementTransactions('${walletType}', ${curPage - 1})" ${curPage <= 1 ? 'disabled' : ''} class="px-2.5 py-1 text-[10px] font-bold rounded-lg border bg-white ${curPage <= 1 ? 'opacity-40 pointer-events-none' : 'hover:bg-blue-50 text-blue-700 cursor-pointer shadow-2xs'}">‹ Trước</button>
+                <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md">${curPage}/${totalPages}</span>
+                <button onclick="filterStatementTransactions('${walletType}', ${curPage + 1})" ${curPage >= totalPages ? 'disabled' : ''} class="px-2.5 py-1 text-[10px] font-bold rounded-lg border bg-white ${curPage >= totalPages ? 'opacity-40 pointer-events-none' : 'hover:bg-blue-50 text-blue-700 cursor-pointer shadow-2xs'}">Sau ›</button>
+            </div>`;
+        }
+
+        containerEl.innerHTML = html + paginationHtml;
     }
 
     function handleClickStatementTx(index) {
         const item = t1_statementHistoryCache[index];
         if (!item) return;
-        openEditStatementTxModal(item.id || '', item.date || '', item.rawNote || item.note || '', item.amount || 0);
+        const isPos = item.type === '+';
+        let cleanNote = cleanTransactionDetailNote(item.rawNote || item.note || '', item.module, !isPos);
+        cleanNote = cleanNote.replace(/^📦\s*/, '').replace(/\s*\(\+?[0-9,.]+\s*¥\)$/i, '').trim();
+        openEditStatementTxModal(item.id || '', item.date || '', cleanNote || item.note || '', item.amount || 0);
     }
 
     function openEditStatementTxModal(id, date, note, amount) {
+        let cleanNote = cleanTransactionDetailNote(note || '', '', false);
+        cleanNote = cleanNote.replace(/^📦\s*/, '').replace(/\s*\(\+?[0-9,.]+\s*¥\)$/i, '').trim();
         document.getElementById('edit-st-id').value = id || '';
         document.getElementById('edit-st-id-display').value = id || 'Chưa có ID';
         document.getElementById('edit-st-date').value = date || '';
-        document.getElementById('edit-st-note').value = note || '';
+        document.getElementById('edit-st-note').value = cleanNote || note || '';
         document.getElementById('edit-st-amount').value = amount || 0;
         openModal('modal-edit-statement-tx');
     }
@@ -1661,7 +2682,8 @@
                 if (t1_activeWalletForStatement) {
                     openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
                 }
-                reloadTab1Data();
+                if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+                else reloadTab1Data();
             }).withFailureHandler(function(err) {
                 btn.innerText = "Lưu Thay Đổi"; btn.disabled = false;
                 showToast("❌ Lỗi: " + err.message, true);
@@ -1673,7 +2695,8 @@
             if (t1_activeWalletForStatement) {
                 openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
             }
-            reloadTab1Data();
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
         }
     }
 
@@ -1707,28 +2730,67 @@
             }
         }
 
+        // Optimistic transfer
+        let oldFromBal = 0;
+        let oldToBal = 0;
+        let fromObj = null;
+        let toObj = null;
+        if (Array.isArray(window.t1_walletsData)) {
+            fromObj = window.t1_walletsData.find(function(w) { return String(w.name).trim().toLowerCase() === String(from).trim().toLowerCase(); });
+            toObj = window.t1_walletsData.find(function(w) { return String(w.name).trim().toLowerCase() === String(to).trim().toLowerCase(); });
+            if (fromObj) {
+                oldFromBal = Number(fromObj.current_balance) || 0;
+                fromObj.current_balance = oldFromBal - amt;
+            }
+            if (toObj) {
+                oldToBal = Number(toObj.current_balance) || 0;
+                toObj.current_balance = oldToBal + amt;
+            }
+            renderTab1Wallets();
+        }
+
+        closeModal('modal-transfer-wallet');
+        showToast("⚡ Đang chuyển " + amt.toLocaleString() + " ¥ từ " + from + " sang " + to + "...");
+
         const btn = document.getElementById('btn-submit-transfer');
-        btn.innerText = "Đang xử lý..."; btn.disabled = true;
+        if (btn) { btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false; }
+
+        const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_WT_") : ("REQ_WT_" + Date.now());
 
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.processWalletTransfer === 'function') {
             google.script.run.withSuccessHandler(function(res) {
-                btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
-                if (res.success) {
-                    closeModal('modal-transfer-wallet');
+                if (res && res.success) {
                     showToast(res.message || "✅ Đã chuyển tiền thành công!");
-                    reloadTab1Data();
+                    const wList = res.wallets || res.updatedWallets;
+                    if (wList && Array.isArray(wList)) {
+                        if (typeof mergeUpdatedWallets === 'function') {
+                            mergeUpdatedWallets(wList);
+                        } else {
+                            window.t1_walletsData = wList;
+                            renderTab1Wallets();
+                        }
+                    }
+                    if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                        window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                    }
+                    if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+                    else reloadTab1Data();
                 } else {
-                    showToast(res.message || "❌ Lỗi chuyển tiền!", true);
+                    if (fromObj) fromObj.current_balance = oldFromBal;
+                    if (toObj) toObj.current_balance = oldToBal;
+                    renderTab1Wallets();
+                    showToast(res && res.message ? res.message : "❌ Lỗi chuyển tiền!", true);
                 }
             }).withFailureHandler(function(err) {
-                btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
-                showToast("❌ Lỗi: " + err.message, true);
-            }).processWalletTransfer({ fromWallet: from, toWallet: to, amount: amt, note: note });
+                if (fromObj) fromObj.current_balance = oldFromBal;
+                if (toObj) toObj.current_balance = oldToBal;
+                renderTab1Wallets();
+                showToast("❌ Lỗi: " + (err ? (err.message || err) : "Mất kết nối"), true);
+            }).processWalletTransfer({ requestId: requestId, fromWallet: from, toWallet: to, amount: amt, note: note });
         } else {
-            btn.innerText = "Xác Nhận Chuyển"; btn.disabled = false;
-            closeModal('modal-transfer-wallet');
             showToast("✅ Đã chuyển tiền thành công (Demo)!");
-            reloadTab1Data();
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
         }
     }
 
@@ -1736,6 +2798,10 @@
     function openSettleModal(cardName, currentBalance) {
         document.getElementById('settle-card-name').value = cardName;
         document.getElementById('settle-amount').value = Math.abs(currentBalance) > 0 ? Math.abs(currentBalance) : "";
+
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('settle-date');
+        if (dateInput) dateInput.value = today;
 
         // Lấy nguồn mặc định từ Cột K trong database nếu có
         const sourceInput = document.getElementById('settle-source-wallet');
@@ -1751,30 +2817,84 @@
         const card = document.getElementById('settle-card-name').value;
         const source = document.getElementById('settle-source-wallet').value;
         const amt = Number(document.getElementById('settle-amount').value);
+        const dateVal = document.getElementById('settle-date') ? document.getElementById('settle-date').value : '';
 
         if (!source || !amt || amt <= 0) {
             showToast("⚠️ Vui lòng chọn ví nguồn và nhập số tiền thanh toán!", true);
             return;
         }
 
+        // Optimistic UI updates - phản hồi tức thì 0ms
+        let oldCardBal = 0;
+        let oldSourceBal = 0;
+        let targetCardObj = null;
+        let sourceWalletObj = null;
+
+        if (Array.isArray(window.t1_walletsData)) {
+            targetCardObj = window.t1_walletsData.find(w => String(w.name).trim().toLowerCase() === String(card).trim().toLowerCase());
+            sourceWalletObj = window.t1_walletsData.find(w => String(w.name).trim().toLowerCase() === String(source).trim().toLowerCase());
+            if (targetCardObj) {
+                oldCardBal = Number(targetCardObj.current_balance) || 0;
+                targetCardObj.current_balance = oldCardBal + amt;
+            }
+            if (sourceWalletObj) {
+                oldSourceBal = Number(sourceWalletObj.current_balance) || 0;
+                sourceWalletObj.current_balance = oldSourceBal - amt;
+            }
+            renderTab1Wallets();
+        }
+
+        // Đóng modal ngay lập tức không bắt người dùng chờ
+        closeModal('modal-settle-card');
+        showToast("⚡ Đang tất toán " + amt.toLocaleString() + " ¥ cho thẻ " + card + "...");
+
         const btn = document.getElementById('btn-submit-settle');
-        btn.innerText = "Đang xử lý..."; btn.disabled = true;
+        if (btn) { btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false; }
+
+        const requestId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_CCS_") : ("REQ_CCS_" + Date.now());
 
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.processCreditCardSettlement === 'function') {
             google.script.run.withSuccessHandler(function(res) {
-                btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
-                closeModal('modal-settle-card');
-                showToast(res.message || "✅ Đã tất toán thẻ thành công!");
-                reloadTab1Data();
+                if (res && res.success) {
+                    showToast(res.message || "✅ Đã tất toán thẻ thành công!");
+                    const wList = res.wallets || res.updatedWallets;
+                    if (wList && Array.isArray(wList)) {
+                        if (typeof mergeUpdatedWallets === 'function') {
+                            mergeUpdatedWallets(wList);
+                        } else {
+                            window.t1_walletsData = wList;
+                            renderTab1Wallets();
+                        }
+                    }
+                    if (res.dataVersion && window.APP_CLIENT_VERSION !== undefined) {
+                        window.APP_CLIENT_VERSION = Number(res.dataVersion);
+                    }
+                    if (window.t1_statementCache) {
+                        const cleanCard = String(card).trim().toLowerCase();
+                        const cleanSource = String(source).trim().toLowerCase();
+                        delete window.t1_statementCache[cleanCard];
+                        delete window.t1_statementCache[cleanSource];
+                    }
+                    if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+                    else reloadTab1Data();
+                } else {
+                    // Rollback nếu backend báo lỗi
+                    if (targetCardObj) targetCardObj.current_balance = oldCardBal;
+                    if (sourceWalletObj) sourceWalletObj.current_balance = oldSourceBal;
+                    renderTab1Wallets();
+                    showToast(res && res.message ? res.message : "❌ Lỗi tất toán thẻ", true);
+                }
             }).withFailureHandler(function(err) {
-                btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
-                showToast("❌ Lỗi: " + err.message, true);
-            }).processCreditCardSettlement({ creditCard: card, sourceWallet: source, amount: amt });
+                // Rollback nếu mất kết nối
+                if (targetCardObj) targetCardObj.current_balance = oldCardBal;
+                if (sourceWalletObj) sourceWalletObj.current_balance = oldSourceBal;
+                renderTab1Wallets();
+                showToast("❌ Lỗi: " + (err ? (err.message || err) : "Mất kết nối"), true);
+            }).processCreditCardSettlement({ requestId: requestId, creditCard: card, sourceWallet: source, amount: amt, date: dateVal });
         } else {
-            btn.innerText = "Xác Nhận Thanh Toán"; btn.disabled = false;
-            closeModal('modal-settle-card');
             showToast("✅ Đã tất toán thẻ thành công (Demo)!");
-            reloadTab1Data();
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
         }
     }
 
@@ -1782,18 +2902,30 @@
     function openAdjustModalFromStatement() {
         if (!t1_activeWalletForStatement) return;
         const name = t1_activeWalletForStatement.name;
+        const isCredit = (t1_activeWalletForStatement.type === 'CREDIT');
         const bal = Number(t1_activeWalletForStatement.current_balance) || 0;
         document.getElementById('adj-wallet-name').value = name;
         document.getElementById('adj-app-balance').value = bal;
-        document.getElementById('adj-wallet-name-txt').innerText = name;
-        document.getElementById('adj-app-balance-txt').innerText = bal.toLocaleString() + " ¥";
-        document.getElementById('adj-actual-balance').value = "";
+        document.getElementById('adj-wallet-name-txt').innerText = (isCredit ? 'Thẻ: ' : 'Ví: ') + name;
+        document.getElementById('adj-app-balance-txt').innerText = isCredit 
+            ? ("Nợ: " + Math.abs(bal).toLocaleString() + " ¥") 
+            : (bal.toLocaleString() + " ¥");
+        const adjLabel = document.querySelector('#modal-adjust-balance label');
+        if (adjLabel) {
+            adjLabel.innerText = isCredit ? "Số dư NỢ THỰC TẾ cần chỉnh (¥)" : "Số dư THỰC TẾ thực cầm (¥)";
+        }
+        const adjInput = document.getElementById('adj-actual-balance');
+        if (adjInput) {
+            adjInput.placeholder = isCredit ? "Ví dụ: 1021243 (số tiền nợ thực tế)" : "Nhập số tiền thực tế...";
+            adjInput.value = "";
+        }
         openModal('modal-adjust-balance');
     }
 
     function submitAdjustBalance() {
         const name = document.getElementById('adj-wallet-name').value;
-        const actual = Number(document.getElementById('adj-actual-balance').value);
+        const isCredit = (t1_activeWalletForStatement && t1_activeWalletForStatement.type === 'CREDIT');
+        let actual = Number(document.getElementById('adj-actual-balance').value);
         const appBal = Number(t1_activeWalletForStatement ? t1_activeWalletForStatement.current_balance : 0);
 
         if (isNaN(actual)) {
@@ -1801,26 +2933,241 @@
             return;
         }
 
+        // Đối với thẻ tín dụng: Nếu người dùng nhập số nợ dương (ví dụ 1021243), lưu thành số âm (-1021243)
+        if (isCredit && actual > 0 && appBal <= 0) {
+            actual = -actual;
+        }
+
+        // Optimistic UI updates (0ms)
+        let oldBal = appBal;
+        let targetWalletObj = null;
+        if (Array.isArray(window.t1_walletsData)) {
+            targetWalletObj = window.t1_walletsData.find(w => String(w.name).trim().toLowerCase() === String(name).trim().toLowerCase());
+            if (targetWalletObj) {
+                oldBal = Number(targetWalletObj.current_balance) || 0;
+                targetWalletObj.current_balance = actual;
+            }
+            if (t1_activeWalletForStatement && String(t1_activeWalletForStatement.name).trim().toLowerCase() === String(name).trim().toLowerCase()) {
+                t1_activeWalletForStatement.current_balance = actual;
+            }
+            renderTab1Wallets();
+            try {
+                if (window.SERVER_INITIAL_DATA) window.SERVER_INITIAL_DATA.wallets = window.t1_walletsData;
+                localStorage.setItem('APP_LOCAL_CACHE_V25', JSON.stringify(window.SERVER_INITIAL_DATA || { success: true, wallets: window.t1_walletsData }));
+                localStorage.setItem('T1_CACHE_V25_LATEST', JSON.stringify({ success: true, wallets: window.t1_walletsData }));
+            } catch(e) {}
+        }
+
+        closeModal('modal-adjust-balance');
+        closeModal('modal-statement-credit');
+        closeModal('modal-statement-debit');
+        showToast("⚡ Đang cập nhật số dư " + name + " thành " + (isCredit ? ("Nợ " + Math.abs(actual).toLocaleString()) : actual.toLocaleString()) + " ¥...");
+
         const btn = document.getElementById('btn-submit-adjust');
-        btn.innerText = "Đang lưu..."; btn.disabled = true;
+        if (btn) { btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false; }
+
+        const cleanName = String(name).trim().toLowerCase();
+        if (window.t1_statementCache) delete window.t1_statementCache[cleanName];
 
         if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.adjustWalletBalance === 'function') {
             google.script.run.withSuccessHandler(function(res) {
-                btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false;
-                closeModal('modal-adjust-balance');
-                closeModal('modal-statement-credit');
-                closeModal('modal-statement-debit');
-                showToast(res.message || "✅ Đã chỉnh lệch số dư thành công!");
-                reloadTab1Data();
+                if (res && res.success) {
+                    showToast(res.message || "✅ Đã chỉnh lệch số dư thành công!");
+                    if (res.wallets && Array.isArray(res.wallets)) {
+                        window.t1_walletsData = res.wallets;
+                        if (window.SERVER_INITIAL_DATA) window.SERVER_INITIAL_DATA.wallets = res.wallets;
+                        renderTab1Wallets();
+                        try {
+                            localStorage.setItem('APP_LOCAL_CACHE_V25', JSON.stringify(window.SERVER_INITIAL_DATA || { success: true, wallets: res.wallets }));
+                            localStorage.setItem('T1_CACHE_V25_LATEST', JSON.stringify({ success: true, wallets: res.wallets }));
+                        } catch(e) {}
+                    }
+                    if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+                    else reloadTab1Data();
+                } else {
+                    // Rollback
+                    if (targetWalletObj) targetWalletObj.current_balance = oldBal;
+                    if (t1_activeWalletForStatement) t1_activeWalletForStatement.current_balance = oldBal;
+                    renderTab1Wallets();
+                    showToast(res && res.message ? res.message : "❌ Lỗi chỉnh lệch số dư", true);
+                }
             }).withFailureHandler(function(err) {
-                btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false;
-                showToast("❌ Lỗi: " + err.message, true);
+                // Rollback
+                if (targetWalletObj) targetWalletObj.current_balance = oldBal;
+                if (t1_activeWalletForStatement) t1_activeWalletForStatement.current_balance = oldBal;
+                renderTab1Wallets();
+                showToast("❌ Lỗi: " + (err.message || err), true);
             }).adjustWalletBalance({ walletName: name, actualBalance: actual, appBalance: appBal });
         } else {
-            btn.innerText = "Lưu Chênh Lệch"; btn.disabled = false;
-            closeModal('modal-adjust-balance');
             showToast("✅ Đã chỉnh lệch thành công (Demo)!");
-            reloadTab1Data();
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
+        }
+    }
+
+    // Modal Chốt Sổ Kỳ (Checkpoint Snapshot)
+    function openCheckpointModalFromStatement() {
+        if (!t1_activeWalletForStatement) return;
+        const name = t1_activeWalletForStatement.name || '';
+        const isCredit = (t1_activeWalletForStatement.type === 'CREDIT');
+        const bal = Number(t1_activeWalletForStatement.current_balance) || 0;
+        const lastCp = t1_activeWalletForStatement.checkpoint_date || t1_activeWalletForStatement.closing_date || '';
+        
+        document.getElementById('cp-wallet-name-txt').innerText = (isCredit ? 'Thẻ: ' : 'Ví: ') + name;
+        const cpLabel = document.querySelector('#modal-checkpoint-wallet label');
+        if (cpLabel) {
+            cpLabel.innerText = isCredit ? "Số Dư Nợ Thẻ Muốn Chốt Mốc (¥)" : "Số Dư Thực Tế Muốn Chốt Mốc (¥)";
+        }
+        const balInput = document.getElementById('cp-wallet-balance-input');
+        if (balInput) {
+            balInput.value = isCredit ? Math.abs(bal) : bal;
+            balInput.placeholder = isCredit ? "Ví dụ: 1021243 (số tiền nợ)" : "Nhập số dư thực tế...";
+        }
+        
+        const lastCpEl = document.getElementById('cp-wallet-last-checkpoint-txt');
+        if (lastCpEl) {
+            lastCpEl.innerHTML = `Thời gian đã chốt: <strong class="text-slate-700">${lastCp ? lastCp : 'Chưa chốt lần nào'}</strong>`;
+        }
+        
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        document.getElementById('cp-wallet-date').value = `${dd}/${mm}/${yyyy}`;
+        
+        openModal('modal-checkpoint-wallet');
+    }
+
+    function submitCheckpointWallet() {
+        if (!t1_activeWalletForStatement) return;
+        const walletId = t1_activeWalletForStatement.id || '';
+        const walletName = t1_activeWalletForStatement.name || '';
+        const isCredit = (t1_activeWalletForStatement.type === 'CREDIT');
+        const cpDate = document.getElementById('cp-wallet-date').value.trim();
+        const balInput = document.getElementById('cp-wallet-balance-input');
+        let curBal = balInput && balInput.value !== '' ? Number(balInput.value) : (Number(t1_activeWalletForStatement.current_balance) || 0);
+
+        // Đối với thẻ tín dụng: Nếu người dùng nhập số nợ dương (ví dụ 1021243), chuẩn hóa thành số âm (-1021243)
+        if (isCredit && curBal > 0) {
+            curBal = -curBal;
+        }
+
+        // Optimistic UI: Update balance in local state immediately
+        let oldBal = Number(t1_activeWalletForStatement.current_balance) || 0;
+        let targetWalletObj = null;
+        if (Array.isArray(window.t1_walletsData)) {
+            targetWalletObj = window.t1_walletsData.find(w => String(w.name).trim().toLowerCase() === String(walletName).trim().toLowerCase());
+            if (targetWalletObj) {
+                targetWalletObj.current_balance = curBal;
+                targetWalletObj.checkpoint_balance = curBal;
+                targetWalletObj.checkpoint_date = cpDate;
+            }
+            t1_activeWalletForStatement.current_balance = curBal;
+            t1_activeWalletForStatement.checkpoint_balance = curBal;
+            t1_activeWalletForStatement.checkpoint_date = cpDate;
+            renderTab1Wallets();
+            try {
+                if (window.SERVER_INITIAL_DATA) window.SERVER_INITIAL_DATA.wallets = window.t1_walletsData;
+                localStorage.setItem('APP_LOCAL_CACHE_V25', JSON.stringify(window.SERVER_INITIAL_DATA || { success: true, wallets: window.t1_walletsData }));
+                localStorage.setItem('T1_CACHE_V25_LATEST', JSON.stringify({ success: true, wallets: window.t1_walletsData }));
+            } catch(e) {}
+        }
+
+        // Đóng modal chốt sổ và modal sổ phụ để toàn bộ màn hình cập nhật số liệu mới nhất
+        closeModal('modal-checkpoint-wallet');
+        closeModal('modal-statement-credit');
+        closeModal('modal-statement-debit');
+        showToast("⚡ Đang chốt sổ mốc " + curBal.toLocaleString() + " ¥ cho " + walletName + "...");
+
+        const cleanName = String(walletName).trim().toLowerCase();
+        if (window.t1_statementCache) delete window.t1_statementCache[cleanName];
+
+        const btn = document.getElementById('btn-submit-checkpoint');
+        if (btn) { btn.innerText = "Đang chốt..."; btn.disabled = true; }
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.checkpointWalletBalance === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                if (btn) { btn.innerText = "Xác Nhận Chốt"; btn.disabled = false; }
+                showToast(res && res.message ? res.message : "✅ Đã chốt sổ kỳ thành công!");
+                
+                const wList = res.wallets || res.updatedWallets;
+                if (wList && Array.isArray(wList)) {
+                    window.t1_walletsData = wList;
+                    if (window.SERVER_INITIAL_DATA) window.SERVER_INITIAL_DATA.wallets = wList;
+                    renderTab1Wallets();
+                }
+                
+                // Tự động làm mới toàn bộ dữ liệu hệ thống (All tabs)
+                if (typeof forceReloadAllAppData === 'function') {
+                    forceReloadAllAppData(true);
+                } else if (typeof loadAppData === 'function') {
+                    loadAppData(true);
+                } else {
+                    reloadTab1Data();
+                }
+            }).withFailureHandler(function(err) {
+                if (btn) { btn.innerText = "Xác Nhận Chốt"; btn.disabled = false; }
+                // Rollback if error
+                if (targetWalletObj) targetWalletObj.current_balance = oldBal;
+                if (t1_activeWalletForStatement) t1_activeWalletForStatement.current_balance = oldBal;
+                renderTab1Wallets();
+                showToast("❌ Lỗi: " + (err ? (err.message || err) : "Lỗi chốt sổ"), true);
+            }).checkpointWalletBalance({ walletId: walletId, walletName: walletName, checkpointDate: cpDate, currentBalance: curBal });
+        } else {
+            if (btn) { btn.innerText = "Xác Nhận Chốt"; btn.disabled = false; }
+            showToast(`✅ Đã chốt sổ kỳ thành công (Demo)! Mốc mới: ${curBal.toLocaleString()} ¥`);
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
+        }
+    }
+
+    // Trigger Rebuild Wallet Balance
+    function triggerRebuildWalletFromStatement() {
+        if (!t1_activeWalletForStatement) return;
+        const walletId = t1_activeWalletForStatement.id || '';
+        const walletName = t1_activeWalletForStatement.name || '';
+
+        showToast("⏳ Đang rebuild lại số dư từ mốc chốt...");
+
+        if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.rebuildWalletBalance === 'function') {
+            google.script.run.withSuccessHandler(function(res) {
+                showToast(res.message || "✅ Đã rebuild số dư thành công!");
+                const cleanName = String(walletName).trim().toLowerCase();
+                if (window.t1_statementCache) delete window.t1_statementCache[cleanName];
+
+                if (res && res.currentBalance !== undefined) {
+                    if (t1_activeWalletForStatement) {
+                        t1_activeWalletForStatement.current_balance = res.currentBalance;
+                    }
+                    const debBalEl = document.getElementById('debit-statement-balance');
+                    if (debBalEl) debBalEl.innerText = res.currentBalance.toLocaleString() + ' ¥';
+                    const credBalEl = document.getElementById('credit-statement-balance');
+                    if (credBalEl) credBalEl.innerText = Math.abs(res.currentBalance).toLocaleString() + ' ¥';
+                    
+                    if (window.t1_walletsData) {
+                        const targetW = window.t1_walletsData.find(w => String(w.name || '').trim().toLowerCase() === cleanName);
+                        if (targetW) targetW.current_balance = res.currentBalance;
+                    }
+                    if (typeof renderTab1Wallets === 'function') renderTab1Wallets();
+                }
+
+                if (typeof forceReloadAllAppData === 'function') {
+                    forceReloadAllAppData(true);
+                } else if (typeof loadAppData === 'function') {
+                    loadAppData(true);
+                } else {
+                    reloadTab1Data();
+                }
+                if (t1_activeWalletForStatement) {
+                    openStatement(t1_activeWalletForStatement.name, t1_activeWalletForStatement.type);
+                }
+            }).withFailureHandler(function(err) {
+                showToast("❌ Lỗi rebuild: " + err.message, true);
+            }).rebuildWalletBalance(walletId || walletName);
+        } else {
+            showToast(`✅ Đã rebuild số dư cho ${walletName} thành công (Demo)!`);
+            if (typeof forceReloadAllAppData === 'function') forceReloadAllAppData(true);
+            else reloadTab1Data();
         }
     }
 
@@ -2534,6 +3881,35 @@
         }
     }
 
+    function t1_toggleCvvMask(cvvElId, realCvv, btnEl) {
+        t1_startAutoLockTimer();
+        const cvvEl = document.getElementById(cvvElId);
+        if (!cvvEl) return;
+        const isMasked = cvvEl.getAttribute('data-masked') === 'true';
+        if (isMasked) {
+            cvvEl.innerText = realCvv || '***';
+            cvvEl.setAttribute('data-masked', 'false');
+            if (btnEl) btnEl.innerText = "🙈";
+        } else {
+            cvvEl.innerText = "•••";
+            cvvEl.setAttribute('data-masked', 'true');
+            if (btnEl) btnEl.innerText = "👁";
+        }
+    }
+
+    function t1_toggleInputPassword(inputId, btnEl) {
+        t1_startAutoLockTimer();
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (btnEl) btnEl.innerText = "🙈";
+        } else {
+            input.type = 'password';
+            if (btnEl) btnEl.innerText = "👁";
+        }
+    }
+
     function renderCardInfoList() {
         const container = document.getElementById('t1-card-info-list');
         if (!container) return;
@@ -2669,7 +4045,12 @@
                         <div class="flex items-center justify-between text-[10px] pt-1 border-t border-white/10">
                           <div class="flex items-center gap-3">
                             <div><span class="text-slate-400 text-[8px] font-bold mr-1">HSD:</span><span class="font-mono font-bold text-white">${c.cardExp || '--/--'}</span> <button onclick="t1_copyToClipboard('${(c.cardExp||'').replace(/'/g, "\\'")}', 'HSD')" class="text-[9px] text-indigo-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
-                            <div><span class="text-slate-400 text-[8px] font-bold mr-1">CVV:</span><span class="font-mono font-bold text-white">${c.cardCvv || '***'}</span> <button onclick="t1_copyToClipboard('${(c.cardCvv||'').replace(/'/g, "\\'")}', 'CVV')" class="text-[9px] text-indigo-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
+                            <div>
+                              <span class="text-slate-400 text-[8px] font-bold mr-1">CVV:</span>
+                              <span id="cvv-${c.origIndex}" data-masked="true" class="font-mono font-bold text-white tracking-widest">•••</span>
+                              <button onclick="t1_toggleCvvMask('cvv-${c.origIndex}', '${(c.cardCvv||'').replace(/'/g, "\\'")}', this)" class="text-[9px] text-indigo-300 hover:text-white cursor-pointer ml-1" title="Ẩn/Hiện CVV">👁</button>
+                              <button onclick="t1_copyToClipboard('${(c.cardCvv||'').replace(/'/g, "\\'")}', 'CVV')" class="text-[9px] text-indigo-300 hover:text-white cursor-pointer ml-0.5" title="Copy CVV">📋</button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -2731,7 +4112,12 @@
                         <div class="flex items-center justify-between text-[10px] pt-1 border-t border-purple-500/20">
                           <div class="flex items-center gap-3">
                             <div><span class="text-purple-300 text-[8px] font-bold mr-1">HSD:</span><span class="font-mono font-bold text-white">${c.vCardExp || '--/--'}</span> <button onclick="t1_copyToClipboard('${(c.vCardExp||'').replace(/'/g, "\\'")}', 'HSD Thẻ ảo')" class="text-[9px] text-purple-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
-                            <div><span class="text-purple-300 text-[8px] font-bold mr-1">CVV:</span><span class="font-mono font-bold text-white">${c.vCardCvv || '***'}</span> <button onclick="t1_copyToClipboard('${(c.vCardCvv||'').replace(/'/g, "\\'")}', 'CVV Thẻ ảo')" class="text-[9px] text-purple-300 hover:text-white cursor-pointer ml-0.5">📋</button></div>
+                            <div>
+                              <span class="text-purple-300 text-[8px] font-bold mr-1">CVV:</span>
+                              <span id="vcvv-${c.origIndex}" data-masked="true" class="font-mono font-bold text-white tracking-widest">•••</span>
+                              <button onclick="t1_toggleCvvMask('vcvv-${c.origIndex}', '${(c.vCardCvv||'').replace(/'/g, "\\'")}', this)" class="text-[9px] text-purple-300 hover:text-white cursor-pointer ml-1" title="Ẩn/Hiện CVV">👁</button>
+                              <button onclick="t1_copyToClipboard('${(c.vCardCvv||'').replace(/'/g, "\\'")}', 'CVV Thẻ ảo')" class="text-[9px] text-purple-300 hover:text-white cursor-pointer ml-0.5">📋</button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -2899,6 +4285,36 @@
             }
             renderCardInfoList();
             showToast("✅ Đã lưu thông tin thẻ thành công (Demo)!");
+        }
+    }
+
+    function t1_triggerMigrateCards() {
+        if (typeof showToast === 'function') showToast("⏳ Đang quét và mã hóa dữ liệu thẻ trên Google Sheet...", false);
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    if (res && res.success) {
+                        const count = res.count !== undefined ? res.count : 0;
+                        if (typeof showToast === 'function') {
+                            showToast("✅ Đã mã hóa xong " + count + " thẻ trên Google Sheet! Vui lòng F5 lại trang tính để kiểm tra.", false);
+                        }
+                        if (window.t1_cardPasswordVerified && typeof verifyCardPasswordClient === 'function') {
+                            verifyCardPasswordClient();
+                        }
+                    } else {
+                        if (typeof showToast === 'function') {
+                            showToast("❌ " + ((res && res.message) || "Lỗi mã hóa dữ liệu thẻ!"), true);
+                        }
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    if (typeof showToast === 'function') {
+                        showToast("❌ Lỗi kết nối: " + err, true);
+                    }
+                })
+                .migrateEncryptExistingCards();
+        } else {
+            if (typeof showToast === 'function') showToast("✅ Đã quét và mã hóa dữ liệu thẻ (Môi trường test)!", false);
         }
     }
 

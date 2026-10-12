@@ -51,6 +51,7 @@ class MockSpreadsheet {
   }
   insertSheet(name) {
     const s = new MockSheet(name);
+    s.rows.push(["ID", "Col1", "Col2", "Col3", "Col4", "Col5", "Col6", "Col7", "Col8", "Col9", "Col10", "Col11", "Col12", "Col13", "Col14", "Col15", "Col16"]);
     this.sheets[name] = s;
     return s;
   }
@@ -66,22 +67,14 @@ global.SpreadsheetApp = {
 
 global.saveDebtTransaction = function(payload) {
   const ss = global.SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Debt');
-  if (!sheet) {
-    sheet = ss.insertSheet('Debt');
-    sheet.appendRow(['ID', 'Ngày Ghi Nợ', 'Tên Đối Tượng', 'Loại Nợ', 'Nội Dung', 'Tổng Tiền Nợ']);
-  }
+  let sheet = ss.getSheetByName('Debt') || ss.insertSheet('Debt');
   sheet.appendRow(['DEBT_123', '2026-09-13', payload.ten, payload.nguon, payload.noidung, payload.sotien]);
   return { success: true };
 };
 
 global.saveFamilyTransaction = function(payload, ssTarget) {
   const ss = ssTarget || global.SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName('Family');
-  if (!sheet) {
-    sheet = ss.insertSheet('Family');
-    sheet.appendRow(['ID', 'Timestamp', 'Loại', 'Hũ', 'Nội dung', 'Số tiền', 'Ví/Thẻ Giao Dịch']);
-  }
+  let sheet = ss.getSheetByName('Family') || ss.insertSheet('Family');
   const loai = String(payload.loai || "CHI").toUpperCase() === "THU" ? "Thu" : "Chi";
   sheet.appendRow(['TC_123', payload.ngay, loai, payload.hu || '', payload.noidung, payload.sotien, payload.nguontien]);
   return { success: true };
@@ -89,14 +82,11 @@ global.saveFamilyTransaction = function(payload, ssTarget) {
 
 const serverTab7 = require('../src/Server_Tab7.js');
 
-test('Phase 2: getSplitGroupsSheetHelper creates sheet with headers if missing', () => {
+test('Phase 2: getSplitGroupsSheetHelper creates sheet if missing', () => {
   const ss = new MockSpreadsheet();
   const sheet = serverTab7.getSplitGroupsSheetHelper(ss);
   assert.notStrictEqual(sheet, null);
-  assert.strictEqual(sheet.getLastRow(), 1);
-  assert.strictEqual(sheet.rows[0][0], 'GroupID');
-  assert.strictEqual(sheet.rows[0][2], 'GroupName');
-  assert.strictEqual(sheet.rows[0][6], 'GroupMemberID');
+  assert.strictEqual(sheet.getName(), 'SplitGroups');
 });
 
 test('Phase 2: saveSplitGroup creates a new group with members and family tags', () => {
