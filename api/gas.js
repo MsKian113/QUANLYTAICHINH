@@ -7076,7 +7076,7 @@ export default async function handler(req, res) {
 
         // Lấy danh sách PENDING mới nhất trả về
         const pendingRows = await sql`
-          SELECT id, tx_date, merchant, amount, direction, wallet_id, wallet_name, statement_month, raw_body, created_at
+          SELECT id, TO_CHAR(tx_date, 'YYYY-MM-DD') as tx_date, merchant, amount, direction, wallet_id, wallet_name, statement_month, raw_body, created_at
           FROM kian_email_sync_logs
           WHERE status = 'PENDING'
           ORDER BY tx_date DESC, id DESC
@@ -7097,8 +7097,15 @@ export default async function handler(req, res) {
 
       // 1B-2. LẤY DANH SÁCH EMAIL GIAO DỊCH CHỜ DUYỆT (KIAN ONLY)
       case 'getKianPendingEmailTransactions': {
+        const uLower = session ? String(session.username || '').toLowerCase() : '';
+        if (!isKian || uLower.includes('tien') || uLower.includes('stien')) {
+          return res.status(200).json({
+            success: true,
+            items: []
+          });
+        }
         const rows = await sql`
-          SELECT id, tx_date, merchant, amount, direction, wallet_id, wallet_name, statement_month, raw_body, created_at
+          SELECT id, TO_CHAR(tx_date, 'YYYY-MM-DD') as tx_date, merchant, amount, direction, wallet_id, wallet_name, statement_month, raw_body, created_at
           FROM kian_email_sync_logs
           WHERE status = 'PENDING'
           ORDER BY tx_date DESC, id DESC
@@ -7112,6 +7119,10 @@ export default async function handler(req, res) {
 
       // 1B-3. CẬP NHẬT TRẠNG THÁI GIAO DỊCH EMAIL (PROCESSED / DISMISSED)
       case 'updateKianEmailLogStatus': {
+        const uLower = session ? String(session.username || '').toLowerCase() : '';
+        if (!isKian || uLower.includes('tien') || uLower.includes('stien')) {
+          return res.status(200).json({ success: false, message: 'Tính năng chỉ dành cho Kian' });
+        }
         const payload = args[0] || {};
         const logId = parseInt(payload.id || payload.logId, 10);
         const newStatus = String(payload.status || 'PROCESSED').toUpperCase();

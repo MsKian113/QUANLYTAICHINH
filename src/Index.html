@@ -30,12 +30,35 @@
         var s = String(u).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
         return s === "tien" || s === "stien" || s.indexOf("tien") !== -1;
       }
+      function checkIsStienUserGlobal() {
+        if (typeof window._isStienTenantExplicit === 'boolean') return window._isStienTenantExplicit;
+        var u = window.CURRENT_USER || (function() {
+          try { return JSON.parse(localStorage.getItem('FIN_AUTH_USER') || '{}'); } catch(e){ return {}; }
+        })();
+        var name = String(u.username || u.name || '').toLowerCase();
+        if (isTienAccountClient(name)) return true;
+        var ssId = String(window.CURRENT_USER_SS_ID || u.spreadsheetId || '');
+        if (ssId.indexOf('1qGvL8ZJ2W') !== -1) return true;
+        return false;
+      }
+      try {
+        Object.defineProperty(window, 'isStienTenant', {
+          get: function() { return checkIsStienUserGlobal(); },
+          set: function(v) { window._isStienTenantExplicit = Boolean(v); },
+          configurable: true
+        });
+      } catch(eDef) {
+        window.isStienTenant = false;
+      }
       if (_savedUser) {
         var _uName = String(_savedUser.username || _savedUser.name || '').toLowerCase();
         if (isTienAccountClient(_uName)) {
           _ssId = '1qGvL8ZJ2W_I892S2gaBsAZTFNCSb6gCUsZhvYSma14E';
           _savedUser.spreadsheetId = _ssId;
           try { localStorage.setItem('FIN_AUTH_USER', JSON.stringify(_savedUser)); } catch(eStore) {}
+          window.isStienTenant = true;
+        } else {
+          window.isStienTenant = false;
         }
       }
       if (_token || _ssId || (_savedUser && _savedUser.username)) {

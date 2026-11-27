@@ -2506,6 +2506,8 @@ Ví dụ:
         }
         window.activeEmailReviewItem = item;
 
+        const rawTxDate = item.tx_date ? String(item.tx_date).split('T')[0].trim() : '';
+
         if (actionType === 'CHI' || actionType === 'THU') {
             if (typeof openAddTx === 'function') {
                 openAddTx(actionType);
@@ -2518,8 +2520,8 @@ Ví dụ:
             }
 
             const addDateInput = document.getElementById('add-date');
-            if (addDateInput && item.tx_date) {
-                addDateInput.value = item.tx_date;
+            if (addDateInput && rawTxDate) {
+                addDateInput.value = rawTxDate;
             }
 
             const addDescEl = document.getElementById('add-desc');
@@ -2578,7 +2580,7 @@ Ví dụ:
             }
 
             const muaNgayEl = document.getElementById('mua-ngay');
-            if (muaNgayEl && item.tx_date) muaNgayEl.value = item.tx_date;
+            if (muaNgayEl && rawTxDate) muaNgayEl.value = rawTxDate;
 
             const muaNoiEl = document.getElementById('mua-noi');
             if (muaNoiEl) {
@@ -3143,27 +3145,27 @@ Ví dụ:
                 status = 'OVERDUE';
                 urgency = 'CRITICAL';
                 isUrgent = true;
-                badge = `🚨 Quá hạn ${overdueDays} ngày (Hạn: ${effectiveDueDay}/${effectiveDueMonth})`;
+                badge = `🚨 Quá ${overdueDays} ngày`;
                 badgeClass = 'bg-rose-100 text-rose-800 border border-rose-300 font-black animate-pulse';
                 message = `Đã quá hạn tất toán ${overdueDays} ngày (Hạn: ngày ${effectiveDueDay}/${effectiveDueMonth}${isShifted ? ' dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ' : ''})`;
             } else if (diffDays === 0) {
                 status = 'DUE_TODAY';
                 urgency = 'HIGH';
                 isUrgent = true;
-                badge = `⚠️ Đến hạn hôm nay (${effectiveDueDay}/${effectiveDueMonth})`;
+                badge = `⚠️ Hôm nay`;
                 badgeClass = 'bg-rose-500 text-white font-black animate-pulse';
                 message = `Hôm nay đến hạn tất toán (Hạn: ngày ${effectiveDueDay}/${effectiveDueMonth}${isShifted ? ' dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ' : ''})`;
             } else if (diffDays <= 5) {
                 status = 'DUE_SOON';
                 urgency = 'MEDIUM';
                 isUrgent = true;
-                badge = `⏳ Sắp đến hạn (${diffDays} ngày)`;
+                badge = `⏳ Còn ${diffDays} ngày`;
                 badgeClass = 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
                 message = `Sắp đến hạn tất toán còn ${diffDays} ngày (Hạn: ngày ${effectiveDueDay}/${effectiveDueMonth}${isShifted ? ' dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ' : ''})`;
             } else {
                 status = 'UPCOMING';
                 urgency = 'LOW';
-                badge = `📅 Hạn: ngày ${effectiveDueDay}/${effectiveDueMonth}`;
+                badge = `📅 ${effectiveDueDay}/${effectiveDueMonth}`;
                 badgeClass = 'bg-blue-50 text-blue-700 border border-blue-200';
                 message = `Đến hạn ngày ${effectiveDueDay}/${effectiveDueMonth}${isShifted ? ' (dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ)' : ''} (còn ${diffDays} ngày)`;
             }
@@ -3266,9 +3268,9 @@ Ví dụ:
                 const settleAmt = r.dueDebt || r.debt;
                 cardsHtml += `
                 <div class="p-1.5 px-2.5 rounded-xl bg-white/95 border border-rose-200 shadow-2xs flex items-center justify-between gap-1.5 transition hover:border-rose-400">
-                    <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
-                        <span class="text-xs font-black text-slate-800 truncate">${r.name}</span>
-                        <span class="text-[9.5px] px-1.5 py-0.2 rounded font-black inline-flex items-center shrink-0 ${r.badgeClass}">${r.badge}</span>
+                    <div class="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
+                        <span class="text-xs font-black text-slate-800 shrink-0 max-w-[140px] sm:max-w-none truncate">${r.name}</span>
+                        <span class="text-[9px] px-1 py-0.2 rounded font-black inline-flex items-center shrink-0 ${r.badgeClass} whitespace-nowrap">${r.badge}</span>
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="text-xs font-black text-rose-600 whitespace-nowrap cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')">${settleAmt.toLocaleString()} ¥</span>
@@ -3292,9 +3294,9 @@ Ví dụ:
                         const settleAmt = r.dueDebt || r.debt;
                         otherHtml += `
                         <div class="p-1.5 px-2.5 rounded-xl bg-white/90 border border-slate-200 shadow-2xs flex items-center justify-between gap-1.5 transition hover:border-slate-300">
-                            <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
-                                <span class="text-xs font-black text-slate-800 truncate">${r.name}</span>
-                                <span class="text-[9.5px] px-1.5 py-0.2 rounded font-bold inline-flex items-center shrink-0 ${r.badgeClass}">${r.badge}</span>
+                            <div class="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
+                                <span class="text-xs font-black text-slate-800 shrink-0 max-w-[140px] sm:max-w-none truncate">${r.name}</span>
+                                <span class="text-[9px] px-1 py-0.2 rounded font-bold inline-flex items-center shrink-0 ${r.badgeClass} whitespace-nowrap">${r.badge}</span>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
                                 <span class="text-xs font-black text-slate-700 whitespace-nowrap cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')">${settleAmt.toLocaleString()} ¥</span>
@@ -3338,9 +3340,9 @@ Ví dụ:
                     const settleAmt = r.dueDebt || r.debt;
                     expandedListHtml += `
                     <div class="p-1.5 px-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-between gap-1.5 transition hover:border-slate-300">
-                        <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})" title="Bấm để xem sao kê kỳ ${dueMonth}">
-                            <span class="text-xs font-black text-slate-800 truncate">${r.name}</span>
-                            <span class="text-[9.5px] px-1.5 py-0.2 rounded font-bold inline-flex items-center shrink-0 ${r.badgeClass}">${r.badge}</span>
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})" title="Bấm để xem sao kê kỳ ${dueMonth}">
+                            <span class="text-xs font-black text-slate-800 shrink-0 max-w-[140px] sm:max-w-none truncate">${r.name}</span>
+                            <span class="text-[9px] px-1 py-0.2 rounded font-bold inline-flex items-center shrink-0 ${r.badgeClass} whitespace-nowrap">${r.badge}</span>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
                             <span class="text-xs font-black text-slate-700 whitespace-nowrap cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})">${settleAmt.toLocaleString()} ¥</span>
