@@ -6,5 +6,12 @@
   "webapp": {
     "executeAs": "USER_ACCESSING",
     "access": "ANYONE"
-  }
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://mail.google.com/",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/script.scriptapp"
+  ]
 }

@@ -214,8 +214,105 @@ function onOpen() {
       .createMenu('🚀 Vercel Cloud')
       .addItem('📋 Chỉ đẩy Categories & Mẫu Thu Chi sang Vercel (db-kian)', 'syncKianCategoriesToVercel')
       .addItem('⚡ Đẩy toàn bộ dữ liệu sang Vercel (db-kian)', 'syncKianDataToVercel')
+      .addSeparator()
+      .addItem('📧 Kích Hoạt Tự Động Bắt Mail Ngân Hàng (24/7)', 'enableAutomaticEmailSync')
+      .addItem('🔄 Quét Mail Ngân Hàng Ngay Bây Giờ', 'manualSyncBankEmailsFromMenu')
+      .addItem('⏸ Tạm Dừng Tự Động Bắt Mail', 'disableAutomaticEmailSync')
       .addToUi();
   } catch (err) {}
+}
+
+/**
+ * ============================================================
+ * TỰ ĐỘNG BẮT MAIL NGÂN HÀNG (KIAN & KICHU) GỬI VỀ VERCEL
+ * Gắn trực tiếp vào file MASTERDATA (1_lvyQlGzltyVKX-P9eAsxnN97ow0LNoCvbTh-1l-MBc)
+ * ============================================================
+ */
+var GMAIL_BANK_FOLDER = "NGANHANG";
+var VERCEL_WEBHOOK_URL = "https://qlytaichinh.vercel.app/api/gas";
+var VERCEL_API_KEY = "KIAN_FIN_2026";
+
+function enableAutomaticEmailSync() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    disableAutomaticEmailSync(true);
+
+    ScriptApp.newTrigger('syncBankEmailsToApp')
+      .timeBased()
+      .everyMinutes(1)
+      .create();
+
+    ui.alert(
+      'Kích Hoạt Thành Công',
+      '✅ Đã bật chế độ TỰ ĐỘNG BẮT MAIL 24/7 (quét mỗi 1 phút)!\n\n' +
+      'Từ bây giờ, cứ có mail ngân hàng gửi về rơi vào folder "' + GMAIL_BANK_FOLDER + '", ' +
+      'hệ thống sẽ tự động gửi sang Vercel mà bạn không cần phải làm gì thêm.',
+      ui.ButtonSet.OK
+    );
+  } catch (err) {
+    ui.alert('Lỗi Kích Hoạt', 'Không thể tạo trigger tự động: ' + err.message, ui.ButtonSet.OK);
+  }
+}
+
+function disableAutomaticEmailSync(silent) {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'syncBankEmailsToApp') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  if (!silent) {
+    var ui = SpreadsheetApp.getUi();
+    ui.alert('Thông Báo', '⏸ Đã tạm dừng tự động bắt mail.', ui.ButtonSet.OK);
+  }
+}
+
+function manualSyncBankEmailsFromMenu() {
+  var count = syncBankEmailsToApp();
+  var ui = SpreadsheetApp.getUi();
+  ui.alert('Kết Quả Quét Mail', 'Đã quét và đồng bộ ' + count + ' email mới sang Vercel!', ui.ButtonSet.OK);
+}
+
+function syncBankEmailsToApp() {
+  var query = 'label:"' + GMAIL_BANK_FOLDER + '" is:unread';
+  var threads = GmailApp.search(query, 0, 15);
+  var syncedCount = 0;
+
+  for (var i = 0; i < threads.length; i++) {
+    var messages = threads[i].getMessages();
+    for (var j = 0; j < messages.length; j++) {
+      var msg = messages[j];
+      if (!msg.isUnread()) continue;
+
+      var payload = {
+        apiKey: VERCEL_API_KEY,
+        messageId: msg.getId(),
+        from: msg.getFrom(),
+        to: msg.getTo(),
+        subject: msg.getSubject(),
+        rawEmail: msg.getPlainBody() || msg.getBody()
+      };
+
+      try {
+        var response = UrlFetchApp.fetch(VERCEL_WEBHOOK_URL, {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify(payload),
+          muteHttpExceptions: true
+        });
+
+        var resJson = JSON.parse(response.getContentText());
+        if (resJson && resJson.success) {
+          msg.markRead();
+          syncedCount++;
+        }
+      } catch (err) {
+        console.error("Lỗi gửi webhook:", err);
+      }
+    }
+  }
+
+  return syncedCount;
 }
 
 function extractCategoriesFromSheet(ss) {
