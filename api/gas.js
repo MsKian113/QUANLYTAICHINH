@@ -6006,99 +6006,154 @@ async function ensureKianEmailSyncSchema(sql, dbKey) {
 function parseRakutenEmailText(text) {
   if (!text || typeof text !== 'string') return [];
   const items = [];
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
   const isRefundOrIncome = /(?:取消|返金|返品|マイナス|入金|振込入金|還付)/i.test(text);
 
-  // Dạng 1: Key-value (速報版 - 利用日 / 利用先 / 利用金額)
-  if ((text.includes('利用日') || text.includes('日付') || text.includes('お取引日')) && (text.includes('利用金額') || text.includes('金額') || text.includes('お支払金額'))) {
-    let curDate = '';
-    let curMerchant = '';
-    let curAmount = 0;
-    let curStatementMonth = '';
-    let curDirection = isRefundOrIncome ? 'THU' : 'CHI';
-    let curOrderNum = '';
+  // 1. Chuẩn hóa: Nếu text chứa HTML, thay <br>, </tr>, </td> bằng newline/tab
+  let normalized = text
+    .replace(/<br\s*[\/]?>/gi, '\n')
+    .replace(/<\/tr>/gi, '\n')
+    .replace(/<\/td>/gi, '\t')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ');
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const dM = line.match(/(?:利用日|ご利用日|お取引日|日付)[：:\s]*(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
-      if (dM) {
-        const p = dM[1].split(/[\/\-]/);
-        curDate = `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`;
-      }
-      const mM = line.match(/(?:利用先|ご利用先|お取引内容|加盟店名)[：:\s]*(.+)/);
-      if (mM) curMerchant = mM[1].trim();
+  const lines = normalized.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
 
-      const aM = line.match(/(?:利用金額|ご利用金額|金額|お支払金額)[：:\s]*([+-]?\s*[0-9,]+)\s*円?/);
-      if (aM) {
-        const rawAmt = aM[1].replace(/[\s,]/g, '');
-        const parsed = parseInt(rawAmt, 10);
-        if (!isNaN(parsed)) {
-          if (parsed < 0 || aM[1].includes('-')) {
-            curDirection = 'THU';
-            curAmount = Math.abs(parsed);
-          } else {
-            curAmount = parsed;
-          }
+  // Dạng 1: Key-value riêng từng dòng (速報版: 利用日: ... \n 利用先: ... \n 利用金額: ...)
+  let curDate = '';
+  let curMerchant = '';
+  let curAmount = 0;
+  let curStatementMonth = '';
+  let curDirection = isRefundOrIncome ? 'THU' : 'CHI';
+  let curOrderNum = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const dM = line.match(/(?:利用日|ご利用日|お取引日|日付)[：:\s]+(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
+    if (dM) {
+      const p = dM[1].split(/[\/\-]/);
+      curDate = `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`;
+    }
+    const mM = line.match(/(?:利用先|ご利用先|お取引内容|加盟店名)[：:\s]+(.+)/);
+    if (mM) curMerchant = mM[1].trim();
+
+    const aM = line.match(/(?:利用金額|ご利用金額|お支払金額)[：:\s]+([+-]?\s*[0-9,]+)\s*円?/);
+    if (aM) {
+      const rawAmt = aM[1].replace(/[\s,]/g, '');
+      const parsed = parseInt(rawAmt, 10);
+      if (!isNaN(parsed)) {
+        if (parsed < 0 || aM[1].includes('-')) {
+          curDirection = 'THU';
+          curAmount = Math.abs(parsed);
+        } else {
+          curAmount = parsed;
         }
       }
+    }
 
-      const sM = line.match(/支払月[：:\s]*(\d{4})[\/\-年](\d{1,2})/);
-      if (sM) curStatementMonth = `${sM[1]}-${sM[2].padStart(2, '0')}`;
+    const sM = line.match(/支払月[：:\s]*(\d{4})[\/\-年](\d{1,2})/);
+    if (sM) curStatementMonth = `${sM[1]}-${sM[2].padStart(2, '0')}`;
 
-      const oM = line.match(/(?:ORDER#?|注文番号|注文ID)[：:\s]*([A-Za-z0-9\-]+)/i);
-      if (oM) curOrderNum = oM[1].trim();
+    const oM = line.match(/(?:ORDER#?|注文番号|注文ID)[：:\s]*([A-Za-z0-9\-]+)/i);
+    if (oM) curOrderNum = oM[1].trim();
 
-      if (curDate && curAmount > 0) {
-        items.push({
-          date: curDate,
-          merchant: curMerchant || 'Chi tiêu thẻ',
-          amount: curAmount,
-          statementMonth: curStatementMonth,
-          direction: curDirection,
-          orderNum: curOrderNum
-        });
-        curDate = '';
-        curMerchant = '';
-        curAmount = 0;
-        curStatementMonth = '';
-        curDirection = isRefundOrIncome ? 'THU' : 'CHI';
-        curOrderNum = '';
-      }
+    if (curDate && curAmount > 0) {
+      items.push({
+        date: curDate,
+        merchant: curMerchant || 'Chi tiêu thẻ',
+        amount: curAmount,
+        statementMonth: curStatementMonth,
+        direction: curDirection,
+        orderNum: curOrderNum
+      });
+      curDate = '';
+      curMerchant = '';
+      curAmount = 0;
+      curStatementMonth = '';
+      curDirection = isRefundOrIncome ? 'THU' : 'CHI';
+      curOrderNum = '';
     }
   }
 
-  // Dạng 2: Bảng chi tiết (ご利用日 \t ご利用先 \t ご利用金額)
+  // Dạng 2: Bảng chi tiết dạng dòng ngang hoặc đa dòng (確定版 / 楽天プレミアムカードご利用内容)
+  // Dòng 1: 2026/11/16 楽天証券投信積立０．５％～ 30,000 円
+  // Hoặc tách thành nhiều dòng:
+  // 2026/11/16
+  // 楽天証券投信積立０．５％～
+  // 30,000 円
   if (items.length === 0) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const dateMatch = line.match(/(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/);
-      const amountMatch = line.match(/([+-]?\s*[0-9,]+)\s*円/);
-      if (dateMatch && amountMatch) {
-        const dateParts = dateMatch[1].split(/[\/\-]/);
-        const date = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}`;
-        const rawAmt = amountMatch[1].replace(/[\s,]/g, '');
+      if (!dateMatch) continue;
+
+      const p = dateMatch[1].split(/[\/\-]/);
+      const date = `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`;
+
+      // Trường hợp 2A: Ngày và số tiền nằm trên cùng 1 dòng
+      const sameLineAmt = line.match(/([+-]?\s*[0-9,]+)\s*(?:円|¥)/);
+      if (sameLineAmt && !line.includes('合計')) {
+        const rawAmt = sameLineAmt[1].replace(/[\s,]/g, '');
         let amount = parseInt(rawAmt, 10);
         let direction = isRefundOrIncome ? 'THU' : 'CHI';
-        if (amount < 0 || amountMatch[1].includes('-')) {
+        if (amount < 0 || sameLineAmt[1].includes('-')) {
           direction = 'THU';
           amount = Math.abs(amount);
         }
 
         let merchant = line
           .replace(dateMatch[0], '')
-          .replace(amountMatch[0], '')
+          .replace(sameLineAmt[0], '')
           .replace(/\t/g, ' ')
+          .replace(/[\|｜]/g, ' ')
           .trim();
 
         let statementMonth = '';
-        for (let j = i + 1; j < Math.min(lines.length, i + 3); j++) {
+        for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
           const smMatch = lines[j].match(/支払月[：:\s]*(\d{4})[\/\-年](\d{1,2})/);
           if (smMatch) {
             statementMonth = `${smMatch[1]}-${smMatch[2].padStart(2, '0')}`;
             break;
           }
         }
+
+        if (amount > 0) {
+          items.push({ date, merchant: merchant || 'Chi tiêu thẻ', amount, statementMonth, direction });
+          continue;
+        }
+      }
+
+      // Trường hợp 2B: Ngày nằm ở 1 dòng, merchant ở dòng sau, số tiền ở dòng tiếp theo
+      let merchant = '';
+      let amount = 0;
+      let statementMonth = '';
+      let direction = isRefundOrIncome ? 'THU' : 'CHI';
+
+      for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
+        const nextLine = lines[j];
+        if (nextLine.includes('合計') || nextLine.match(/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/)) {
+          break; // Đã sang hàng tiếp theo hoặc tổng kết
+        }
+
+        const amtMatch = nextLine.match(/([+-]?\s*[0-9,]+)\s*(?:円|¥)/);
+        if (amtMatch && !amount) {
+          const rawAmt = amtMatch[1].replace(/[\s,]/g, '');
+          const parsed = parseInt(rawAmt, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            amount = parsed;
+            if (amtMatch[1].includes('-')) direction = 'THU';
+          }
+        } else if (!merchant && !nextLine.includes('支払方法') && !nextLine.includes('支払月') && !nextLine.includes('利用者')) {
+          merchant = nextLine.trim();
+        }
+
+        const smMatch = nextLine.match(/支払月[：:\s]*(\d{4})[\/\-年](\d{1,2})/);
+        if (smMatch && !statementMonth) {
+          statementMonth = `${smMatch[1]}-${smMatch[2].padStart(2, '0')}`;
+        }
+      }
+
+      if (date && amount > 0) {
         items.push({ date, merchant: merchant || 'Chi tiêu thẻ', amount, statementMonth, direction });
       }
     }
@@ -6851,8 +6906,13 @@ export default async function handler(req, res) {
         }
 
         if (items.length === 0) {
+          // Lưu vào log với trạng thái PARSE_FAILED để người dùng thấy trên app và biết email chưa được bóc tách
+          await sql`
+            INSERT INTO kian_email_sync_logs (sender, recipient, subject, raw_body, parsed_status, error_message)
+            VALUES (${fromAddr || 'Unknown'}, ${toAddr || ''}, ${subject || 'Email giao dịch'}, ${rawText.slice(0, 1000)}, 'PARSE_FAILED', 'Không tự động nhận diện được định dạng bảng hoặc mẫu giao dịch')
+          `.catch(() => {});
           return res.status(200).json({
-            success: true,
+            success: false,
             message: 'Không tìm thấy thông tin giao dịch trong nội dung email này.',
             addedCount: 0,
             skippedCount: 0

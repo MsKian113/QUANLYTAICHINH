@@ -302,7 +302,7 @@ function syncBankEmailsToApp() {
         });
 
         var resJson = JSON.parse(response.getContentText());
-        if (resJson && resJson.success) {
+        if (resJson && resJson.success && (resJson.addedCount > 0 || resJson.isConfirmation || resJson.skippedCount > 0)) {
           msg.markRead();
           syncedCount++;
         }
