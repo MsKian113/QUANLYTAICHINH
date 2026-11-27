@@ -7155,7 +7155,6 @@ export default async function handler(req, res) {
           message: 'Đã bỏ qua email thành công!'
         });
       }
-      }
 
       // 1C. LẤY MÃ XÁC NHẬN CHUYỂN TIẾP GMAIL MỚI NHẤT
       case 'getLatestEmailConfirmationCode': {
