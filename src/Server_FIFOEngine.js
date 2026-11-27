@@ -10,7 +10,7 @@ const SHEET_PURCHASE_FIFO = "Purchase";
  */
 function validateFIFOAvailability(productName, quantity, warehouse, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     const pSheet = ss.getSheetByName(SHEET_PURCHASE_FIFO);
     if (!pSheet || pSheet.getLastRow() < 2) {
       return { available: false, currentStock: 0, message: `Không có tồn kho cho sản phẩm: ${productName}` };
@@ -82,7 +82,7 @@ function allocateSaleFIFOCost(saleId, productName, quantity, warehouse, saleDate
   }
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     const pSheet = ss.getSheetByName(SHEET_PURCHASE_FIFO);
     if (!pSheet || pSheet.getLastRow() < 2) {
       return { success: false, totalCOGS: 0, allocations: [], message: "❌ Không tìm thấy Sheet Purchase." };
@@ -196,7 +196,7 @@ function rollbackSaleFIFOCost(saleId, ssTarget) {
   } catch(e) {}
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     const aSheet = ss ? (ss.getSheetByName("SaleCostAllocations") || ss.getSheetByName("Allocations")) : null;
     if (!aSheet || aSheet.getLastRow() < 2) {
       return { success: true, message: "Không có bảng allocations để rollback." };

@@ -14,14 +14,29 @@
       </button>
     </div>
 
-    <!-- Ô TÌM KIẾM TÀI KHOẢN & BỘ LỌC TIỆM MA TRẬN -->
-    <div class="flex gap-1.5 items-center">
-      <div class="relative flex-1">
-        <input id="t5-matrix-search" oninput="t5_renderMatrix()" type="text" placeholder="🔍 Gõ tìm tên tài khoản (VD: KA, Chi, 602)..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-500 focus:bg-white transition" />
+    <!-- Ô TÌM KIẾM TÀI KHOẢN & BỘ LỌC TIỆM MA TRẬN & BỘ LỌC TRẠNG THÁI -->
+    <div class="space-y-2">
+      <div class="flex gap-1.5 items-center">
+        <div class="relative flex-1">
+          <input id="t5-matrix-search" oninput="t5_renderMatrix()" type="text" placeholder="🔍 Gõ tìm tên tài khoản (VD: KA, Chi, 602)..." class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-500 focus:bg-white transition" />
+        </div>
+        <select id="t5-matrix-store-filter" onchange="t5_renderMatrix()" class="bg-white border border-slate-200 text-slate-800 font-bold text-[11px] px-2 py-1.5 rounded-xl outline-none cursor-pointer shadow-2xs">
+          <option value="ALL">🏪 Tất cả tiệm</option>
+        </select>
       </div>
-      <select id="t5-matrix-store-filter" onchange="t5_renderMatrix()" class="bg-white border border-slate-200 text-slate-800 font-bold text-[11px] px-2 py-1.5 rounded-xl outline-none cursor-pointer shadow-2xs">
-        <option value="ALL">🏪 Tất cả</option>
-      </select>
+
+      <!-- FILTER TABS: TẤT CẢ | SẴN SÀNG MUA | ĐANG COOLDOWN -->
+      <div class="flex items-center gap-1.5 text-[11px] font-bold">
+        <button type="button" onclick="t5_setStatusFilter('ALL')" id="t5-filter-btn-all" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-2xs transition cursor-pointer">
+          📋 Tất cả (<span id="t5-count-all">0</span>)
+        </button>
+        <button type="button" onclick="t5_setStatusFilter('READY')" id="t5-filter-btn-ready" class="px-2.5 py-1 rounded-lg bg-slate-100 text-emerald-700 hover:bg-emerald-50 border border-slate-200 transition cursor-pointer">
+          🟢 Sẵn sàng (<span id="t5-count-ready">0</span>)
+        </button>
+        <button type="button" onclick="t5_setStatusFilter('COOLDOWN')" id="t5-filter-btn-cooldown" class="px-2.5 py-1 rounded-lg bg-slate-100 text-rose-700 hover:bg-rose-50 border border-slate-200 transition cursor-pointer">
+          ⏳ Đang chờ (<span id="t5-count-cooldown">0</span>)
+        </button>
+      </div>
     </div>
 
     <!-- CONTAINER DANH SÁCH CÁC TIỆM & TÀI KHOẢN -->
@@ -45,15 +60,19 @@
       <button type="button" onclick="closeModal('modal-t5-acc-detail')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
     </div>
 
-    <!-- CHỈ HIỆN NGÀY MUA GẦN NHẤT & TÊN SP -->
+    <!-- HIỆN NGÀY MUA GẦN NHẤT, TÊN SP & NGÀY ĐƯỢC MUA LẠI -->
     <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 space-y-2">
       <div class="flex justify-between items-center">
         <span class="text-slate-500 font-medium">📅 Ngày mua gần nhất:</span>
-        <b id="t5-md-last-date" class="text-slate-900 font-black text-sm">26/05/2026</b>
+        <b id="t5-md-last-date" class="text-slate-900 font-black text-sm">Chưa từng mua</b>
       </div>
       <div class="flex justify-between items-center border-t border-slate-200/60 pt-1.5">
         <span class="text-slate-500 font-medium">📦 Tên SP mua gần nhất:</span>
-        <b id="t5-md-last-product" class="text-slate-800 font-bold truncate max-w-[170px]">30th Deki</b>
+        <b id="t5-md-last-product" class="text-slate-800 font-bold truncate max-w-[170px]">Chưa có đơn</b>
+      </div>
+      <div class="flex justify-between items-center border-t border-slate-200/60 pt-1.5">
+        <span class="text-slate-500 font-medium">⏱️ Ngày được mua lại:</span>
+        <b id="t5-md-next-date" class="text-emerald-700 font-black text-sm">Sẵn sàng mua ngay</b>
       </div>
     </div>
 
@@ -172,25 +191,47 @@
   function applyTab5Data(res) {
     if (res && res.success) {
       window.TAB5_DATA = res;
+      try {
+        localStorage.setItem('tab5_data_local', JSON.stringify(res));
+      } catch(e) {}
       if (typeof t5_renderMatrix === 'function') {
         t5_renderMatrix();
       }
     }
   }
 
-  function t5_loadData(forceRefresh) {
-    if (!forceRefresh && window.TAB5_DATA && window.TAB5_DATA.matrix && window.TAB5_DATA.matrix.length > 0) {
+  function t5_loadData(forceRefresh, isSilent) {
+    // Nếu đã có dữ liệu trong bộ nhớ, render ngay lập tức (0ms)
+    if (window.TAB5_DATA && window.TAB5_DATA.matrix && window.TAB5_DATA.matrix.length > 0) {
       if (typeof t5_renderMatrix === 'function') t5_renderMatrix();
-      return;
+      if (!forceRefresh) return;
     }
+    
+    if (forceRefresh) {
+      try {
+        localStorage.removeItem('tab5_data_local');
+      } catch(e) {}
+    }
+
     if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab5Data === 'function') {
-      google.script.run.withSuccessHandler(function(res) {
-        if (res && res.success) {
-          applyTab5Data(res);
-        } else {
-          showToast("❌ Không thể tải dữ liệu Lịch Mua!", true);
-        }
-      }).getTab5Data();
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            applyTab5Data(res);
+          } else {
+            console.warn("⚠️ getTab5Data response warning:", res);
+            if (!isSilent) {
+              showToast("❌ Không thể tải dữ liệu Lịch Mua!", true);
+            }
+          }
+        })
+        .withFailureHandler(function(err) {
+          console.error("❌ getTab5Data failed:", err);
+          if (!isSilent) {
+            showToast("❌ Lỗi kết nối khi tải Lịch Mua!", true);
+          }
+        })
+        .getTab5Data(!!forceRefresh, (typeof getTenantTarget === 'function' ? getTenantTarget() : (window.CURRENT_SESSION_TOKEN || window.CURRENT_USER_SS_ID || null)));
     }
   }
 
@@ -222,7 +263,28 @@
     }
   }
 
-  // RENDER MA TRẬN TÀI KHOẢN THEO CỬA HÀNG (DẠNG ULTRALIGHT COMPACT)
+  window.T5_STATUS_FILTER = 'ALL';
+
+  function t5_setStatusFilter(status) {
+    window.T5_STATUS_FILTER = status || 'ALL';
+    const btnAll = document.getElementById('t5-filter-btn-all');
+    const btnReady = document.getElementById('t5-filter-btn-ready');
+    const btnCd = document.getElementById('t5-filter-btn-cooldown');
+    if (btnAll && btnReady && btnCd) {
+      btnAll.className = (window.T5_STATUS_FILTER === 'ALL')
+        ? "px-2.5 py-1 rounded-lg bg-indigo-600 text-white shadow-2xs transition cursor-pointer"
+        : "px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition cursor-pointer";
+      btnReady.className = (window.T5_STATUS_FILTER === 'READY')
+        ? "px-2.5 py-1 rounded-lg bg-emerald-600 text-white shadow-2xs transition cursor-pointer"
+        : "px-2.5 py-1 rounded-lg bg-slate-100 text-emerald-700 hover:bg-emerald-50 border border-slate-200 transition cursor-pointer";
+      btnCd.className = (window.T5_STATUS_FILTER === 'COOLDOWN')
+        ? "px-2.5 py-1 rounded-lg bg-rose-600 text-white shadow-2xs transition cursor-pointer"
+        : "px-2.5 py-1 rounded-lg bg-slate-100 text-rose-700 hover:bg-rose-50 border border-slate-200 transition cursor-pointer";
+    }
+    t5_renderMatrix();
+  }
+
+  // RENDER MA TRẬN TÀI KHOẢN THEO CỬA HÀNG (DẠNG TRỰC QUAN RÕ RÀNG)
   function t5_renderMatrix() {
     const containers = document.querySelectorAll('[id="t5-matrix-container"]');
     if (!containers || containers.length === 0) return;
@@ -237,7 +299,7 @@
       if (matrix.length > 0) {
         const uniqueStores = [...new Set(matrix.map(st => st.store))].filter(Boolean);
         if (storeFilterEl.options.length <= 1 || storeFilterEl.getAttribute('data-loaded') !== String(uniqueStores.length)) {
-          let optHtml = `<option value="ALL">🏪 Tất cả</option>`;
+          let optHtml = `<option value="ALL">🏪 Tất cả tiệm</option>`;
           uniqueStores.forEach(s => {
             optHtml += `<option value="${s}">${s}</option>`;
           });
@@ -259,6 +321,28 @@
       });
       return;
     }
+
+    // Đếm tổng số lượng cho 3 tab lọc trạng thái
+    let totalAllCount = 0;
+    let totalReadyCount = 0;
+    let totalCdCount = 0;
+
+    matrix.forEach(st => {
+      const stNameLower = String(st.store || '').toLowerCase();
+      if (!['fuji', 'yodo', 'joshin'].includes(stNameLower)) return;
+      (st.accountsStatus || []).forEach(acc => {
+        totalAllCount++;
+        if (acc.isCooldown) totalCdCount++;
+        else totalReadyCount++;
+      });
+    });
+
+    const cntAllEl = document.getElementById('t5-count-all');
+    const cntReadyEl = document.getElementById('t5-count-ready');
+    const cntCdEl = document.getElementById('t5-count-cooldown');
+    if (cntAllEl) cntAllEl.innerText = totalAllCount;
+    if (cntReadyEl) cntReadyEl.innerText = totalReadyCount;
+    if (cntCdEl) cntCdEl.innerText = totalCdCount;
 
     let html = '';
 
@@ -283,6 +367,13 @@
         );
       }
 
+      // LỌC THEO TAB TRẠNG THÁI (ALL / READY / COOLDOWN)
+      if (window.T5_STATUS_FILTER === 'READY') {
+        filteredAccs = filteredAccs.filter(a => !a.isCooldown);
+      } else if (window.T5_STATUS_FILTER === 'COOLDOWN') {
+        filteredAccs = filteredAccs.filter(a => a.isCooldown);
+      }
+
       if (filteredAccs.length === 0) return;
 
       const sortAccs = (arr) => {
@@ -300,7 +391,7 @@
       const colorAccs = sortAccs(filteredAccs.filter(a => (a.category || '').includes('Màu')));
       const uniqueCount = new Set(filteredAccs.map(a => a.shortName || a.account).filter(Boolean)).size;
       let cardTheme = {
-        border: 'border-amber-200/80 bg-amber-50/40',
+        border: 'border-amber-200/80 bg-amber-50/30',
         header: 'bg-amber-100/70 border-amber-200/60',
         titleText: 'text-amber-950',
         badge: 'bg-amber-600 text-white',
@@ -309,7 +400,7 @@
 
       if (stNameLower.includes('yodo')) {
         cardTheme = {
-          border: 'border-sky-200/80 bg-sky-50/40',
+          border: 'border-sky-200/80 bg-sky-50/30',
           header: 'bg-sky-100/70 border-sky-200/60',
           titleText: 'text-sky-950',
           badge: 'bg-sky-600 text-white',
@@ -317,23 +408,15 @@
         };
       } else if (stNameLower.includes('joshin')) {
         cardTheme = {
-          border: 'border-emerald-200/80 bg-emerald-50/40',
+          border: 'border-emerald-200/80 bg-emerald-50/30',
           header: 'bg-emerald-100/70 border-emerald-200/60',
           titleText: 'text-emerald-950',
           badge: 'bg-emerald-600 text-white',
           divider: 'border-emerald-200/50'
         };
-      } else if (stNameLower.includes('edion')) {
-        cardTheme = {
-          border: 'border-purple-200/80 bg-purple-50/40',
-          header: 'bg-purple-100/70 border-purple-200/60',
-          titleText: 'text-purple-950',
-          badge: 'bg-purple-600 text-white',
-          divider: 'border-purple-200/50'
-        };
       } else if (stNameLower.includes('fuji')) {
         cardTheme = {
-          border: 'border-indigo-200/80 bg-indigo-50/40',
+          border: 'border-indigo-200/80 bg-indigo-50/30',
           header: 'bg-indigo-100/70 border-indigo-200/60',
           titleText: 'text-indigo-950',
           badge: 'bg-indigo-600 text-white',
@@ -348,9 +431,34 @@
       else if (stNameLower.includes('joshin')) stCdDays = storeCooldowns.Joshin !== undefined ? storeCooldowns.Joshin : 30;
       else stCdDays = 0;
 
+      const renderAccItem = (acc) => {
+        const displayName = acc.shortName || acc.account;
+        if (acc.isCooldown) {
+          return `
+            <button onclick="t5_clickAccBadge('${st.store}', '${acc.account}', '${acc.category}')" 
+                    class="bg-rose-50 hover:bg-rose-100 text-rose-950 border border-rose-300 active:scale-95 py-1 px-2 rounded-xl text-[10px] font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                    title="${acc.account} - Chờ ${acc.daysLeft} ngày (Mở lại: ${acc.nextAvailableDate || ''})">
+              <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0"></span>
+              <span class="truncate max-w-[95px]">${displayName}</span>
+              <span class="bg-rose-600 text-white rounded-md px-1 py-0.2 text-[9px] font-black leading-tight shrink-0 shadow-2xs">${acc.daysLeft}n</span>
+            </button>
+          `;
+        } else {
+          return `
+            <button onclick="t5_clickAccBadge('${st.store}', '${acc.account}', '${acc.category}')" 
+                    class="bg-emerald-50 hover:bg-emerald-100 text-emerald-950 border border-emerald-300 active:scale-95 py-1 px-2 rounded-xl text-[10px] font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1.5"
+                    title="${acc.account} - Sẵn sàng mua ngay">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+              <span class="truncate max-w-[110px]">${displayName}</span>
+              <span class="text-[9px] text-emerald-700 font-extrabold bg-emerald-100/80 px-1 py-0.2 rounded shrink-0">Sẵn sàng</span>
+            </button>
+          `;
+        }
+      };
+
       html += `
-        <div class="border ${cardTheme.border} rounded-2xl overflow-hidden shadow-2xs">
-          <div class="${cardTheme.header} p-1.5 px-2.5 flex justify-between items-center border-b">
+        <div class="border ${cardTheme.border} rounded-2xl overflow-hidden shadow-2xs bg-white">
+          <div class="${cardTheme.header} p-2 px-3 flex justify-between items-center border-b">
             <div class="flex items-center gap-1.5">
               <span class="text-xs">🏬</span>
               <span class="font-extrabold text-xs ${cardTheme.titleText}">${st.store}</span>
@@ -361,36 +469,27 @@
             <span class="text-[9px] font-bold ${cardTheme.badge} px-2 py-0.5 rounded-full shadow-2xs">${uniqueCount} TK</span>
           </div>
 
-          <div class="p-1.5 px-2 space-y-1 text-xs">
+          <div class="p-2 space-y-2 text-xs">
             <!-- DÒNG TRẮNG -->
-            <div class="flex items-start gap-1.5">
-              <span class="w-3.5 h-3.5 rounded-full border border-slate-400 bg-white flex items-center justify-center shrink-0 text-[8px] font-bold text-slate-600 shadow-2xs mt-1" title="Film Trắng">⚪</span>
-              <div class="flex flex-wrap gap-x-2 gap-y-2 flex-1 pt-1 pb-0.5 pr-1">
-                ${whiteAccs.length === 0 ? `<span class="text-slate-400 italic text-[10px] my-0.5">Chưa có TK</span>` : whiteAccs.map((acc) => `
-                  <button onclick="t5_clickAccBadge('${st.store}', '${acc.account}', '${acc.category}')" 
-                          class="${acc.isCooldown ? 'bg-rose-50 text-rose-950 border border-rose-300 hover:bg-rose-100 relative pl-1.5 pr-3.5' : 'bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 px-2'} py-0.5 rounded-full text-[10px] font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1">
-                    ${acc.isCooldown ? `<span class="w-2 h-2 rounded-full bg-rose-600 shrink-0"></span>` : ''}
-                    <span>${acc.shortName || acc.account}</span> 
-                    ${acc.isCooldown ? `<span class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white border-1.5 border-white rounded-full min-w-4 h-4 px-0.5 text-[8px] font-black flex items-center justify-center shadow-2xs leading-none">${acc.daysLeft}n</span>` : ''}
-                  </button>
-                `).join('')}
+            <div>
+              <div class="flex items-center gap-1 text-[10px] font-bold text-slate-600 mb-1">
+                <span>⚪</span> <span>Film Trắng</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 flex-1">
+                ${whiteAccs.length === 0 ? `<span class="text-slate-400 italic text-[10px] py-0.5">Không có tài khoản phù hợp</span>` : whiteAccs.map(renderAccItem).join('')}
               </div>
             </div>
 
-            <div class="border-t ${cardTheme.divider} my-1"></div>
+            <div class="border-t ${cardTheme.divider}"></div>
 
             <!-- DÒNG MÀU -->
-            <div class="flex items-start gap-2">
-              <span class="w-3.5 h-3.5 rounded-full border border-amber-400 bg-amber-300 flex items-center justify-center shrink-0 text-[8px] font-bold text-amber-950 shadow-2xs mt-1" title="Film Màu">🟡</span>
-              <div class="flex flex-wrap gap-x-2 gap-y-2 flex-1 pt-1 pb-0.5 pr-1">
-                ${colorAccs.length === 0 ? `<span class="text-slate-400 italic text-[10px] my-0.5">Chưa có TK</span>` : colorAccs.map((acc) => `
-                  <button onclick="t5_clickAccBadge('${st.store}', '${acc.account}', '${acc.category}')" 
-                          class="${acc.isCooldown ? 'bg-rose-50 text-rose-950 border border-rose-300 hover:bg-rose-100 relative pl-1.5 pr-3.5' : 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 px-2'} py-0.5 rounded-full text-[10px] font-bold transition shadow-2xs cursor-pointer inline-flex items-center gap-1">
-                    ${acc.isCooldown ? `<span class="w-2 h-2 rounded-full bg-rose-600 shrink-0"></span>` : ''}
-                    <span>${acc.shortName || acc.account}</span> 
-                    ${acc.isCooldown ? `<span class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white border-1.5 border-white rounded-full min-w-4 h-4 px-0.5 text-[8px] font-black flex items-center justify-center shadow-2xs leading-none">${acc.daysLeft}n</span>` : ''}
-                  </button>
-                `).join('')}
+            <div>
+              <div class="flex items-center gap-1 text-[10px] font-bold text-amber-700 mb-1">
+                <span>🟡</span> <span>Film Màu</span>
+                ${stNameLower.includes('yodo') ? `<span class="text-[8.5px] font-normal text-slate-500 italic">(Yodo không giới hạn cooldown)</span>` : ''}
+              </div>
+              <div class="flex flex-wrap gap-1.5 flex-1">
+                ${colorAccs.length === 0 ? `<span class="text-slate-400 italic text-[10px] py-0.5">Không có tài khoản phù hợp</span>` : colorAccs.map(renderAccItem).join('')}
               </div>
             </div>
           </div>
@@ -444,6 +543,17 @@
     document.getElementById('t5-md-last-date').innerText = foundAcc.lastPurchaseDate || "Chưa từng mua";
     document.getElementById('t5-md-last-product').innerText = foundAcc.lastProduct || "Chưa có đơn";
 
+    const nextDateEl = document.getElementById('t5-md-next-date');
+    if (nextDateEl) {
+      if (foundAcc.isCooldown) {
+        nextDateEl.className = "text-rose-700 font-black text-sm";
+        nextDateEl.innerText = `${foundAcc.nextAvailableDate || "Chờ"} (còn ${foundAcc.daysLeft} ngày)`;
+      } else {
+        nextDateEl.className = "text-emerald-700 font-black text-sm";
+        nextDateEl.innerText = "Sẵn sàng mua ngay";
+      }
+    }
+
     const btnCancel = document.getElementById('t5-btn-cancel-cooldown');
     if (foundAcc.isCooldown) {
       btnCancel.classList.remove('hidden');
@@ -495,7 +605,12 @@
       if (firstRowPrice) firstRowPrice.value = lastPrice;
     }
 
-    openModal('modal-biz-mua');
+    if (typeof openBizOrderModal === 'function') {
+      openBizOrderModal('MUA');
+    } else {
+      if (typeof toggleBizType === 'function') toggleBizType('MUA');
+      openModal('modal-biz-mua');
+    }
   }
 
   function t5_cancelAccountCooldown(accountName, storeName) {
@@ -503,7 +618,7 @@
     const activeOrder = items.find(it => 
       String(it.cuaHang || '').trim().toLowerCase() === String(storeName || '').trim().toLowerCase() &&
       String(it.taiKhoan || '').trim().toLowerCase() === String(accountName || '').trim().toLowerCase() &&
-      it.trangThai === "THANH_CONG"
+      (it.trangThai === "DANG_CHO" || it.trangThai === "THANH_CONG")
     );
 
     if (activeOrder && activeOrder.id) {
@@ -614,6 +729,9 @@
   window.t5_openSingleStoreCooldownModal = t5_openSingleStoreCooldownModal;
   window.t5_closeStoreCooldownModal = t5_closeStoreCooldownModal;
   window.t5_handleSaveSingleStoreCooldown = t5_handleSaveSingleStoreCooldown;
+  window.t5_loadData = t5_loadData;
+  window.applyTab5Data = applyTab5Data;
+  window.t5_renderMatrix = t5_renderMatrix;
 
   function t5_handleSaveSingleStoreCooldown() {
     const storeKey = document.getElementById('t5-single-cd-store-key').value;

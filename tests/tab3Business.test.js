@@ -108,7 +108,7 @@ test('getBusinessData calculates summary totals and returns warehouse list', () 
   const db = createMockTab3DB();
   const res = getBusinessData('9', '2026');
 
-  assert.equal(res.success, true);
+  console.error('DEBUG RES:', res); assert.equal(res.success, true);
   assert.equal(res.summary.sales, 100000);
   assert.equal(res.summary.stockValue, 5000);
   assert.equal(res.warehouses.includes('Kho 1F Nhật'), true);
@@ -130,6 +130,7 @@ test('savePurchaseOrder appends a purchase transaction', () => {
   assert.equal(db.Purchase.length, 3);
   if (db.WalletLedger) {
     assert.equal(db.WalletLedger.length >= 2, true);
+    assert.equal(db.WalletLedger[1][3], '2026-09-09');
   }
 });
 
@@ -143,6 +144,10 @@ test('saveSalesOrder appends a sales transaction', () => {
   });
 
   assert.equal(res.success, true);
+  if (db.WalletLedger) {
+    assert.equal(db.WalletLedger.length >= 2, true);
+    assert.equal(db.WalletLedger[1][3], '2026-09-09');
+  }
   assert.equal(db.Sales.length, 3);
   if (db.WalletLedger) {
     assert.equal(db.WalletLedger.length >= 2, true);
@@ -235,6 +240,7 @@ test('getBusinessData excludes Chờ Ship and Pre-order items from groupedInvent
   db.Purchase.push(['PO003', '2026-09-02', 'Yodobashi', 'Kho Nhật', 'iPhone 15', 1, 120000, 120000, 'Thẻ', 'PRE-ORDER', '[Pre-order/Chờ trừ thẻ]', 1]);
 
   const res = getBusinessData('9', '2026');
+  console.log('DEBUG RES:', res);
   assert.equal(res.success, true);
 
   // Neither Tai nghe Sony (Chờ Ship) nor iPhone 15 (Pre-order) should be in groupedInventory
@@ -368,6 +374,31 @@ test('getBusinessData filters in-stock products for sales suggestion based on pu
   assert.equal(Boolean(nikeProd), false);
 });
 
+test('Sales form suggestions strictly exclude Chờ ship, Đặt trước, Hủy, Chusen, and tonKho <= 0', () => {
+  createMockTab3DB();
+
+  savePurchaseOrder({ ngay: '2026-09-01', noiMua: 'Donki', trangThaiKho: 'Kho Nhật', nguonTien: 'Ví Tiền Mặt', items: [{ tenSP: 'SP San Sang', qty: 5, price: 1000 }] });
+  savePurchaseOrder({ ngay: '2026-09-01', noiMua: 'Amazon', trangThaiKho: 'Chờ Ship', nguonTien: 'Ví Tiền Mặt', items: [{ tenSP: 'SP Cho Ship', qty: 3, price: 2000 }] });
+  savePurchaseOrder({ ngay: '2026-09-01', noiMua: 'Bic', trangThaiKho: 'Đặt trước', nguonTien: 'Ví Tiền Mặt', items: [{ tenSP: 'SP Dat Truoc', qty: 2, price: 3000 }] });
+  savePurchaseOrder({ ngay: '2026-09-01', noiMua: 'Rakuten', trangThaiKho: 'Chusen', nguonTien: 'Ví Tiền Mặt', items: [{ tenSP: 'SP Chusen', qty: 1, price: 4000 }] });
+  savePurchaseOrder({ ngay: '2026-09-01', noiMua: 'Yodo', trangThaiKho: 'Hủy', nguonTien: 'Ví Tiền Mặt', items: [{ tenSP: 'SP Huy', qty: 1, price: 5000 }] });
+  savePurchaseOrder({ ngay: '2026-09-01', noiMua: 'Donki', trangThaiKho: 'Kho Nhật', nguonTien: 'Ví Tiền Mặt', items: [{ tenSP: 'SP Het Hang', qty: 1, price: 1000 }] });
+  saveSalesOrder({ ngay: '2026-09-02', nhanTienVao: 'Ví Tiền Mặt', items: [{ tenSP: 'SP Het Hang', qty: 1, price: 2000, noiTru: 'Kho Nhật' }] });
+
+  const res = getBusinessData('9', '2026', null, true);
+  assert.equal(res.success, true);
+
+  // groupedInventory and products must ONLY contain 'SP San Sang'
+  assert.equal(res.products.some(p => p.tenSP === 'SP San Sang'), true);
+  assert.equal(res.products.find(p => p.tenSP === 'SP San Sang').qty, 5);
+
+  assert.equal(res.products.some(p => p.tenSP === 'SP Cho Ship'), false);
+  assert.equal(res.products.some(p => p.tenSP === 'SP Dat Truoc'), false);
+  assert.equal(res.products.some(p => p.tenSP === 'SP Chusen'), false);
+  assert.equal(res.products.some(p => p.tenSP === 'SP Huy'), false);
+  assert.equal(res.products.some(p => p.tenSP === 'SP Het Hang'), false);
+});
+
 test('getBusinessData filters out empty rows and handles empty Purchase sheet', () => {
   const db = createMockTab3DB();
   // Clear all data rows in Purchase, keeping header and empty rows
@@ -472,5 +503,67 @@ test('updateWarehouseStatus and updateBatchWarehouseStatus log transfer rows to 
   assert.equal(db.STOCK_TRANSFER[2][5], 'Kho 2F VN');
 });
 
+test('Pre-order Confirmation: confirmBatchPreOrdersPayment accepts LedgerID, updates Purchase and WalletLedger without error', () => {
+  const db = createMockTab3DB();
+  db.Purchase.push(
+    ['PO_INSTAX_99', '2026-10-20', 'Khách A', 'Đặt trước', 'Film MINI INSTAX (x3)', 1, 33230, 33230, 'C- Raku KA', 'PENDING', '[Pre-order] Film MINI INSTAX', 0]
+  );
+  db.WalletLedger.push(
+    ['WL_PRE_8888', 'W_RAKU_CC', 'C- Raku KA', '2026-10-20', 33230, 'HOLD', 'PREORDER_HOLD', 'Purchase', 'PO_INSTAX_99', 'PREORDER', 'K_PRE', 'PENDING', '[Pre] - Film MINI INSTAX (x3) + 9 SP khác', '2026-10-20T10:00:00Z', '', '']
+  );
 
+  // Gọi xác nhận đã trừ thẻ bằng LedgerID 'WL_PRE_8888' (như giao diện modal chi tiết thẻ gửi lên)
+  const res = confirmPreOrderPayment('WL_PRE_8888', '2026-10-28');
+  assert.equal(res.success, true, 'Phải xác nhận thành công không bị báo lỗi thiếu ID');
 
+  // Kiểm tra Sheet Purchase: Trạng thái -> HOAN_TAT, Trạng thái kho -> Chờ Ship
+  const pRow = db.Purchase.find(r => r[0] === 'PO_INSTAX_99');
+  assert.ok(pRow);
+  assert.equal(pRow[9], 'HOAN_TAT');
+  assert.equal(pRow[3], 'Chờ Ship');
+
+  // Kiểm tra Sheet WalletLedger: Status -> POSTED, EffectType -> CARD_DEBT
+  const lRow = db.WalletLedger.find(r => r[0] === 'WL_PRE_8888');
+  assert.ok(lRow);
+  assert.equal(lRow[11], 'POSTED');
+  assert.equal(lRow[6], 'CARD_DEBT');
+});
+
+test('Pre-order Revert: revertPreOrderPayment moves confirmed order back to PRE-ORDER and reverses debt', () => {
+  const db = createMockTab3DB();
+  db.Purchase.push(
+    ['PO_MISTAKE_01', '2026-10-25', 'Amazon', 'Kho Nhật', 'Sản phẩm Preorder', 1, 15000, 15000, 'C- Amazon', 'HOAN_TAT', 'Đã trừ thẻ', 1]
+  );
+  db.WalletLedger.push(
+    ['WL_001', 'W_AMZ', 'C- Amazon', '2026-10-25', 15000, 'INCREASE', 'CARD_DEBT', 'Purchase', 'PO_MISTAKE_01', 'PURCHASE_CHARGE', 'K_01', 'POSTED', '[Mua hàng] Sản phẩm Preorder', '2026-10-25T10:00:00Z', '', '']
+  );
+
+  const res = revertPreOrderPayment('PO_MISTAKE_01');
+  assert.equal(res.success, true);
+
+  const pRow = db.Purchase.find(r => r[0] === 'PO_MISTAKE_01');
+  assert.ok(pRow);
+  assert.equal(pRow[9], 'PRE-ORDER', 'Purchase card status must be PRE-ORDER');
+  assert.ok(pRow[10].includes('[Pre-order]'), 'Note must include [Pre-order]');
+});
+
+test('Pre-order Month Selection & Net Worth Protection: formatBizDateServer, formatLedgerDate, and t6-preorder-debt UI elements', () => {
+  const { formatBizDateServer } = require('../src/Server_Tab3.js');
+  const { formatLedgerDate } = require('../src/Server_FinancialLedger.js');
+
+  // 1. Kiểm tra format ngày khi người dùng chỉ chọn tháng (YYYY-MM)
+  assert.equal(formatBizDateServer('2026-11'), '01/11/2026');
+  assert.equal(formatBizDateServer('2026/12'), '01/12/2026');
+  assert.equal(formatLedgerDate('2026-11'), '2026-11-01');
+  assert.equal(formatLedgerDate('2026-12'), '2026-12-01');
+
+  // 2. Kiểm tra phần tử t6-preorder-debt tồn tại trong Tab1.html và Tab6.html
+  const tab1Html = fs.readFileSync('src/Tab1.html', 'utf8');
+  const tab6Html = fs.readFileSync('src/Tab6.html', 'utf8');
+  assert.ok(tab1Html.includes('id="t6-preorder-debt"'), 'Tab1.html must have t6-preorder-debt element');
+  assert.ok(tab6Html.includes('id="t6-preorder-debt"'), 'Tab6.html must have t6-preorder-debt element');
+
+  // 3. Kiểm tra công thức tính Tổng nợ và Tài sản ròng trong Tab1.html đã bao gồm totalPreorderDebt
+  assert.ok(tab1Html.includes('totalLiabilities = totalCreditDebt + totalPreorderDebt + payables'), 'Total liabilities must include totalPreorderDebt');
+  assert.ok(tab1Html.includes('netWorth = totalAssets - totalLiabilities'), 'Net worth must deduct totalLiabilities (including preorder)');
+});

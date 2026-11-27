@@ -17,10 +17,11 @@ global.Utilities = {
 };
 
 function createMockTab5DB() {
+  const futureDateStr = new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0];
   const tables = {
     Purchase: [
       ["MÃ ĐƠN", "Ngày Mua", "Nơi mua", "Trạng Thái Kho", "Tên Sản Phẩm", "Số Lượng", "Giá Mua (1 cái)", "Tổng Tiền", "Nguồn Tiền Mua", "Tình trạng thẻ", "Note", "Tồn kho", "Ngày sao kê", "Tài khoản mua", "SoNgayCooldown", "NgayKhaDung", "Tình trạngCooldown"],
-      ["LM0001", "2026-09-15", "Joshin", "Chờ Ship", "Film Fuji Instax Mini 11", 1, 1000, 1000, "Ví Tiền Mặt", "HOAN_TAT", "Đang chờ cooldown", 0, "2026-09-15", "Joshin KA", 30, "2026-10-15", "THANH_CONG"],
+      ["LM0001", "2026-10-01", "Joshin", "Chờ Ship", "Film Fuji Instax Mini 11", 1, 1000, 1000, "Ví Tiền Mặt", "HOAN_TAT", "Đang chờ cooldown", 0, "2026-10-01", "Joshin KA", 30, futureDateStr, "THANH_CONG"],
       ["LM0002", "2026-09-05", "Yodobashi", "Hủy", "Film Mini Instax", 1, 1000, 1000, "Ví Tiền Mặt", "CHO_HOAN_TIEN", "Đơn bị hủy - đã kết thúc cooldown", 0, "2026-09-05", "Yodo KA", 13, "2026-09-18", "DA_HUY"]
     ],
     Categories: [
@@ -147,16 +148,29 @@ test('savePurchaseLimitRecord applies 13-day cooldown for Yodo store', () => {
   assert.equal(newRow[15], "23/09/2026"); // 10/09 + 13 ngày = 23/09
 });
 
-test('updatePurchaseLimitStatus releases cooldown and updates status columns when set to DA_HUY or THANH_CONG', () => {
+test('updatePurchaseLimitStatus applies 7-day cooldown from cancellation date for cancelled film order and updates status columns', () => {
   const tables = createMockTab5DB();
+  // Set purchase date in the near future/current timeframe so cooldown remains active
+  const todayStr = formatDateTab5Standard(new Date());
+  tables.Purchase[1][1] = todayStr; // Ngày mua = today
 
   const updateRes = updatePurchaseLimitStatus("LM0001", "DA_HUY");
   assert.equal(updateRes.success, true);
 
+  // Check columns updated in Purchase sheet:
+  assert.equal(tables.Purchase[1][14], 7); // SoNgayCooldown = 7
+  assert.equal(tables.Purchase[1][16], "DANG_CHO");
+  // NgayKhaDung = Today + 7 days
+  const expectedKd = new Date();
+  expectedKd.setDate(expectedKd.getDate() + 7);
+  assert.equal(tables.Purchase[1][15], formatDateTab5Standard(expectedKd));
+
   const res = getTab5Data();
   const joshinStore = res.matrix.find(m => m.store === "Joshin");
   const joshinKA = joshinStore.accountsStatus.find(a => a.account === "Joshin KA");
-  assert.equal(joshinKA.isCooldown, false);
+  // Khi hủy đơn film -> cooldown 7 ngày từ ngày hủy -> isCooldown: true
+  assert.equal(joshinKA.isCooldown, true);
+  assert.equal(joshinKA.daysLeft, 7);
 
   // Khôi phục lại trạng thái THANH_CONG
   const restoreRes = updatePurchaseLimitStatus("LM0001", "THANH_CONG");
@@ -223,12 +237,12 @@ test('getProductCategory maps Film MINI INSTAX to Trắng and other Film items t
   assert.equal(yodoColorKA.isCooldown, false); // Yodo Film Màu không tính cooldown
 });
 
-test('getTab5Data releases cooldown when Column D (Trạng Thái Kho) is set to Hủy', () => {
+test('getTab5Data releases cooldown when cancelled film order exceeds 7 days', () => {
   const tables = createMockTab5DB();
   tables.Categories.push(["", "", "", "", "", "", "Fuji KA"]);
   tables.Purchase = [
     ["ID", "Ngày Mua", "Nơi mua", "Trạng Thái Kho", "Tên Sản Phẩm", "Số Lượng", "Giá Mua", "Tổng Tiền", "Nguồn Tiền", "Trạng thái thẻ", "Note", "Tồn kho", "Ngày Sao kê", "Thông tin tài khoản mua", "SoNgayCooldown", "NgayKhaDung", "TrangThai"],
-    ["PUR_001", "2026-09-14", "Fuji", "Hủy", "Film MINI INSTAX", 3, 1075, 3225, "Ví Tiền Mặt", "HOAN_TAT", "", 3, "2026-09-14", "Fuji KA", 30, "2026-10-14", "THANH_CONG"]
+    ["PUR_001", "2026-09-14", "Fuji", "Hủy", "Film MINI INSTAX", 3, 1075, 3225, "Ví Tiền Mặt", "HOAN_TAT", "Hủy ngày 14/09/2026", 3, "2026-09-14", "Fuji KA", 7, "2026-09-21", "KET_THUC"]
   ];
 
   const res = getTab5Data();
@@ -238,7 +252,7 @@ test('getTab5Data releases cooldown when Column D (Trạng Thái Kho) is set to 
 
   const fujiKA = fujiStore.accountsStatus.find(a => a.account === "Fuji KA" && a.category === "Film MINI Trắng");
   assert.ok(fujiKA);
-  assert.equal(fujiKA.isCooldown, false); // Trạng Thái Kho = "Hủy" ➔ Cooldown lập tức giải phóng (false)
+  assert.equal(fujiKA.isCooldown, false); // Đã qua 7 ngày kể từ ngày hủy -> Cooldown giải phóng
 });
 
 test('savePurchaseLimitRecord saves multiple product items in 1 purchase order', () => {

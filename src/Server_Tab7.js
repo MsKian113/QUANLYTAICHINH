@@ -20,38 +20,74 @@ function formatDateToYYYYMMDD(d) {
     return yr + '-' + mo + '-' + da;
   }
   var str = String(d).trim();
-  if (!str) return new Date().toISOString().split('T')[0];
-  if (str.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
-    var p1 = str.split(' ')[0].split('-');
+  if (!str || str === 'undefined' || str === 'null' || str === 'Invalid Date') return new Date().toISOString().split('T')[0];
+  if (str.match(/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/)) {
+    var sep1 = str.includes('-') ? '-' : '/';
+    var p1 = str.split(' ')[0].split(sep1);
     return p1[0] + '-' + p1[1].padStart(2, '0') + '-' + p1[2].padStart(2, '0');
   }
-  if (str.match(/^\d{1,2}\/\d{1,2}\/\d{2,4}/)) {
-    var p2 = str.split(' ')[0].split('/');
+  if (str.match(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/)) {
+    var sep2 = str.includes('/') ? '/' : '-';
+    var p2 = str.split(' ')[0].split(sep2);
     var dd = p2[0].padStart(2, '0');
     var mm = p2[1].padStart(2, '0');
     var yyyy = p2[2];
     if (yyyy.length === 2) yyyy = "20" + yyyy;
     return yyyy + '-' + mm + '-' + dd;
   }
-  var parsed = new Date(str);
-  if (!isNaN(parsed.getTime())) {
-    var yr2 = parsed.getFullYear();
-    var mo2 = String(parsed.getMonth() + 1).padStart(2, '0');
-    var da2 = String(parsed.getDate()).padStart(2, '0');
-    return yr2 + '-' + mo2 + '-' + da2;
+  if (str.match(/^\d{1,2}[\/\-]\d{1,2}$/)) {
+    var sep3 = str.includes('/') ? '/' : '-';
+    var p3 = str.split(sep3);
+    var dd3 = p3[0].padStart(2, '0');
+    var mm3 = p3[1].padStart(2, '0');
+    var yyyy3 = new Date().getFullYear();
+    return yyyy3 + '-' + mm3 + '-' + dd3;
   }
+  try {
+    var cleanedStr = str.replace(/\s*\([^)]*\)$/, '');
+    var parsed = new Date(cleanedStr);
+    if (!isNaN(parsed.getTime())) {
+      var yr2 = parsed.getFullYear();
+      var mo2 = String(parsed.getMonth() + 1).padStart(2, '0');
+      var da2 = String(parsed.getDate()).padStart(2, '0');
+      return yr2 + '-' + mo2 + '-' + da2;
+    }
+  } catch(e) {}
   return new Date().toISOString().split('T')[0];
+}
+
+function resolveTab7Spreadsheet(ssTarget) {
+  if (typeof resolveSpreadsheet === 'function') {
+    return resolveSpreadsheet(ssTarget);
+  }
+  if (!ssTarget) {
+    return (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  }
+  if (typeof ssTarget === 'object' && ssTarget !== null && typeof ssTarget.getSheetByName === 'function') {
+    return ssTarget;
+  }
+  if (typeof ssTarget === 'string' && typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.openById) {
+    try {
+      const cleanId = (typeof extractSpreadsheetId === 'function') ? extractSpreadsheetId(ssTarget) : ssTarget.trim();
+      return SpreadsheetApp.openById(cleanId);
+    } catch(e) {
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
  * Ensures SplitFamilies sheet exists with correct headers and seed sample data
  */
 function getSplitFamiliesSheetHelper(ssTarget) {
-  var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
-  if (!ss) return null;
+  var ss = resolveTab7Spreadsheet(ssTarget);
+  if (!ss || typeof ss.getSheetByName !== 'function') return null;
   var sheet = ss.getSheetByName(SHEET_SPLIT_FAMILIES);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_SPLIT_FAMILIES);
+  if (!sheet && typeof ss.insertSheet === 'function') {
+    try {
+      sheet = ss.insertSheet(SHEET_SPLIT_FAMILIES);
+    } catch(e) {}
   }
   return sheet;
 }
@@ -60,11 +96,13 @@ function getSplitFamiliesSheetHelper(ssTarget) {
  * Ensures SplitGroups sheet exists
  */
 function getSplitGroupsSheetHelper(ssTarget) {
-  var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) return null;
+  var ss = resolveTab7Spreadsheet(ssTarget);
+  if (!ss || typeof ss.getSheetByName !== 'function') return null;
   var sheet = ss.getSheetByName(SHEET_SPLIT_GROUPS);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_SPLIT_GROUPS);
+  if (!sheet && typeof ss.insertSheet === 'function') {
+    try {
+      sheet = ss.insertSheet(SHEET_SPLIT_GROUPS);
+    } catch(e) {}
   }
   return sheet;
 }
@@ -73,11 +111,13 @@ function getSplitGroupsSheetHelper(ssTarget) {
  * Ensures SplitExpenses sheet exists
  */
 function getSplitExpensesSheetHelper(ssTarget) {
-  var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
-  if (!ss) return null;
+  var ss = resolveTab7Spreadsheet(ssTarget);
+  if (!ss || typeof ss.getSheetByName !== 'function') return null;
   var sheet = ss.getSheetByName(SHEET_SPLIT_EXPENSES);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_SPLIT_EXPENSES);
+  if (!sheet && typeof ss.insertSheet === 'function') {
+    try {
+      sheet = ss.insertSheet(SHEET_SPLIT_EXPENSES);
+    } catch(e) {}
   }
   return sheet;
 }
@@ -89,8 +129,8 @@ function getSplitExpensesSheetHelper(ssTarget) {
  */
 function standardizeSplitFamiliesSheet(ssTarget) {
   try {
-    var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
-    if (!ss) return;
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss || typeof ss.getSheetByName !== 'function') return;
     var sheet = ss.getSheetByName(SHEET_SPLIT_FAMILIES) || ss.getSheetByName("SplitFamilies");
     if (!sheet || sheet.getLastRow() < 2) return;
 
@@ -262,7 +302,8 @@ function getSplitFamilies(ssTarget) {
       return { success: true, families: [], rawMembers: [] };
     }
 
-    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 8).getValues();
+    var maxCols = Math.max(sheet.getLastColumn(), 8);
+    var data = sheet.getRange(2, 1, sheet.getLastRow() - 1, maxCols).getValues();
     var familyMap = {};
     var rawMembers = [];
 
@@ -276,7 +317,13 @@ function getSplitFamilies(ssTarget) {
       if (isNaN(weight)) weight = (memType === "CHILD" ? 0.5 : (memType === "BABY" ? 0 : 1.0));
       
       var rawIsMe = row[6];
-      var isMeVal = (rawIsMe === true || String(rawIsMe).toLowerCase() === "true");
+      var rawCol8 = row.length > 8 ? row[8] : false;
+      var famNameLower = famName.toLowerCase();
+      var memNameLower = memName.toLowerCase();
+      var isMeVal = (rawIsMe === true || String(rawIsMe).toLowerCase() === "true" ||
+                     rawCol8 === true || String(rawCol8).toLowerCase() === "true" ||
+                     famNameLower === "2f" || famNameLower.includes("2f") || famNameLower.includes("nhà mình") ||
+                     memNameLower.includes("(tôi)") || memNameLower.includes("chủ ví"));
       var rawRep = row[7];
       var isRep = (rawRep === true || String(rawRep).toLowerCase() === "true");
 
@@ -344,7 +391,7 @@ function getSplitFamilies(ssTarget) {
 
 function getFamilyCategorySuggestionsHelper(ssTarget) {
   try {
-    var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    var ss = resolveTab7Spreadsheet(ssTarget);
     if (!ss) return [];
     var catSheet = ss.getSheetByName("Categories") || ss.getSheetByName("DanhMuc");
     if (!catSheet || catSheet.getLastRow() < 1) return [];
@@ -488,6 +535,7 @@ function saveSplitFamilyMember(memberData, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
 
     return {
       success: true,
@@ -525,7 +573,7 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
 
     if (!famName) return { success: false, message: "⚠️ Vui lòng nhập tên Gia Đình!" };
 
-    var ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    var ss = resolveTab7Spreadsheet(ssTarget);
     var sheet = getSplitFamiliesSheetHelper(ss);
     if (!sheet) return { success: false, message: "❌ Không tìm thấy sheet SplitFamilies!" };
 
@@ -638,6 +686,7 @@ function saveSplitFamilyBatch(batchData, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
 
     return getSplitFamilies(ssTarget);
   } catch (err) {
@@ -687,6 +736,7 @@ function deleteSplitFamilyMember(memberId, ssTarget) {
     if (targetRowIdx > 0) {
       sheet.deleteRow(targetRowIdx);
       if (typeof clearAppDataCache === 'function') clearAppDataCache();
+      if (typeof incrementDataVersion === 'function') incrementDataVersion();
       return { success: true, message: "✅ Đã xóa vĩnh viễn thành viên khỏi database!" };
     }
 
@@ -715,6 +765,7 @@ function deleteSplitFamilyEntirely(famNameOrId, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
     return { success: true, message: "✅ Đã xóa vĩnh viễn gia đình khỏi database!" };
   } catch (err) {
     return { success: false, message: "Lỗi xóa gia đình: " + err.toString() };
@@ -743,11 +794,25 @@ function getSplitGroups(ssTarget) {
 
     // Pre-fetch master members from SplitFamilies for automatic FK resolution
     var masterMemMap = {};
+    var masterFamMeSet = {};
     try {
       var famRes = getSplitFamilies(ssTarget);
       if (famRes && famRes.rawMembers) {
         famRes.rawMembers.forEach(function(m) {
           if (m.member_id) masterMemMap[m.member_id] = m;
+          if (m.isMe || m.is_me || m.isme) {
+            if (m.family_name) masterFamMeSet[String(m.family_name).trim().toLowerCase()] = true;
+            if (m.family_id) masterFamMeSet[String(m.family_id).trim().toLowerCase()] = true;
+          }
+        });
+      }
+      if (famRes && famRes.families) {
+        famRes.families.forEach(function(f) {
+          if (f.isMe || f.is_me || f.isme) {
+            if (f.family_name) masterFamMeSet[String(f.family_name).trim().toLowerCase()] = true;
+            if (f.name) masterFamMeSet[String(f.name).trim().toLowerCase()] = true;
+            if (f.family_id) masterFamMeSet[String(f.family_id).trim().toLowerCase()] = true;
+          }
         });
       }
     } catch(e) {}
@@ -836,7 +901,13 @@ function getSplitGroups(ssTarget) {
       if (memberName || memberId) {
         var mNameLower = String(memberName || "").toLowerCase();
         var mFamLower = String(familyName || "").toLowerCase();
-        var isMeVal = (mNameLower.includes("tôi") || mNameLower.includes("chủ ví") || mFamLower === "2f" || mFamLower.includes("2f") || mNameLower.includes("quậy") || mNameLower.includes("chi") || mNameLower.includes("chít"));
+        var mFamIdLower = String(familyId || "").toLowerCase();
+        var isMasterMe = Boolean(
+          (memberId && masterMemMap[memberId] && (masterMemMap[memberId].isMe || masterMemMap[memberId].is_me || masterMemMap[memberId].isme)) ||
+          (mFamLower && masterFamMeSet[mFamLower]) ||
+          (mFamIdLower && masterFamMeSet[mFamIdLower])
+        );
+        var isMeVal = Boolean(isMasterMe || mNameLower.includes("tôi") || mNameLower.includes("chủ ví") || mFamLower === "2f" || mFamLower.includes("2f") || mNameLower.includes("quậy") || mNameLower.includes("chi") || mNameLower.includes("chít"));
         groupMap[id].members.push({
           id: memberId || groupMemberId,
           groupMemberId: groupMemberId,
@@ -1003,11 +1074,22 @@ function saveSplitGroup(groupData, ssTarget) {
     });
     appendRowsBatchHelper(sheet, memberRows);
 
+    // Tự động tính lại chi tiết / đơn giá trên đầu người cho toàn bộ các khoản chi hiện có của nhóm khi số người tham gia thay đổi
+    try {
+      recalculateGroupExpensesOnMemberChange(groupId, members, ssTarget);
+    } catch (eRecalc) {}
+
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
+
+    var fullDataRes = null;
+    try {
+      fullDataRes = getTab7FullGroupData(groupId, ssTarget);
+    } catch (eFull) {}
 
     return {
       success: true,
-      message: "✅ Đã lưu nhóm " + name + " (" + members.length + " thành viên) thành công!",
+      message: "✅ Đã lưu nhóm " + name + " (" + members.length + " thành viên) & cập nhật lại chi phí trên đầu người!",
       group: {
         id: groupId,
         name: name,
@@ -1017,10 +1099,87 @@ function saveSplitGroup(groupData, ssTarget) {
         status: status,
         category: category,
         members: members
-      }
+      },
+      groupData: (fullDataRes && fullDataRes.success) ? fullDataRes : null
     };
   } catch (err) {
     return { success: false, message: "Lỗi lưu nhóm: " + err.toString() };
+  }
+}
+
+/**
+ * Tự động tính lại phần chia (CalculatedAmount & danh sách người tham gia) của các khoản chi trong nhóm
+ * khi danh sách thành viên tham gia của nhóm thay đổi.
+ */
+function recalculateGroupExpensesOnMemberChange(groupId, newMembers, ssTarget) {
+  if (!groupId || !Array.isArray(newMembers) || newMembers.length === 0) return;
+  var expSheet = getSplitExpensesSheetHelper(ssTarget);
+  if (!expSheet || expSheet.getLastRow() < 2) return;
+
+  var expRes = getSplitExpenses(groupId, ssTarget);
+  var existingExps = (expRes && expRes.success && Array.isArray(expRes.expenses)) ? expRes.expenses : [];
+  if (existingExps.length === 0) return;
+
+  var lastRow = expSheet.getLastRow();
+  var data = expSheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  var rowsToDelete = [];
+  for (var i = 0; i < data.length; i++) {
+    if (String(data[i][1] || "").trim() === String(groupId).trim()) {
+      rowsToDelete.push(i + 2);
+    }
+  }
+
+  var replacementRows = [];
+  existingExps.forEach(function(exp) {
+    var sMode = String(exp.splitType || "WEIGHT").trim().toUpperCase();
+    var targetParticipants = newMembers;
+    if (sMode === "CUSTOM" && Array.isArray(exp.participants) && exp.participants.length > 0) {
+      targetParticipants = exp.participants;
+    }
+    var splitRes = calculateExpenseShares(sMode === "CUSTOM" ? "WEIGHT" : sMode, Number(exp.amount) || 0, targetParticipants, exp.extraOptions);
+    var finalParts = (splitRes && splitRes.success && Array.isArray(splitRes.participants)) ? splitRes.participants : [];
+
+    var pIdVal = String(exp.payerId || "").trim();
+    var pNameVal = String(exp.payerName || "").trim();
+    var matchedPayer = newMembers.find(function(m) {
+      return m.id === pIdVal || m.groupMemberId === pIdVal || m.name === pNameVal || m.family === pNameVal;
+    });
+    if (matchedPayer) {
+      pIdVal = matchedPayer.id;
+      if (!pNameVal) pNameVal = matchedPayer.name;
+    }
+
+    finalParts.forEach(function(p) {
+      var pId = String(p.memberId || p.id || "").trim();
+      var pName = String(p.name || "").trim();
+      var inputVal = (p.weight !== undefined && !isNaN(Number(p.weight))) ? Number(p.weight) : (Number(p.inputValue || p.customAmount || p.percentage) || 1);
+      var calcAmt = Number(p.calculatedAmount) || 0;
+      var noteStr = String(p.calculationNote || ("Phân bổ " + sMode)).trim();
+
+      replacementRows.push([
+        exp.id,
+        groupId,
+        exp.date || new Date().toISOString().split('T')[0],
+        exp.description || "Chi tiêu nhóm",
+        Number(exp.amount) || 0,
+        pIdVal,
+        pNameVal,
+        exp.walletName || "",
+        sMode,
+        exp.roundUnit || 1,
+        pId,
+        pName,
+        inputVal,
+        calcAmt,
+        noteStr,
+        "ACTIVE"
+      ]);
+    });
+  });
+
+  if (replacementRows.length > 0) {
+    deleteContiguousRowsHelper(expSheet, rowsToDelete);
+    appendRowsBatchHelper(expSheet, replacementRows);
   }
 }
 
@@ -1101,6 +1260,7 @@ function deleteSplitGroup(groupId, ssTarget) {
     deleteExpensesByGroupId(cleanId, ssTarget);
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
     return { success: true, message: "✅ Đã xóa nhóm và toàn bộ khoản chi liên quan!" };
   } catch (err) {
     return { success: false, message: "Lỗi xóa nhóm: " + err.toString() };
@@ -1189,8 +1349,17 @@ function calculateExpenseShares(splitType, totalAmount, participants, extraOptio
       };
     });
   } else if (type === "WEIGHT") {
+    var getParticipantWeight = function(p) {
+      if (p.weight !== undefined && p.weight !== null && String(p.weight).trim() !== "" && !isNaN(Number(p.weight))) {
+        return Number(p.weight);
+      }
+      var pType = String(p.type || p.member_type || "ADULT").toUpperCase();
+      if (pType === "BABY") return 0;
+      if (pType === "CHILD") return 0.5;
+      return 1.0;
+    };
     var sumWeight = 0;
-    rawList.forEach(function(p) { sumWeight += (Number(p.weight) || 0); });
+    rawList.forEach(function(p) { sumWeight += getParticipantWeight(p); });
 
     if (sumWeight <= 0) {
       return { success: false, message: "⚠️ Tổng hệ số tham gia phải > 0!", participants: [] };
@@ -1200,7 +1369,7 @@ function calculateExpenseShares(splitType, totalAmount, participants, extraOptio
     var totalBase = 0;
 
     rawList.forEach(function(p, idx) {
-      var w = Number(p.weight) || 0;
+      var w = getParticipantWeight(p);
       var calc = Math.floor((w / sumWeight) * amount);
       totalBase += calc;
       baseShares.push({
@@ -1470,7 +1639,8 @@ function getSplitExpenses(groupId, ssTarget) {
 function saveSplitExpense(expenseData, ssTarget) {
   try {
     if (!expenseData) return { success: false, message: "⚠️ Dữ liệu khoản chi trống!" };
-    var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
     var groupId = String(expenseData.groupId || expenseData.group_id || "").trim();
     var description = String(expenseData.description || expenseData.noiDung || expenseData.noidung || expenseData.name || expenseData.expenseName || "Chi tiêu nhóm").trim();
     var amount = Number(expenseData.amount || expenseData.totalAmount) || 0;
@@ -1533,7 +1703,7 @@ function saveSplitExpense(expenseData, ssTarget) {
     splitRes.participants.forEach(function(p) {
       var pId = String(p.memberId || p.id || "").trim();
       var pName = String(p.name || "").trim();
-      var inputVal = Number(p.inputValue || p.customAmount || p.percentage) || 1;
+      var inputVal = (p.weight !== undefined && !isNaN(Number(p.weight))) ? Number(p.weight) : (Number(p.inputValue || p.customAmount || p.percentage) || 1);
       var calcAmt = Number(p.calculatedAmount) || 0;
       var noteStr = String(p.calculationNote || ("Phân bổ " + splitType)).trim();
 
@@ -1619,6 +1789,10 @@ function saveSplitExpense(expenseData, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
 
     var updatedExpensesRes = getSplitExpenses(groupId, ss);
     var updatedExpenses = updatedExpensesRes.success ? updatedExpensesRes.expenses : [];
@@ -1648,7 +1822,8 @@ function saveSplitExpense(expenseData, ssTarget) {
 
 function deleteSplitExpense(expenseId, ssTarget) {
   try {
-    var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
     var cleanId = String(expenseId || "").trim();
     if (!cleanId) return { success: false, message: "⚠️ Mã khoản chi không hợp lệ!" };
 
@@ -1724,6 +1899,10 @@ function deleteSplitExpense(expenseId, ssTarget) {
     deleteContiguousRowsHelper(sheet, targetRows);
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
 
     var updatedExpensesRes = getSplitExpenses(groupId, ss);
     var updatedExpenses = updatedExpensesRes.success ? updatedExpensesRes.expenses : [];
@@ -1785,10 +1964,13 @@ function calculateGroupBalances(groupIdOrGroupObj, ssTarget, preFetchedExpenses)
 
       var targetMember = members.find(function(m) {
         var mId = String(m.id || "").trim().toLowerCase();
+        var mGId = String(m.groupMemberId || "").trim().toLowerCase();
         var mName = String(m.name || "").trim().toLowerCase();
         var mFam = String(m.family || m.familyTag || "").trim().toLowerCase();
 
         if (mId && (mId === payerIdLower || mId === payerNameLower)) return true;
+        if (mGId && (mGId === payerIdLower || mGId === payerNameLower)) return true;
+        if (payerFamilyLower && mFam === payerFamilyLower && mName && mName === payerNameLower) return true;
         if (mName && (mName === payerNameLower || mName === payerIdLower)) return true;
         if (mFam && (mFam === payerNameLower || mFam === payerIdLower || (payerFamilyLower && mFam === payerFamilyLower))) return true;
         return false;
@@ -1812,7 +1994,9 @@ function calculateGroupBalances(groupIdOrGroupObj, ssTarget, preFetchedExpenses)
         paidMap[members[0].id] += (exp.amount || 0);
       }
 
-      if (Array.isArray(exp.participants)) {
+      var expOwedMatchedSum = 0;
+      var usedMemberIdsInExp = {};
+      if (Array.isArray(exp.participants) && exp.participants.length > 0) {
         exp.participants.forEach(function(p) {
           var pId = String(p.memberId || p.id || "").trim();
           var pName = String(p.name || "").trim();
@@ -1822,22 +2006,76 @@ function calculateGroupBalances(groupIdOrGroupObj, ssTarget, preFetchedExpenses)
           var pNameLower = pName.toLowerCase();
           var pFamLower = pFam.toLowerCase();
 
+          // 1. Exact ID or groupMemberId match
           var pMember = members.find(function(m) {
             var mId = String(m.id || "").trim().toLowerCase();
-            var mName = String(m.name || "").trim().toLowerCase();
-            var mFam = String(m.family || m.familyTag || "").trim().toLowerCase();
-
-            if (pIdLower && mId === pIdLower) return true;
-            if (pNameLower && mName === pNameLower) return true;
-            if (pFamLower && mFam === pFamLower) return true;
-            return false;
+            var mGId = String(m.groupMemberId || "").trim().toLowerCase();
+            return pIdLower && (mId === pIdLower || mGId === pIdLower);
           });
+
+          // 2. Family + Name match (preferring unused members in this expense)
+          if (!pMember && pFamLower && pNameLower) {
+            pMember = members.find(function(m) {
+              if (usedMemberIdsInExp[m.id]) return false;
+              var mName = String(m.name || "").trim().toLowerCase();
+              var mFam = String(m.family || m.familyTag || "").trim().toLowerCase();
+              return mFam === pFamLower && mName === pNameLower;
+            });
+          }
+
+          // 3. Name or Family match (preferring unused members in this expense so duplicate names like "Người lớn 1" across 1F & 2F distribute properly)
+          if (!pMember) {
+            pMember = members.find(function(m) {
+              if (usedMemberIdsInExp[m.id]) return false;
+              var mName = String(m.name || "").trim().toLowerCase();
+              var mFam = String(m.family || m.familyTag || "").trim().toLowerCase();
+              if (pNameLower && mName === pNameLower) return true;
+              if (pFamLower && mFam === pFamLower) return true;
+              return false;
+            });
+          }
+
+          // 4. Fallback without unused constraint
+          if (!pMember) {
+            pMember = members.find(function(m) {
+              var mName = String(m.name || "").trim().toLowerCase();
+              var mFam = String(m.family || m.familyTag || "").trim().toLowerCase();
+              if (pNameLower && mName === pNameLower) return true;
+              if (pFamLower && mFam === pFamLower) return true;
+              return false;
+            });
+          }
+
+          if (!pMember && (pNameLower || pIdLower)) {
+            var cleanPName = pNameLower.replace(/\s*\((tôi|chủ ví)\)\s*/gi, '').trim();
+            pMember = members.find(function(m) {
+              var mName = String(m.name || "").replace(/\s*\((tôi|chủ ví)\)\s*/gi, '').trim().toLowerCase();
+              if (cleanPName && mName && (mName === cleanPName || mName.indexOf(cleanPName) >= 0 || cleanPName.indexOf(mName) >= 0)) return true;
+              return false;
+            });
+          }
 
           var targetId = pMember ? pMember.id : pId;
           if (targetId && owedMap[targetId] !== undefined) {
-            owedMap[targetId] += (Number(p.calculatedAmount) || 0);
+            var calcAmt = Number(p.calculatedAmount) || 0;
+            owedMap[targetId] += calcAmt;
+            expOwedMatchedSum += calcAmt;
+            usedMemberIdsInExp[targetId] = true;
           }
         });
+      }
+
+      // Fallback: if expense has amount > 0 but participants matched 0 owed (e.g. empty participants or zeroed amounts), compute shares by weight/splitType
+      if ((Number(exp.amount) || 0) > 0 && expOwedMatchedSum <= 0 && members.length > 0) {
+        var fallbackShares = calculateExpenseShares(exp.splitType || "WEIGHT", Number(exp.amount) || 0, members);
+        if (fallbackShares && fallbackShares.success && Array.isArray(fallbackShares.participants)) {
+          fallbackShares.participants.forEach(function(fp) {
+            var fid = fp.memberId || fp.id;
+            if (fid && owedMap[fid] !== undefined) {
+              owedMap[fid] += (Number(fp.calculatedAmount) || 0);
+            }
+          });
+        }
       }
     });
 
@@ -2035,11 +2273,241 @@ function formatDebtTargetName(nameStr) {
 }
 
 /**
+ * Helper dùng chung: Tính toán & Ghi/Cập nhật phần chi phí thực tế gia đình gánh chịu (Hũ Giải trí)
+ * vào sheet Family (Thu Chi) khi chốt nợ hoặc đồng bộ nhóm ăn chơi / du lịch.
+ */
+function upsertGroupFamilyShareToThuChi(group, expenses, sRes, opt, ss) {
+  try {
+    if (!group || typeof saveFamilyTransaction !== 'function') {
+      return { success: false, meOwed: 0 };
+    }
+    opt = opt || {};
+    var expList = Array.isArray(expenses) ? expenses : (getSplitExpenses(group.id, ss).expenses || []);
+
+    var groupTitle = group.name || "";
+    var gCatLower = String(group.category || "").toLowerCase();
+    var nameLower = groupTitle.toLowerCase();
+    var isDining = (gCatLower === 'dining' || nameLower.includes('ăn') || nameLower.includes('lòng') || nameLower.includes('tiệc') || nameLower.includes('nhậu') || nameLower.includes('cơm'));
+    var prefix = isDining ? "Ăn chơi" : "Du lịch";
+
+    var cleanTitle = groupTitle
+      .replace(/^\[Chốt\s*[^\]]*\]\s*/i, '')
+      .replace(/^(Ăn chơi|Du lịch|Ăn uống)\s*[:\-]\s*/i, '')
+      .trim();
+    if (!cleanTitle) cleanTitle = groupTitle.trim();
+
+    var formattedNoiDung = prefix + " : " + cleanTitle;
+    var formattedGhiChu = isDining ? "[Chi phí ăn chơi] Chi phí thực tế gia đình gánh chịu" : "[Chi phí chuyến đi] Chi phí thực tế gia đình gánh chịu";
+
+    // Ưu tiên lấy ngày từ khoản chi thực tế (cùng ngày/tháng với khoản [Ứng hộ nhóm]), fallback sang ngày tạo nhóm
+    var dVal = "";
+    for (var ei = expList.length - 1; ei >= 0; ei--) {
+      var rawExpDate = expList[ei] && (expList[ei].date || expList[ei].created_at);
+      if (rawExpDate) {
+        var parsedExpDate = formatDateToYYYYMMDD(rawExpDate);
+        if (parsedExpDate) {
+          dVal = parsedExpDate;
+          break;
+        }
+      }
+    }
+    if (!dVal) {
+      dVal = formatDateToYYYYMMDD(group.created_at || group.date);
+    }
+
+    var members = group.members || [];
+    var meFamSet = {};
+    var meMemberIdSet = {};
+
+    // 1. Nhận diện gia đình nhà mình qua cờ isMe, tên 2F, Quậy, Chi, Chít, Tôi, Chủ ví
+    members.forEach(function(m) {
+      var mId = String(m.id || m.groupMemberId || "").trim();
+      var mName = String(m.name || "").toLowerCase();
+      var mFam = String(m.family || m.family_name || m.familyName || m.familyTag || "").trim().toLowerCase();
+      if (m.isMe || m.is_me || mName.includes("quậy") || mName.includes("chi") || mName.includes("chít") || mName.includes("tôi") || mName.includes("chủ ví") || mFam === "2f" || mFam.includes("2f") || mFam.includes("tôi") || mFam.includes("chủ ví") || mFam.includes("nhà mình")) {
+        if (mFam) meFamSet[mFam] = true;
+        if (mId) meMemberIdSet[mId] = true;
+      }
+    });
+
+    // 2. Nếu chưa có cờ isMe/2F rõ ràng, nhận diện qua khoản chi có chọn ví cá nhân (khoản [Ứng hộ nhóm])
+    if (Object.keys(meFamSet).length === 0 && Object.keys(meMemberIdSet).length === 0) {
+      expList.forEach(function(exp) {
+        if (exp && String(exp.walletName || "").trim() !== "") {
+          var pId = String(exp.payerId || "").trim().toLowerCase();
+          var pName = String(exp.payerName || exp.payer || "").trim().toLowerCase();
+          var pFam = String(exp.payerFamily || "").trim().toLowerCase();
+          if (pFam) meFamSet[pFam] = true;
+          var matchedPayer = members.find(function(m) {
+            var mId = String(m.id || "").trim().toLowerCase();
+            var mGId = String(m.groupMemberId || "").trim().toLowerCase();
+            var mName = String(m.name || "").trim().toLowerCase();
+            var mFam = String(m.family || m.familyTag || "").trim().toLowerCase();
+            return (pId && (mId === pId || mGId === pId)) || (pName && mName === pName) || (pFam && mFam === pFam);
+          });
+          if (matchedPayer) {
+            var mpFam = String(matchedPayer.family || matchedPayer.familyTag || "").trim().toLowerCase();
+            if (mpFam) meFamSet[mpFam] = true;
+            if (matchedPayer.id) meMemberIdSet[matchedPayer.id] = true;
+          }
+        }
+      });
+    }
+
+    var meFamKeys = Object.keys(meFamSet);
+    var isMyMemberFn = function(fTag, mName, isMeFlag, mId) {
+      if (isMeFlag) return true;
+      if (mId && meMemberIdSet[mId]) return true;
+      if (fTag && (fTag === "2f" || fTag.includes("2f") || fTag.includes("tôi") || fTag.includes("chủ ví") || fTag.includes("nhà mình"))) return true;
+      for (var k = 0; k < meFamKeys.length; k++) {
+        var mf = meFamKeys[k];
+        if (mf && fTag && (fTag === mf || fTag.includes(mf) || mf.includes(fTag))) {
+          return true;
+        }
+      }
+      if ((!fTag || fTag === "gia đình" || meFamKeys.length === 0) && (mName.includes("quậy") || mName.includes("chi") || mName.includes("chít") || mName.includes("tôi") || mName.includes("chủ ví"))) {
+        return true;
+      }
+      return false;
+    };
+
+    var meOwed = 0;
+    if (sRes && Array.isArray(sRes.memberBalances) && sRes.memberBalances.length > 0) {
+      sRes.memberBalances.forEach(function(mb) {
+        var fTag = String(mb.family || "").trim().toLowerCase();
+        var mName = String(mb.name || "").trim().toLowerCase();
+        if (isMyMemberFn(fTag, mName, mb.isMe, mb.memberId)) {
+          meOwed += Number(mb.owed) || 0;
+        }
+      });
+    }
+
+    // Fallback A: Nếu meOwed = 0 nhưng gia đình nhà mình có thành viên trong nhóm và nhóm có chi phí > 0 (do lệch ID thành viên cũ), tính theo tỷ lệ hệ số (weight)
+    var totalExp = expList.reduce(function(s, e) { return s + (Number(e.amount) || 0); }, 0) || Number(group.totalExpense) || 0;
+    if (meOwed <= 0 && totalExp > 0 && members.length > 0) {
+      var myWeight = 0;
+      var totalWeight = 0;
+      members.forEach(function(m) {
+        var mType = String(m.type || m.member_type || "ADULT").toUpperCase();
+        var w = (m.weight !== undefined && !isNaN(Number(m.weight))) ? Number(m.weight) : (mType === "CHILD" ? 0.5 : (mType === "BABY" ? 0 : 1.0));
+        totalWeight += w;
+        var fTag = String(m.family || m.familyTag || "").trim().toLowerCase();
+        var mName = String(m.name || "").trim().toLowerCase();
+        if (isMyMemberFn(fTag, mName, m.isMe || m.is_me, m.id || m.groupMemberId)) {
+          myWeight += w;
+        }
+      });
+      if (myWeight > 0 && totalWeight > 0) {
+        meOwed = Math.round(totalExp * (myWeight / totalWeight));
+      }
+    }
+
+    // Fallback B: Từ tham số familyShareAmount do Frontend tính sẵn gửi lên
+    if (meOwed <= 0 && opt && Number(opt.familyShareAmount) > 0) {
+      meOwed = Math.round(Number(opt.familyShareAmount));
+    }
+
+    // Fallback C: Nếu vẫn bằng 0, lấy theo gia đình 1F hoặc gia đình đầu tiên trong memberBalances
+    if (meOwed <= 0 && sRes && Array.isArray(sRes.memberBalances) && sRes.memberBalances.length > 0) {
+      sRes.memberBalances.forEach(function(mb) {
+        var fTag = String(mb.family || mb.name || "").trim().toLowerCase();
+        if (fTag.includes("1f")) {
+          meOwed += Number(mb.owed) || 0;
+        }
+      });
+      if (meOwed <= 0) {
+        var firstFam = String(sRes.memberBalances[0].family || sRes.memberBalances[0].name || "").trim().toLowerCase();
+        sRes.memberBalances.forEach(function(mb) {
+          var fTag = String(mb.family || mb.name || "").trim().toLowerCase();
+          if (fTag === firstFam) {
+            meOwed += Number(mb.owed) || 0;
+          }
+        });
+      }
+    }
+
+    if (meOwed <= 0) {
+      return { success: false, meOwed: 0, formattedNoiDung: formattedNoiDung };
+    }
+
+    // Xác định nguồn tiền cho chi phí thực tế gia đình: theo chuẩn quy định là "Tiền mặt"
+    var myWalletName = "Tiền mặt";
+
+    var roundedOwed = Math.round(meOwed);
+    var existingFamRowUpdated = false;
+    var targetFamId = "";
+    try {
+      var fSheetCheck = ss ? (ss.getSheetByName("Family") || ss.getSheetByName("ThuChi")) : null;
+      if (fSheetCheck && fSheetCheck.getLastRow() >= 2) {
+        var fCheckData = fSheetCheck.getRange(2, 1, fSheetCheck.getLastRow() - 1, Math.max(fSheetCheck.getLastColumn(), 10)).getValues();
+        for (var fc = 0; fc < fCheckData.length; fc++) {
+          var rNoiDung = String(fCheckData[fc][4] || "").trim().toLowerCase();
+          var rGhiChu = String(fCheckData[fc][8] || "").trim().toLowerCase();
+          if (rNoiDung === formattedNoiDung.toLowerCase() && (rGhiChu.includes("chi phí thực tế gia đình gánh chịu") || String(fCheckData[fc][3] || "").trim() === "Giải trí")) {
+            targetFamId = String(fCheckData[fc][0] || "");
+            var formattedDateVal = (typeof formatToDDMMYYYY === 'function') ? formatToDDMMYYYY(dVal) : dVal;
+            fSheetCheck.getRange(fc + 2, 2).setValue(formattedDateVal);
+            fSheetCheck.getRange(fc + 2, 3).setValue("Chi");
+            fSheetCheck.getRange(fc + 2, 4).setValue("Giải trí");
+            fSheetCheck.getRange(fc + 2, 5).setValue(formattedNoiDung);
+            fSheetCheck.getRange(fc + 2, 6).setValue(roundedOwed);
+            fSheetCheck.getRange(fc + 2, 7).setValue(myWalletName);
+            fSheetCheck.getRange(fc + 2, 9).setValue(formattedGhiChu);
+            fSheetCheck.getRange(fc + 2, 10).setValue("HOAN_TAT");
+            existingFamRowUpdated = true;
+            break;
+          }
+        }
+      }
+    } catch (eCheck) {}
+
+    var savedRes = null;
+    if (!existingFamRowUpdated) {
+      savedRes = saveFamilyTransaction({
+        ngay: dVal,
+        loai: "CHI",
+        hu: "Giải trí",
+        noidung: formattedNoiDung,
+        sotien: roundedOwed,
+        nguontien: myWalletName,
+        codinh: false,
+        ghichu: formattedGhiChu,
+        status: "HOAN_TAT",
+        allowEmptyWallet: true,
+        skipWalletUpdate: true,
+        skipLedger: true
+      }, ss);
+      if (savedRes && savedRes.id) targetFamId = savedRes.id;
+    } else {
+      // Dòng Family đã có sẵn và đã cập nhật nguồn tiền "Tiền mặt".
+      // Theo logic kế toán: Toàn bộ tiền ứng ban đầu đã ghi vào WalletLedger lúc thanh toán [Ứng hộ nhóm].
+      // Phần chi phí của gia đình nằm trọn trong khoản đã ứng, do đó KHÔNG ghi vào WalletLedger và KHÔNG trừ ví lần nữa!
+    }
+
+    if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+
+    return {
+      success: true,
+      meOwed: roundedOwed,
+      formattedNoiDung: formattedNoiDung,
+      formattedGhiChu: formattedGhiChu,
+      dVal: dVal
+    };
+  } catch (err) {
+    return { success: false, meOwed: 0, message: err.toString() };
+  }
+}
+
+/**
  * 3. FINALIZE TRIP & EXPORT NET DEBTS 1-TIME TO MAIN DEBT SHEET (TAB 4 & TAB 1 ASSETS)
  */
 function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
   try {
-    var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
     var opt = exportOptions || {};
 
     // 1. Acquire DocumentLock if in Apps Script environment (INV-15)
@@ -2084,17 +2552,30 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
         return { success: false, message: "❌ Không tìm thấy nhóm!" };
       }
 
-      if (currentStatus === "LOCKED" || currentStatus === "CLOSED") {
+      var isAlreadyClosed = (currentStatus === "LOCKED" || currentStatus === "CLOSED");
+
+      // Ngay cả khi nhóm đã CLOSED/LOCKED, luôn đảm bảo khoản chi thực tế gia đình (Ăn chơi / Du lịch) được đồng bộ vào Tab 2 (Family)
+      if (isAlreadyClosed && !opt.allowRefinalize) {
+        try {
+          var preStl = calculateOptimalSettlements(groupId, opt, ss);
+          if (preStl && preStl.success && preStl.group) {
+            var preExps = getSplitExpenses(groupId, ss).expenses || [];
+            upsertGroupFamilyShareToThuChi(preStl.group, preExps, preStl, opt, ss);
+          }
+        } catch (eSyncClosed) {}
         return { success: false, message: "⚠️ Chuyến đi này đã được chốt nợ trước đó (LOCKED)!" };
       }
 
-      var sRes = calculateOptimalSettlements(groupId, opt, ss);
+      var expRes = getSplitExpenses(groupId, ss);
+      var expenses = expRes && expRes.success ? expRes.expenses : [];
+      var sRes = calculateOptimalSettlements(groupId, opt, ss, expenses);
       if (!sRes.success) return sRes;
 
       var group = sRes.group;
       var settlements = sRes.settlements || [];
       var batchId = generateSplitId("SET");
       var exportedCount = 0;
+      var meOwed = 0;
 
       // 3. Write Phase with Controlled Recovery by BatchID (INV-16)
       try {
@@ -2107,90 +2588,38 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
           }
         });
 
+        // 1. Log family's actual share in Tab 2 (Family / ThuChi sheet)
+        var famShareRes = upsertGroupFamilyShareToThuChi(group, expenses, sRes, opt, ss);
+        meOwed = (famShareRes && famShareRes.meOwed) ? famShareRes.meOwed : 0;
+
         var groupTitle = group.name || "";
         var gCatLower = String(group.category || "").toLowerCase();
         var nameLower = groupTitle.toLowerCase();
         var isDining = (gCatLower === 'dining' || nameLower.includes('ăn') || nameLower.includes('lòng') || nameLower.includes('tiệc') || nameLower.includes('nhậu') || nameLower.includes('cơm'));
         var prefix = isDining ? "Ăn chơi" : "Du lịch";
-
-        var dVal = formatDateToYYYYMMDD(group.created_at || group.date);
-        var dateShort = "";
-        if (dVal) {
-          var dParts = dVal.split('-');
-          if (dParts.length === 3) dateShort = dParts[2] + "/" + dParts[1];
-        }
-
         var cleanTitle = groupTitle
           .replace(/^\[Chốt\s*[^\]]*\]\s*/i, '')
           .replace(/^(Ăn chơi|Du lịch|Ăn uống)\s*[:\-]\s*/i, '')
           .trim();
         if (!cleanTitle) cleanTitle = groupTitle.trim();
+        var formattedNoiDung = (famShareRes && famShareRes.formattedNoiDung) ? famShareRes.formattedNoiDung : (prefix + " : " + cleanTitle);
 
-        var formattedNoiDung = prefix + " : " + cleanTitle;
-        var formattedGhiChu = isDining ? "[Chi phí ăn chơi] Chi phí thực tế gia đình gánh chịu" : "[Chi phí chuyến đi] Chi phí thực tế gia đình gánh chịu";
-
-        // 1. Log family's actual share in Tab 2 (Family / ThuChi sheet) for monthly expense calculation (Hũ Giải trí, Nguồn tiền rỗng)
-        var meFam = "";
-        var meMbr = (group.members || []).find(function(m) {
-          var mName = String(m.name || "").toLowerCase();
-          var mFam = String(m.family || m.family_name || m.familyName || "").toLowerCase();
-          return m.isMe || mName.includes("quậy") || mName.includes("chi") || mName.includes("chít") || mName.includes("tôi") || mName.includes("chủ ví") || mFam === "2f" || mFam.includes("2f") || mFam.includes("tôi") || mFam.includes("chủ ví");
-        });
-        if (meMbr) {
-          meFam = String(meMbr.family || meMbr.family_name || meMbr.familyName || meMbr.name || "").trim().toLowerCase();
-        }
-
-        var meOwed = 0;
-        if (sRes && sRes.memberBalances && sRes.memberBalances.length > 0) {
-          // Pass 1: match members/families belonging to ME / 2F (Quậy, Chi, Chít, Chủ ví, Tôi)
-          sRes.memberBalances.forEach(function(mb) {
-            var fTag = String(mb.family || mb.name || "").trim().toLowerCase();
-            var mName = String(mb.name || "").trim().toLowerCase();
-            var isMyMember = mb.isMe ||
-                             (meFam && fTag && (fTag === meFam || fTag.includes(meFam) || meFam.includes(fTag))) ||
-                             (meFam && mName && (mName === meFam || mName.includes(meFam))) ||
-                             fTag.includes("2f") || fTag.includes("tôi") || fTag.includes("chủ ví") ||
-                             mName.includes("quậy") || mName.includes("chi") || mName.includes("chít") ||
-                             mName.includes("tôi") || mName.includes("chủ ví");
-            if (isMyMember) {
-              meOwed += Number(mb.owed) || 0;
+        // Kiểm tra công nợ đã tồn tại trong sheet Debt nếu là Chốt Nợ Lại (allowRefinalize) để tránh nhân đôi công nợ
+        var existingDebtKeys = {};
+        if (isAlreadyClosed && opt.allowRefinalize) {
+          try {
+            var dSheet = ss.getSheetByName("Debt") || ss.getSheetByName("CongNo");
+            if (dSheet && dSheet.getLastRow() >= 2) {
+              var dRows = dSheet.getRange(2, 1, dSheet.getLastRow() - 1, Math.max(dSheet.getLastColumn(), 9)).getValues();
+              for (var di = 0; di < dRows.length; di++) {
+                var dTen = String(dRows[di][2] || "").trim().toLowerCase();
+                var dNoiDung = String(dRows[di][8] || "").trim().toLowerCase();
+                if (dNoiDung === formattedNoiDung.toLowerCase()) {
+                  existingDebtKeys[dTen + "|" + dNoiDung] = true;
+                }
+              }
             }
-          });
-
-          // Pass 2: Fallback if meOwed is still 0 (try "1f" or first family in list)
-          if (meOwed <= 0) {
-            sRes.memberBalances.forEach(function(mb) {
-              var fTag = String(mb.family || mb.name || "").trim().toLowerCase();
-              if (fTag.includes("1f")) {
-                meOwed += Number(mb.owed) || 0;
-              }
-            });
-          }
-
-          if (meOwed <= 0 && sRes.memberBalances.length > 0) {
-            var firstFam = String(sRes.memberBalances[0].family || sRes.memberBalances[0].name || "").trim().toLowerCase();
-            sRes.memberBalances.forEach(function(mb) {
-              var fTag = String(mb.family || mb.name || "").trim().toLowerCase();
-              if (fTag === firstFam) {
-                meOwed += Number(mb.owed) || 0;
-              }
-            });
-          }
-        }
-
-        if (meOwed > 0 && typeof saveFamilyTransaction === 'function') {
-          var todayDateStr = formatDateToYYYYMMDD(dVal);
-          saveFamilyTransaction({
-            ngay: todayDateStr,
-            loai: "CHI",
-            hu: "Giải trí",
-            noidung: formattedNoiDung,
-            sotien: Math.round(meOwed),
-            nguontien: "",
-            codinh: false,
-            ghichu: formattedGhiChu,
-            status: "HOAN_TAT"
-          }, ss);
+          } catch (eDebtCheck) {}
         }
 
         // 2. Log net debt settlements to Tab 4 (Debt sheet)
@@ -2203,6 +2632,12 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
 
             var toIsMe = Boolean(stl.toIsMe || (stl.toName && (stl.toName.toLowerCase().includes('tôi') || stl.toName.toLowerCase().includes('2f'))));
             var fromIsMe = Boolean(stl.fromIsMe || (stl.fromName && (stl.fromName.toLowerCase().includes('tôi') || stl.fromName.toLowerCase().includes('2f'))));
+
+            var targetPartner = toIsMe ? fromTargetName : (fromIsMe ? toTargetName : fromTargetName);
+            var debtKey = String(targetPartner || "").trim().toLowerCase() + "|" + formattedNoiDung.toLowerCase();
+            if (existingDebtKeys[debtKey]) {
+              return;
+            }
 
             if (toIsMe) {
               saveDebtTransaction({
@@ -2248,25 +2683,49 @@ function finalizeTripAndExportDebts(groupId, exportOptions, ssTarget) {
         if (typeof removeDebtByBatchId === 'function') {
           removeDebtByBatchId(batchId, ss);
         }
-        groupRowIndices.forEach(function(rIdx) {
-          if (isLegacy) {
-            gSheet.getRange(rIdx, 6).setValue("OPEN");
-          } else {
-            gSheet.getRange(rIdx, 5).setValue("OPEN");
-          }
-        });
+        if (!isAlreadyClosed) {
+          groupRowIndices.forEach(function(rIdx) {
+            if (isLegacy) {
+              gSheet.getRange(rIdx, 6).setValue("OPEN");
+            } else {
+              gSheet.getRange(rIdx, 5).setValue("OPEN");
+            }
+          });
+        }
         throw writeErr;
       }
 
       if (typeof clearAppDataCache === 'function') clearAppDataCache();
+      if (typeof clearAllWalletStatementCaches === 'function') {
+        try { clearAllWalletStatementCaches(); } catch(e) {}
+      }
+      if (typeof incrementDataVersion === 'function') incrementDataVersion();
+
+      var fullDataRes = null;
+      var groupsRes = null;
+      var tab2DataRes = null;
+      try {
+        fullDataRes = getTab7FullGroupData(groupId, ss);
+        groupsRes = getSplitGroups(ss);
+        if (typeof getTab2Data === 'function') {
+          var now = new Date();
+          var curM = (now.getMonth() + 1).toString();
+          var curY = now.getFullYear().toString();
+          tab2DataRes = getTab2Data(curM, curY, ss);
+        }
+      } catch(e) {}
 
       var familyMsg = meOwed > 0 ? (" Đã ghi nhận " + Math.round(meOwed).toLocaleString() + " ¥ chi phí gia đình vào Tab 2 (Thu chi).") : "";
       return {
         success: true,
         message: "✅ Đã chốt nợ thành công!" + familyMsg + " (Đã kết xuất " + exportedCount + " công nợ vào Sổ Công Nợ).",
         exportedCount: exportedCount,
+        meOwed: meOwed,
         batchId: batchId,
-        settlements: settlements
+        settlements: settlements,
+        groupData: (fullDataRes && fullDataRes.success) ? fullDataRes : null,
+        groups: (groupsRes && groupsRes.success) ? groupsRes.groups : null,
+        tab2Data: (tab2DataRes && tab2DataRes.success) ? tab2DataRes : null
       };
     } finally {
       if (lock && typeof lock.releaseLock === 'function') {
@@ -2300,7 +2759,8 @@ function t7_settleDebtPayment(debtId, walletName, ssTarget) {
  */
 function reopenSplitGroup(groupId, ssTarget) {
   try {
-    var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
     var cleanId = String(groupId || "").trim();
     if (!cleanId) return { success: false, message: "⚠️ Mã nhóm không hợp lệ!" };
 
@@ -2326,8 +2786,24 @@ function reopenSplitGroup(groupId, ssTarget) {
     if (!updated) return { success: false, message: "❌ Không tìm thấy nhóm để mở lại!" };
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+    if (typeof incrementDataVersion === 'function') incrementDataVersion();
 
-    return { success: true, message: "🔓 Đã mở lại chuyến đi thành công! Bạn có thể nhấn Chốt nợ lại." };
+    var fullDataRes = null;
+    var groupsRes = null;
+    try {
+      fullDataRes = getTab7FullGroupData(cleanId, ss);
+      groupsRes = getSplitGroups(ss);
+    } catch(e) {}
+
+    return {
+      success: true,
+      message: "🔓 Đã mở lại chuyến đi thành công! Bạn có thể nhấn Chốt nợ lại.",
+      groupData: (fullDataRes && fullDataRes.success) ? fullDataRes : null,
+      groups: (groupsRes && groupsRes.success) ? groupsRes.groups : null
+    };
   } catch (err) {
     return { success: false, message: "Lỗi mở lại nhóm: " + err.toString() };
   }
@@ -2341,7 +2817,8 @@ function getTab7FullGroupData(groupId, ssTarget) {
     var cleanId = String(groupId || "").trim();
     if (!cleanId) return { success: false, message: "⚠️ Mã nhóm không hợp lệ!" };
 
-    var ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
     var gRes = getSplitGroupById(cleanId, ss);
     if (!gRes.success) return gRes;
 
@@ -2352,6 +2829,14 @@ function getTab7FullGroupData(groupId, ssTarget) {
     var balRes = calculateGroupBalances(group, ss, expenses);
     var stlRes = calculateOptimalSettlements(group, { consolidateByFamily: true }, ss, expenses);
 
+    // Nếu nhóm này đã chốt nợ (CLOSED / LOCKED), tự động đảm bảo phần chi thực tế của gia đình đã được ghi vào Tab 2 (Thu Chi)
+    var stUpper = String(group.status || "").trim().toUpperCase();
+    if ((stUpper === "CLOSED" || stUpper === "LOCKED") && expenses.length > 0 && stlRes && stlRes.success) {
+      try {
+        upsertGroupFamilyShareToThuChi(group, expenses, stlRes, {}, ss);
+      } catch (eSync) {}
+    }
+
     return {
       success: true,
       group: group,
@@ -2361,6 +2846,98 @@ function getTab7FullGroupData(groupId, ssTarget) {
     };
   } catch (err) {
     return { success: false, message: "Lỗi tải dữ liệu nhóm: " + err.toString() };
+  }
+}
+
+/**
+ * Tự động đồng bộ bù khoản chi phí thực tế gia đình gánh chịu (Hũ Giải trí)
+ * vào sheet Family (Thu Chi) đối với các nhóm đã chốt nợ (CLOSED / LOCKED) nhưng bị thiếu dòng ghi nhận
+ */
+function syncMissingFinalizedGroupFamilyShares(ssTarget) {
+  try {
+    var ss = resolveTab7Spreadsheet(ssTarget);
+    if (!ss || typeof saveFamilyTransaction !== 'function') return { success: false, syncedCount: 0 };
+
+    var grpRes = getSplitGroups(ss);
+    if (!grpRes || !grpRes.success || !Array.isArray(grpRes.groups) || grpRes.groups.length === 0) {
+      return { success: true, syncedCount: 0 };
+    }
+
+    // Nhận diện thêm các nhóm đã từng kết xuất sang sheet Debt dù trạng thái có thể chưa lưu CLOSED
+    var debtExportedTitles = {};
+    try {
+      var dSheet = ss.getSheetByName("Debt") || ss.getSheetByName("CongNo");
+      if (dSheet && dSheet.getLastRow() >= 2) {
+        var dData = dSheet.getRange(2, 1, dSheet.getLastRow() - 1, Math.max(dSheet.getLastColumn(), 9)).getValues();
+        for (var d = 0; d < dData.length; d++) {
+          var dNd = String(dData[d][8] || "").trim().toLowerCase();
+          if (dNd.startsWith("ăn chơi :") || dNd.startsWith("du lịch :")) {
+            debtExportedTitles[dNd] = true;
+          }
+        }
+      }
+    } catch (eDebt) {}
+
+    var closedGroups = grpRes.groups.filter(function(g) {
+      var st = String(g.status || "").trim().toUpperCase();
+      var groupTitle = g.name || "";
+      var gCatLower = String(g.category || "").toLowerCase();
+      var nameLower = groupTitle.toLowerCase();
+      var isDining = (gCatLower === 'dining' || nameLower.includes('ăn') || nameLower.includes('lòng') || nameLower.includes('tiệc') || nameLower.includes('nhậu') || nameLower.includes('cơm'));
+      var prefix = isDining ? "Ăn chơi" : "Du lịch";
+      var cleanTitle = groupTitle.replace(/^\[Chốt\s*[^\]]*\]\s*/i, '').replace(/^(Ăn chơi|Du lịch|Ăn uống)\s*[:\-]\s*/i, '').trim() || groupTitle.trim();
+      var formattedNd = (prefix + " : " + cleanTitle).toLowerCase();
+
+      return (st === "CLOSED" || st === "LOCKED" || debtExportedTitles[formattedNd]) && (Number(g.totalExpense) || 0) > 0;
+    });
+    if (closedGroups.length === 0) return { success: true, syncedCount: 0 };
+
+    var fSheet = ss.getSheetByName("Family") || ss.getSheetByName("ThuChi");
+    var existingNoiDungSet = {};
+    if (fSheet && fSheet.getLastRow() >= 2) {
+      var fData = fSheet.getRange(2, 1, fSheet.getLastRow() - 1, Math.max(fSheet.getLastColumn(), 9)).getValues();
+      for (var i = 0; i < fData.length; i++) {
+        var nd = String(fData[i][4] || "").trim().toLowerCase();
+        var amt = Number(fData[i][5]) || 0;
+        var gc = String(fData[i][8] || "").trim().toLowerCase();
+        if (nd && amt > 0 && (gc.includes("chi phí thực tế gia đình gánh chịu") || nd.startsWith("ăn chơi :") || nd.startsWith("du lịch :"))) {
+          existingNoiDungSet[nd] = true;
+        }
+      }
+    }
+
+    var syncedCount = 0;
+    closedGroups.forEach(function(group) {
+      var groupTitle = group.name || "";
+      var gCatLower = String(group.category || "").toLowerCase();
+      var nameLower = groupTitle.toLowerCase();
+      var isDining = (gCatLower === 'dining' || nameLower.includes('ăn') || nameLower.includes('lòng') || nameLower.includes('tiệc') || nameLower.includes('nhậu') || nameLower.includes('cơm'));
+      var prefix = isDining ? "Ăn chơi" : "Du lịch";
+
+      var cleanTitle = groupTitle
+        .replace(/^\[Chốt\s*[^\]]*\]\s*/i, '')
+        .replace(/^(Ăn chơi|Du lịch|Ăn uống)\s*[:\-]\s*/i, '')
+        .trim();
+      if (!cleanTitle) cleanTitle = groupTitle.trim();
+
+      var formattedNoiDung = prefix + " : " + cleanTitle;
+      if (existingNoiDungSet[formattedNoiDung.toLowerCase()]) return;
+
+      var expRes = getSplitExpenses(group.id, ss);
+      var expenses = expRes && expRes.success ? expRes.expenses : [];
+      var sRes = calculateOptimalSettlements(group, { consolidateByFamily: true }, ss, expenses);
+      if (!sRes || !sRes.success) return;
+
+      var upRes = upsertGroupFamilyShareToThuChi(group, expenses, sRes, {}, ss);
+      if (upRes && upRes.success && upRes.meOwed > 0) {
+        existingNoiDungSet[formattedNoiDung.toLowerCase()] = true;
+        syncedCount++;
+      }
+    });
+
+    return { success: true, syncedCount: syncedCount };
+  } catch (err) {
+    return { success: false, syncedCount: 0, message: err.toString() };
   }
 }
 
@@ -2377,6 +2954,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getSplitGroups: getSplitGroups,
     getSplitGroupById: getSplitGroupById,
     getTab7FullGroupData: getTab7FullGroupData,
+    syncMissingFinalizedGroupFamilyShares: syncMissingFinalizedGroupFamilyShares,
     saveSplitGroup: saveSplitGroup,
     deleteSplitGroup: deleteSplitGroup,
     addMemberToSplitGroup: addMemberToSplitGroup,

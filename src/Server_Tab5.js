@@ -19,10 +19,24 @@ function removeAccentsTab5(str) {
     .replace(/Đ/g, 'D');
 }
 
-function getAccountCleanKey(accName, storeName) {
-  let str = String(accName || "").trim();
-  if (!str) return "";
+function normalizeTab5AccountName(name) {
+  if (!name) return "";
+  let str = String(name).trim();
   str = str.replace(/^tk\s*/i, "");
+  str = str.replace(/\.+$/, "").trim(); // Xóa dấu chấm lửng ở đuôi (ví dụ: Vema.. -> Vema)
+  const lower = removeAccentsTab5(str).toLowerCase();
+  if (lower === "fuji vema" || lower === "fuji vemaybay" || lower === "fuji ve may bay") {
+    return "Fuji Vemaybay";
+  }
+  if (lower === "vema" || lower === "vemaybay" || lower === "ve may bay") {
+    return "Vemaybay";
+  }
+  return str;
+}
+
+function getAccountCleanKey(accName, storeName) {
+  let str = normalizeTab5AccountName(accName);
+  if (!str) return "";
   let lower = removeAccentsTab5(str).toLowerCase();
   let stLower = removeAccentsTab5(storeName || "").toLowerCase();
   if (stLower && !lower.includes("joshin") && !lower.includes("yodo") && !lower.includes("edion") && !lower.includes("fuji") && !lower.includes("amazon")) {
@@ -31,6 +45,8 @@ function getAccountCleanKey(accName, storeName) {
   }
   let cleanKey = lower.replace(/[\s\-_]/g, "");
   if (cleanKey.endsWith("chitis")) cleanKey = cleanKey.replace("chitis", "chit");
+  if (cleanKey === "fujivema" || cleanKey === "fujivemaybay") cleanKey = "fujivemaybay";
+  if (cleanKey === "vema" || cleanKey === "vemaybay") cleanKey = "vemaybay";
   return cleanKey;
 }
 
@@ -40,19 +56,22 @@ function getAccountCleanKey(accName, storeName) {
 // ==========================================
 
 function parseTab5Date(dateStr) {
-  if (!dateStr) return new Date();
-  if (dateStr instanceof Date) return dateStr;
+  if (!dateStr && dateStr !== 0) return null;
+  if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : new Date(dateStr.getTime());
   const str = String(dateStr).trim();
+  if (!str) return null;
   if (str.match(/^\d{4}-\d{2}-\d{2}$/)) {
     const parts = str.split('-');
-    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    return isNaN(d.getTime()) ? null : d;
   }
   const matchDMY = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
   if (matchDMY) {
-    return new Date(parseInt(matchDMY[3], 10), parseInt(matchDMY[2], 10) - 1, parseInt(matchDMY[1], 10));
+    const d = new Date(parseInt(matchDMY[3], 10), parseInt(matchDMY[2], 10) - 1, parseInt(matchDMY[1], 10));
+    return isNaN(d.getTime()) ? null : d;
   }
   const d = new Date(str);
-  return isNaN(d.getTime()) ? new Date() : d;
+  return isNaN(d.getTime()) ? null : d;
 }
 
 function formatDateTab5Standard(d) {
@@ -83,7 +102,7 @@ function getProductCategory(tenSP, storeName) {
 function isFilmProduct(productName) {
   if (!productName) return false;
   const clean = removeAccentsTab5(String(productName)).trim().toLowerCase();
-  return clean.startsWith("film");
+  return clean.startsWith("film") || clean.includes("instax") || clean.includes("fujifilm") || clean.includes("polaroid");
 }
 
 function getStoreCooldownSettings() {
@@ -152,7 +171,12 @@ function isRealAccountName(name) {
   const ignoredStatuses = ["cho ship", "chờ ship", "chusen", "huy", "hủy", "pre-order", "preorder", "da_huy", "ket_thuc", "kết thúc", "dang_cho", "đang chờ", "thanh_cong", "thành công", "tk mac dinh", "tk mặc định"];
   if (ignoredStatuses.includes(lower)) return false;
 
-  const ignoredWarehouses = ["kho 1f", "kho 2f", "kho 3f", "ton kho", "tồn kho", "vemaybay", "vé máy bay", "an uong", "ăn uống", "tieu dung", "tiêu dùng", "gia dinh", "gia đình"];
+  if (lower.startsWith("fuji ") || lower.startsWith("yodo ") || lower.startsWith("joshin ")) {
+    // Tài khoản có tiền tố tiệm cooldown
+    return true;
+  }
+
+  const ignoredWarehouses = ["kho 1f", "kho 2f", "kho 3f", "ton kho", "tồn kho", "an uong", "ăn uống", "tieu dung", "tiêu dùng", "gia dinh", "gia đình"];
   if (ignoredWarehouses.includes(lower)) return false;
 
   const parts = str.split(/\s+/);
@@ -169,9 +193,22 @@ function isRealAccountName(name) {
   return true;
 }
 
-function getTab5Data(ssTarget) {
+function getTab5Data(param1, param2) {
+  // param1 có thể là forceRefresh (boolean) hoặc ssTarget (Spreadsheet Object)
+  let forceRefresh = false;
+  let ssTarget = null;
+  if (typeof param1 === 'boolean') {
+    forceRefresh = param1;
+    ssTarget = param2 || null;
+  } else if (param1 && typeof param1 === 'object' && typeof param1.getSheetByName === 'function') {
+    ssTarget = param1;
+    forceRefresh = !!param2;
+  } else {
+    forceRefresh = Boolean(param1 || param2);
+  }
+
   const cacheKey = "tab5_data_v7";
-  if (!ssTarget && typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
+  if (!forceRefresh && !ssTarget && typeof CacheService !== 'undefined' && CacheService.getScriptCache) {
     try {
       const cached = CacheService.getScriptCache().get(cacheKey);
       if (cached) return JSON.parse(cached);
@@ -179,7 +216,8 @@ function getTab5Data(ssTarget) {
   }
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
+    if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet!", accounts: [], stores: [] };
     const accountsSet = new Set();
     const storesSet = new Set(["Fuji", "Yodo", "Joshin"]);
 
@@ -188,7 +226,8 @@ function getTab5Data(ssTarget) {
       const catSheet = ss.getSheetByName("Categories") || ss.getSheetByName("DanhMuc");
       if (catSheet && catSheet.getLastRow() >= 2) {
         const lastRow = catSheet.getLastRow();
-        const lastCol = Math.max(catSheet.getLastColumn(), 11);
+        const maxCols = typeof catSheet.getMaxColumns === 'function' ? catSheet.getMaxColumns() : Math.max(catSheet.getLastColumn(), 11);
+        const lastCol = Math.min(Math.max(catSheet.getLastColumn(), 1), maxCols);
         const catData = catSheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
         catData.forEach(r => {
           const accG = String(r[6] || "").trim(); // Column G (Index 6)
@@ -206,8 +245,16 @@ function getTab5Data(ssTarget) {
     // 1. ĐỌC TRỰC TIẾP TỪ SHEET PURCHASE 17 CỘT (ƯU TIÊN HÀNG ĐẦU)
     const pSheet = ss ? ss.getSheetByName("Purchase") : null;
     if (pSheet && pSheet.getLastRow() >= 2) {
-      const lastColP = Math.max(pSheet.getLastColumn(), 17);
-      const pData = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, lastColP).getValues();
+      // Đảm bảo số cột an toàn, không vượt quá maxColumns của sheet
+      const maxCols = typeof pSheet.getMaxColumns === 'function' ? pSheet.getMaxColumns() : Math.max(pSheet.getLastColumn(), 17);
+      if (maxCols < 17 && typeof pSheet.insertColumnsAfter === 'function') {
+        try {
+          pSheet.insertColumnsAfter(maxCols, 17 - maxCols);
+        } catch(eCol) {}
+      }
+      const safeMaxCol = Math.max(maxCols, 17);
+      const readCol = Math.min(safeMaxCol, Math.max(pSheet.getLastColumn(), 17));
+      const pData = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, readCol).getValues();
 
       pData.forEach(row => {
         if (!row || !row[0]) return;
@@ -223,7 +270,8 @@ function getTab5Data(ssTarget) {
         }
 
         const id = String(row[0]).trim();
-        const ngayMuaDate = parseTab5Date(row[1]);
+        const ngayMuaDate = parseTab5Date(row[1]) || new Date();
+        ngayMuaDate.setHours(0, 0, 0, 0);
         const ngayMua = formatDateTab5Standard(ngayMuaDate);
         const cuaHangRaw = String(row[2] || "").trim() || "Cửa Hàng Mặc Định";
         const cuaHang = normalizeTab5Store(cuaHangRaw);
@@ -236,28 +284,55 @@ function getTab5Data(ssTarget) {
           taiKhoan = cuaHang + " " + rawTk;
         }
 
+        const rawTrangThaiKho = removeAccentsTab5(String(row[3] || "")).trim().toLowerCase();
+        const rawTrangThaiColQ = String(row[16] || "").trim().toUpperCase();
+        const ghiChu = String(row[10] || "").trim();
+        const isCancelled = rawTrangThaiKho.includes("huy") || rawTrangThaiKho.includes("cancel") || rawTrangThaiColQ === "DA_HUY" || rawTrangThaiColQ === "HUY";
+
         const isFilm = isFilmProduct(tenSP);
-        const cooldownDays = isFilm ? (parseInt(row[14], 10) || getDefaultCooldownDays(cuaHang, tenSP)) : 0;
+        let cooldownDays = 0;
+        if (isFilm) {
+          if (isCancelled) {
+            cooldownDays = 7;
+          } else {
+            cooldownDays = parseInt(row[14], 10) || getDefaultCooldownDays(cuaHang, tenSP);
+          }
+        }
         
-        let ngayKhaDungDate = parseTab5Date(row[15]);
+        let parsedKhaDung = parseTab5Date(row[15]);
+        let ngayKhaDungDate;
         if (!isFilm) {
           ngayKhaDungDate = new Date(ngayMuaDate.getTime());
-        } else if (!row[15]) {
+        } else if (isCancelled) {
+          // Đối với đơn Film bị hủy: Ngày khả dụng = Ngày Hủy + 7 ngày
+          const matchHuyDate = ghiChu.match(/\[Hủy:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})\]/i);
+          let baseCancelDate = matchHuyDate ? (parseTab5Date(matchHuyDate[1]) || ngayMuaDate) : null;
+          
+          if (parsedKhaDung && row[14] == 7) {
+            ngayKhaDungDate = parsedKhaDung;
+          } else if (baseCancelDate) {
+            ngayKhaDungDate = new Date(baseCancelDate.getTime());
+            ngayKhaDungDate.setDate(ngayKhaDungDate.getDate() + 7);
+          } else {
+            ngayKhaDungDate = new Date(ngayMuaDate.getTime());
+            ngayKhaDungDate.setDate(ngayKhaDungDate.getDate() + 7);
+          }
+        } else if (parsedKhaDung) {
+          ngayKhaDungDate = parsedKhaDung;
+        } else {
           ngayKhaDungDate = new Date(ngayMuaDate.getTime());
           ngayKhaDungDate.setDate(ngayKhaDungDate.getDate() + cooldownDays);
         }
+        ngayKhaDungDate.setHours(0, 0, 0, 0);
         const ngayKhaDung = formatDateTab5Standard(ngayKhaDungDate);
-        const rawTrangThaiKho = removeAccentsTab5(String(row[3] || "")).trim().toLowerCase();
-        const rawTrangThaiColQ = String(row[16] || "").trim().toUpperCase();
+
         let trangThai = "KET_THUC";
-        if (rawTrangThaiKho.includes("huy") || rawTrangThaiKho.includes("cancel") || rawTrangThaiColQ === "DA_HUY" || rawTrangThaiColQ === "HUY" || rawTrangThaiColQ === "KET_THUC") {
-          trangThai = "KET_THUC";
-        } else if (isFilm && ngayKhaDungDate.getTime() > today.getTime()) {
+        if (isFilm && ngayKhaDungDate.getTime() > today.getTime()) {
           trangThai = "DANG_CHO";
         } else {
           trangThai = "KET_THUC";
         }
-        const ghiChu = String(row[10] || "").trim();
+        const price = Number(row[6]) || 0;
 
         accountsSet.add(taiKhoan);
         storesSet.add(cuaHang);
@@ -265,6 +340,7 @@ function getTab5Data(ssTarget) {
         items.push({
           id: id,
           ngayMua: ngayMua,
+          ngayMuaDate: ngayMuaDate,
           ngayMuaDisplay: formatDateTab5Display(ngayMuaDate),
           taiKhoan: taiKhoan,
           cuaHang: cuaHang,
@@ -272,16 +348,20 @@ function getTab5Data(ssTarget) {
           category: getProductCategory(tenSP, cuaHang),
           cooldownDays: cooldownDays,
           ngayKhaDung: ngayKhaDung,
+          ngayKhaDungDate: ngayKhaDungDate,
           ngayKhaDungDisplay: formatDateTab5Display(ngayKhaDungDate),
           trangThai: trangThai,
+          rawTrangThaiKho: rawTrangThaiKho,
+          rawTrangThaiColQ: rawTrangThaiColQ,
           maDonTab3: id,
-          ghiChu: ghiChu
+          ghiChu: ghiChu,
+          price: price
         });
       });
     }
 
-    // Sắp xếp items mới nhất lên đầu (để lấy dòng cuối cùng/mới nhất cho từng tài khoản)
-    items.sort((a, b) => new Date(b.ngayMua).getTime() - new Date(a.ngayMua).getTime());
+    // Sắp xếp items mới nhất lên đầu chuẩn xác theo timestamp
+    items.sort((a, b) => (b.ngayMuaDate ? b.ngayMuaDate.getTime() : 0) - (a.ngayMuaDate ? a.ngayMuaDate.getTime() : 0));
 
     // Tính toán Ma Trận Cooldown (Store -> Account Status & Last Purchase)
     const accounts = Array.from(accountsSet);
@@ -316,12 +396,13 @@ function getTab5Data(ssTarget) {
       }
 
       targetStores.forEach(storeName => {
-        let shortName = subName;
+        let shortName = normalizeTab5AccountName(subName);
         if (!shortName || shortName.toLowerCase() === storeName.toLowerCase() || shortName.toLowerCase() === "tk mặc định" || shortName.toLowerCase() === "tk mac dinh") {
           return;
         }
 
         let fullName = shortName.toLowerCase().startsWith(storeName.toLowerCase()) ? shortName : (storeName + " " + shortName);
+        fullName = normalizeTab5AccountName(fullName);
 
         if (!storeMap[storeName]) {
           storeMap[storeName] = [];
@@ -351,18 +432,35 @@ function getTab5Data(ssTarget) {
         const shortName = accObj.shortName;
         const targetAccKey = getAccountCleanKey(account, store);
 
-        // Tìm các đơn mua Film đang trong thời gian Cooldown (DANG_CHO) cho tài khoản này
-        const activeOrders = items.filter(it => {
-          const st = String(it.trangThai || "").toUpperCase();
-          if (st !== "DANG_CHO") return false;
-          if (!isFilmProduct(it.tenSanPham)) return false;
+        // Lấy tất cả các đơn mua của tài khoản này ở cửa hàng này
+        const accountOrders = items.filter(it => {
           const itemAccKey = getAccountCleanKey(it.taiKhoan, it.cuaHang);
           return itemAccKey === targetAccKey;
         });
 
-        if (activeOrders.length === 0) {
-          // Chưa có lịch sử mua -> Mặc định Sẵn Sàng Mua cho cả Trắng & Màu
-          ["Film MINI Trắng", "Film MINI Màu"].forEach(cat => {
+        // Group các đơn theo danh mục (Film MINI Trắng & Film MINI Màu)
+        const categoryOrdersMap = {};
+        accountOrders.forEach(ord => {
+          if (!isFilmProduct(ord.tenSanPham)) return;
+          const cat = ord.category || getProductCategory(ord.tenSanPham, store);
+          if (!categoryOrdersMap[cat]) categoryOrdersMap[cat] = [];
+          categoryOrdersMap[cat].push(ord);
+        });
+
+        // Xác định thứ tự các danh mục: Danh mục đã mua được xếp trước, các danh mục còn lại bổ sung sau
+        const purchasedCats = Object.keys(categoryOrdersMap);
+        const allCatsToProcess = [];
+        purchasedCats.forEach(cat => {
+          if (!allCatsToProcess.includes(cat)) allCatsToProcess.push(cat);
+        });
+        ["Film MINI Trắng", "Film MINI Màu"].forEach(cat => {
+          if (!allCatsToProcess.includes(cat)) allCatsToProcess.push(cat);
+        });
+
+        allCatsToProcess.forEach(cat => {
+          const catOrders = categoryOrdersMap[cat] || [];
+          if (catOrders.length === 0) {
+            // Chưa từng mua danh mục này
             storeStatusList.push({
               account: account,
               shortName: shortName,
@@ -374,32 +472,32 @@ function getTab5Data(ssTarget) {
               lastProduct: "",
               lastPrice: 0
             });
-          });
-        } else {
-          // Group active orders by category
-          const categoryOrdersMap = {};
-          activeOrders.forEach(ord => {
-            const cat = ord.category || getProductCategory(ord.tenSanPham, store);
-            if (!categoryOrdersMap[cat]) categoryOrdersMap[cat] = [];
-            categoryOrdersMap[cat].push(ord);
-          });
-
-          // Duyệt từng danh mục đã mua
-          Object.keys(categoryOrdersMap).forEach(cat => {
-            const catOrders = categoryOrdersMap[cat];
+          } else {
+            // Sắp xếp các đơn của danh mục này theo ngày mua mới nhất
+            catOrders.sort((a, b) => (b.ngayMuaDate ? b.ngayMuaDate.getTime() : 0) - (a.ngayMuaDate ? a.ngayMuaDate.getTime() : 0));
             const lastOrder = catOrders[0];
-            const khaDungDate = parseTab5Date(lastOrder.ngayKhaDung);
-            khaDungDate.setHours(0, 0, 0, 0);
 
+            // Tìm xem có đơn nào hợp lệ đang còn trong thời gian Cooldown không (bao gồm cả đơn Film HỦY đang trong 7 ngày cooldown)
+            const activeCdOrders = catOrders.filter(ord => {
+              const kd = ord.ngayKhaDungDate || parseTab5Date(ord.ngayKhaDung);
+              return kd && kd.getTime() > today.getTime() && ord.rawTrangThaiColQ !== "KET_THUC";
+            });
+
+            // Sắp xếp theo ngày khả dụng xa nhất (ngày được phép mua tiếp theo)
             let isCooldown = false;
             let daysLeft = 0;
             let nextAvailableDate = "";
 
-            if (khaDungDate.getTime() > today.getTime()) {
-              isCooldown = true;
-              const diffTime = khaDungDate.getTime() - today.getTime();
-              daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              nextAvailableDate = lastOrder.ngayKhaDungDisplay;
+            if (activeCdOrders.length > 0) {
+              activeCdOrders.sort((a, b) => (b.ngayKhaDungDate ? b.ngayKhaDungDate.getTime() : 0) - (a.ngayKhaDungDate ? a.ngayKhaDungDate.getTime() : 0));
+              const latestCdOrder = activeCdOrders[0];
+              const kdDate = latestCdOrder.ngayKhaDungDate || parseTab5Date(latestCdOrder.ngayKhaDung);
+              if (kdDate && kdDate.getTime() > today.getTime()) {
+                isCooldown = true;
+                const diffTime = kdDate.getTime() - today.getTime();
+                daysLeft = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+                nextAvailableDate = latestCdOrder.ngayKhaDungDisplay || formatDateTab5Display(kdDate);
+              }
             }
 
             // Tiệm Yodo: Film Màu KHÔNG tính cooldown
@@ -419,25 +517,8 @@ function getTab5Data(ssTarget) {
               lastProduct: lastOrder.tenSanPham,
               lastPrice: lastOrder.price || 0
             });
-          });
-
-          // Bổ sung các danh mục Trắng/Màu chưa mua ở trạng thái Sẵn Sàng
-          ["Film MINI Trắng", "Film MINI Màu"].forEach(cat => {
-            if (!categoryOrdersMap[cat]) {
-              storeStatusList.push({
-                account: account,
-                shortName: shortName,
-                category: cat,
-                isCooldown: false,
-                daysLeft: 0,
-                nextAvailableDate: "",
-                lastPurchaseDate: "Chưa từng mua",
-                lastProduct: "",
-                lastPrice: 0
-              });
-            }
-          });
-        }
+          }
+        });
       });
 
       if (storeStatusList.length > 0) {
@@ -471,7 +552,8 @@ function getTab5Data(ssTarget) {
 
 function savePurchaseLimitRecord(formData, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const rawSs = ssTarget || (formData && formData.ssTarget) || null;
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(rawSs) : (rawSs || SpreadsheetApp.getActiveSpreadsheet());
     if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet!" };
 
     let pSheet = ss.getSheetByName("Purchase");
@@ -579,7 +661,7 @@ function savePurchaseLimitRecord(formData, ssTarget) {
 
 function updatePurchaseLimitStatus(id, newStatus, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     const targetStatus = String(newStatus || "DA_HUY").trim().toUpperCase();
     let updated = false;
 
@@ -598,6 +680,23 @@ function updatePurchaseLimitStatus(id, newStatus, ssTarget) {
               pData[i][3] = "Hủy"; // Cột D: Trạng Thái Kho
               pData[i][9] = "CHO_HOAN_TIEN"; // Cột J: Trạng thái thẻ
               pData[i][11] = 0; // Cột L: Tồn kho = 0
+
+              const tenSP = String(pData[i][4] || "");
+              const isFilm = isFilmProduct(tenSP);
+              if (isFilm) {
+                const cancelDate = new Date();
+                cancelDate.setHours(0, 0, 0, 0);
+
+                const kdDate = new Date(cancelDate.getTime());
+                kdDate.setDate(kdDate.getDate() + 7);
+                kdDate.setHours(0, 0, 0, 0);
+
+                pData[i][14] = 7; // Cột O (Col 15): SoNgayCooldown = 7
+                pData[i][15] = formatDateTab5Standard(kdDate); // Cột P (Col 16): NgayKhaDung = NgayHuy + 7 (dd/MM/yyyy)
+                pData[i][16] = "DANG_CHO"; // Cột Q (Col 17): TrangThai = DANG_CHO
+              } else {
+                pData[i][16] = "KET_THUC";
+              }
             } else if (targetStatus === "THANH_CONG") {
               pData[i][3] = "Chờ Ship"; // Cột D: Trạng Thái Kho
               pData[i][9] = "HOAN_TAT"; // Cột J: Trạng thái thẻ
@@ -621,7 +720,7 @@ function updatePurchaseLimitStatus(id, newStatus, ssTarget) {
 
 function deletePurchaseLimitRecord(id, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet!" };
     const sheet = ss.getSheetByName("Purchase");
     if (!sheet || sheet.getLastRow() < 2) return { success: false, error: "Không tìm thấy sheet Purchase!" };
@@ -648,7 +747,7 @@ function deletePurchaseLimitRecord(id, ssTarget) {
  */
 function addTab5Account(storeName, accountName, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     if (!ss) return { success: false, error: "Không tìm thấy Spreadsheet!" };
 
     const catSheet = ss.getSheetByName("Categories") || ss.getSheetByName("DanhMuc");

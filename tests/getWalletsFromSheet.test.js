@@ -77,6 +77,8 @@ test('getWalletsFromSheet parses sheet rows into valid wallet objects with corre
     settle_source: 'Thẻ UFJ ATM',
     checkpoint_date: '',
     checkpoint_balance: 0,
+    last_reconciled_date: '',
+    last_reconciled_batch: '',
     balance_status: 'SYNCED'
   });
 
@@ -100,6 +102,8 @@ test('getWalletsFromSheet parses sheet rows into valid wallet objects with corre
     settle_source: '',
     checkpoint_date: '',
     checkpoint_balance: 500000,
+    last_reconciled_date: '',
+    last_reconciled_batch: '',
     balance_status: 'SYNCED'
   });
 });
@@ -112,4 +116,42 @@ test('getWalletsFromSheet falls back gracefully when sheet is missing or empty',
   assert.equal(res.success, true);
   assert.ok(Array.isArray(res.wallets));
   assert.equal(res.wallets.length, 0);
+});
+
+test('getWalletsFromSheet parses 13-column layout (A..M) with Preorder at Col J accurately', () => {
+  const mockSheetRows13Col = [
+    ['ID', 'Tên', 'Phân loại', 'Hạn mức tín dụng', 'Ngày chốt sao kê', 'Ngày Đáo hạn', 'Số Dư Ban Đầu', 'THU', 'CHI', 'Preorder', 'Số Dư Hiện Tại', 'Ví nguồn', 'Checkpoint Date'],
+    ['W33762', 'C- Raku KA', 'CREDIT', 2000000, '12', '25', 1021842, 0, 991243, 30599, 978158, 'Ufj KA', '10/10/2026'],
+    ['W33773', 'Ufj KA', 'DEBIT', 0, '', '', 6468088, 100000, 60880, 0, 6507208, '', '10/10/2026']
+  ];
+
+  setupMockSpreadsheet(mockSheetRows13Col);
+  const res13 = getWalletsFromSheet('ALL', 'ALL');
+  assert.equal(res13.success, true);
+  assert.equal(res13.wallets.length, 2);
+
+  // Assert Credit Card with Preorder
+  const rakuCard = res13.wallets[0];
+  assert.equal(rakuCard.id, 'W33762');
+  assert.equal(rakuCard.name, 'C- Raku KA');
+  assert.equal(rakuCard.type, 'CREDIT');
+  assert.equal(rakuCard.credit_limit, 2000000);
+  assert.equal(rakuCard.closing_date, '12');
+  assert.equal(rakuCard.due_date, '25');
+  assert.equal(rakuCard.initial_balance, 1021842);
+  assert.equal(rakuCard.total_increase, 0);
+  assert.equal(rakuCard.total_decrease, 991243);
+  assert.equal(rakuCard.debt, 991243);
+  assert.equal(rakuCard.settle_source, 'Ufj KA');
+  assert.equal(rakuCard.checkpoint_date, '10/10/2026');
+
+  // Assert Debit Wallet
+  const ufjWallet = res13.wallets[1];
+  assert.equal(ufjWallet.id, 'W33773');
+  assert.equal(ufjWallet.name, 'Ufj KA');
+  assert.equal(ufjWallet.type, 'DEBIT');
+  assert.equal(ufjWallet.current_balance, 6507208);
+  assert.equal(ufjWallet.initial_balance, 6468088);
+  assert.equal(ufjWallet.total_increase, 100000);
+  assert.equal(ufjWallet.total_decrease, 60880);
 });

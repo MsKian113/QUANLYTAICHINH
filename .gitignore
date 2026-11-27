@@ -2,3 +2,6 @@ node_modules/
 .clasp.json
 clasp-credentials.json
 scratch/
+
+.vercel
+.env*

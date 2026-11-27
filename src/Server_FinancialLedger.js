@@ -2,7 +2,7 @@
 // FILE: Server_FinancialLedger.js
 // NHIỆM VỤ: Central Immutable Financial Ledger Engine (Phiên bản 2.0)
 // Chuẩn Kế toán Sổ Cái 16 Cột:
-// A: LedgerID | B: WalletID | C: WalletName | D: Date (YYYY-MM-DD) | E: Amount | F: Direction | G: EffectType | H: SourceModule | I: SourceID | J: EventType | K: IdempotencyKey | L: Status | M: Note | N: CreatedAt | O: ReversalOf | P: CheckpointRef
+// A: LedgerID | B: WalletID | C: WalletName | D: Date (YYYY-MM-DD) | E: Amount | F: Direction | G: EffectType | H: SourceModule | I: SourceID | J: EventType | K: IdempotencyKey | L: Status | M: Note | N: CreatedAt | O: StatementDate | P: CheckpointRef
 // ==========================================
 
 var SHEET_WALLET_LEDGER = "WalletLedger";
@@ -23,28 +23,58 @@ var LEDGER_HEADERS_16 = [
   "Status",
   "Note",
   "CreatedAt",
-  "ReversalOf",
+  "StatementDate",
   "CheckpointRef"
 ];
 
 // Alias để tương thích ngược
 var LEDGER_HEADERS_15 = LEDGER_HEADERS_16;
 
+function resolveLedgerSpreadsheet(ssTarget) {
+  if (typeof resolveSpreadsheet === 'function') {
+    return resolveSpreadsheet(ssTarget);
+  }
+  if (!ssTarget) {
+    return (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+  }
+  if (typeof ssTarget === 'object' && ssTarget !== null && typeof ssTarget.getSheetByName === 'function') {
+    return ssTarget;
+  }
+  if (typeof ssTarget === 'string' && typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.openById) {
+    try {
+      const cleanId = (typeof extractSpreadsheetId === 'function') ? extractSpreadsheetId(ssTarget) : ssTarget.trim();
+      return SpreadsheetApp.openById(cleanId);
+    } catch(e) {
+      return null;
+    }
+  }
+  return null;
+}
+
 /**
  * Đảm bảo tồn tại Sheet WalletLedger với đúng 16 headers chuẩn
  */
 function getOrCreateLedgerSheet(ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return null;
-    let sheet = ss.getSheetByName(SHEET_WALLET_LEDGER);
+    let sheet = (typeof ss.getSheetByName === 'function')
+      ? (ss.getSheetByName(SHEET_WALLET_LEDGER) || ss.getSheetByName("WalletLedger") || ss.getSheetByName("SoCaiVi"))
+      : null;
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_WALLET_LEDGER);
       sheet.getRange(1, 1, 1, LEDGER_HEADERS_16.length).setValues([LEDGER_HEADERS_16]);
-      sheet.getRange(1, 1, 1, LEDGER_HEADERS_16.length).setFontWeight("bold").setBackground("#e2e8f0");
+      if (sheet.getRange(1, 1, 1, LEDGER_HEADERS_16.length).setFontWeight) {
+        try {
+          sheet.getRange(1, 1, 1, LEDGER_HEADERS_16.length).setFontWeight("bold").setBackground("#e2e8f0");
+        } catch(e) {}
+      }
     } else {
       // Đảm bảo đủ 16 cột
-      const lastCol = Math.max(sheet.getLastColumn(), 1);
+      if (sheet.getMaxColumns && sheet.getMaxColumns() < LEDGER_HEADERS_16.length) {
+        sheet.insertColumnsAfter(sheet.getMaxColumns(), LEDGER_HEADERS_16.length - sheet.getMaxColumns());
+      }
+      const lastCol = Math.max(sheet.getLastColumn ? sheet.getLastColumn() : 1, 1);
       if (lastCol < LEDGER_HEADERS_16.length) {
         sheet.getRange(1, 1, 1, LEDGER_HEADERS_16.length).setValues([LEDGER_HEADERS_16]);
       }
@@ -206,7 +236,7 @@ function resolveWalletCanonicalName(rawName, ssTarget) {
 
   // Dynamic matching fallback
   try {
-    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (ss) {
       const wSheet = (typeof getSheetByNames === 'function') ? getSheetByNames("Wallets", "Ví", ss) : (ss.getSheetByName("Wallets") || ss.getSheetByName("Ví"));
       if (wSheet && wSheet.getLastRow() >= 2) {
@@ -240,7 +270,7 @@ function getWalletLookupMaps(ssTarget) {
   };
 
   try {
-    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return maps;
 
     const wSheet = (typeof getSheetByNames === 'function') ? getSheetByNames("Wallets", "Ví", ss) : (ss.getSheetByName("Wallets") || ss.getSheetByName("Ví"));
@@ -349,7 +379,7 @@ function validateWalletExists(walletNameOrId, ssTarget) {
   if (!rawStr) return false;
 
   try {
-    const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return true;
 
     const wSheet = (typeof getSheetByNames === 'function') ? getSheetByNames("Wallets", "Ví", ss) : (ss.getSheetByName("Wallets") || ss.getSheetByName("Ví"));
@@ -443,6 +473,13 @@ function formatLedgerDate(val) {
   const str = String(val).trim();
   if (!str) return "";
 
+  if (/^\d{4}-\d{1,2}$/.test(str)) {
+    const parts = str.split('-');
+    const y = parts[0];
+    const m = parts[1].padStart(2, '0');
+    return `${y}-${m}-01`;
+  }
+
   if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
     const parts = str.split(' ')[0].split('-');
     const y = parts[0];
@@ -517,8 +554,8 @@ function validateFinancialEvents(eventList) {
     return { valid: false, message: "Danh sách event trống." };
   }
 
-  const validDirections = ["IN", "OUT", "INCREASE", "DECREASE"];
-  const validEffectTypes = ["CASH", "CARD_DEBT", "PARTNER_RECEIVABLE", "PARTNER_PAYABLE", "PARTNER_DEBT"];
+  const validDirections = ["IN", "OUT", "INCREASE", "DECREASE", "HOLD", "NONE"];
+  const validEffectTypes = ["CASH", "CARD_DEBT", "PARTNER_RECEIVABLE", "PARTNER_PAYABLE", "PARTNER_DEBT", "PREORDER_HOLD"];
 
   for (let i = 0; i < eventList.length; i++) {
     const ev = eventList[i];
@@ -534,7 +571,7 @@ function validateFinancialEvents(eventList) {
     }
     const eff = String(ev.effectType || ev.type || "").trim().toUpperCase();
     if (!validEffectTypes.includes(eff)) {
-      return { valid: false, message: `Event [${i}] thiếu hoặc sai EffectType (CASH, CARD_DEBT, PARTNER_RECEIVABLE, PARTNER_PAYABLE).` };
+      return { valid: false, message: `Event [${i}] thiếu hoặc sai EffectType (CASH, CARD_DEBT, PARTNER_RECEIVABLE, PARTNER_PAYABLE, PREORDER_HOLD).` };
     }
   }
 
@@ -554,17 +591,21 @@ function postFinancialEvents(eventList, ssTarget) {
   }
 
   let lock = null;
+  let acquiredLock = false;
   try {
     if (typeof LockService !== 'undefined' && LockService.getScriptLock) {
       lock = LockService.getScriptLock();
-      lock.waitLock(15000);
+      if (!lock.hasLock || !lock.hasLock()) {
+        lock.waitLock(15000);
+        acquiredLock = true;
+      }
     }
   } catch(e) {
     if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Warning ScriptLock: " + e);
   }
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     const sheet = getOrCreateLedgerSheet(ss);
     if (!sheet) {
       return { success: false, message: "❌ Không thể khởi tạo Sheet WalletLedger." };
@@ -609,8 +650,9 @@ function postFinancialEvents(eventList, ssTarget) {
       // Khóa chống trùng 8 thành phần chuẩn xác
       const idemKey = ev.idempotencyKey ? String(ev.idempotencyKey).trim() : `${srcModule}_${srcId}_${paymentId}_${wId || wName}_${eventType}_${effectType}_${dir}_${rev}`;
 
-      // Chống ghi trùng chỉ đối với các dòng POSTED
-      if (existingIdemMap.get(idemKey) === "POSTED") {
+      // Chống ghi trùng đối với các dòng POSTED hoặc PENDING
+      const existingStatus = existingIdemMap.get(idemKey);
+      if (existingStatus === "POSTED" || existingStatus === "PENDING") {
         duplicateCount++;
         continue;
       }
@@ -620,7 +662,7 @@ function postFinancialEvents(eventList, ssTarget) {
       const amt = parseBizMoney(ev.amount);
       const noteStr = String(ev.note || ev.ghiChu || ev.noiDung || "").trim();
       const statusStr = String(ev.status || "POSTED").trim().toUpperCase();
-      const reversalOf = String(ev.reversalOf || "").trim();
+      const statementDate = String(ev.statementDate || ev.statement_date || ev.billingMonth || ev.reversalOf || "").trim();
       const checkpointRef = String(ev.checkpointRef || "").trim();
 
       rowsToAppend.push([
@@ -638,7 +680,7 @@ function postFinancialEvents(eventList, ssTarget) {
         statusStr,                      // 11: L - Status (POSTED, REVERSED)
         noteStr,                        // 12: M - Note
         nowIso,                         // 13: N - CreatedAt
-        reversalOf,                     // 14: O - ReversalOf
+        statementDate,                  // 14: O - StatementDate
         checkpointRef                   // 15: P - CheckpointRef
       ]);
 
@@ -647,10 +689,22 @@ function postFinancialEvents(eventList, ssTarget) {
 
     if (rowsToAppend.length > 0) {
       const startRow = sheet.getLastRow() + 1;
+      if (sheet.getMaxColumns && sheet.getMaxColumns() < 16) {
+        sheet.insertColumnsAfter(sheet.getMaxColumns(), 16 - sheet.getMaxColumns());
+      }
       sheet.getRange(startRow, 1, rowsToAppend.length, 16).setValues(rowsToAppend);
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+    if (typeof incrementDataVersion === 'function') {
+      try { incrementDataVersion(); } catch(e) {}
+    }
+    if (typeof checkAndSyncWalletLedgerChanges === 'function') {
+      try { checkAndSyncWalletLedgerChanges(ss, true); } catch(e) {}
+    }
 
     return {
       success: true,
@@ -663,7 +717,7 @@ function postFinancialEvents(eventList, ssTarget) {
     if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi postFinancialEvents: " + err);
     return { success: false, message: "❌ Lỗi postFinancialEvents: " + err.toString() };
   } finally {
-    if (lock) {
+    if (lock && acquiredLock) {
       try { lock.releaseLock(); } catch(e) {}
     }
   }
@@ -678,15 +732,19 @@ function reverseFinancialEvents(sourceId, reason, ssTarget) {
   if (!sourceId) return { success: false, message: "❌ Thiếu SourceID để đảo ngược." };
 
   let lock = null;
+  let acquiredLock = false;
   try {
     if (typeof LockService !== 'undefined' && LockService.getScriptLock) {
       lock = LockService.getScriptLock();
-      lock.waitLock(15000);
+      if (!lock.hasLock || !lock.hasLock()) {
+        lock.waitLock(15000);
+        acquiredLock = true;
+      }
     }
   } catch(e) {}
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     const sheet = getOrCreateLedgerSheet(ss);
     if (!sheet || sheet.getLastRow() < 2) {
       return { success: true, reversedCount: 0, message: "Sheet WalletLedger trống." };
@@ -725,6 +783,15 @@ function reverseFinancialEvents(sourceId, reason, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+    if (typeof incrementDataVersion === 'function') {
+      try { incrementDataVersion(); } catch(e) {}
+    }
+    if (typeof checkAndSyncWalletLedgerChanges === 'function') {
+      try { checkAndSyncWalletLedgerChanges(ss, true); } catch(e) {}
+    }
 
     return {
       success: true,
@@ -737,7 +804,7 @@ function reverseFinancialEvents(sourceId, reason, ssTarget) {
     if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi reverseFinancialEvents: " + err);
     return { success: false, message: "❌ Lỗi reverseFinancialEvents: " + err.toString() };
   } finally {
-    if (lock) {
+    if (lock && acquiredLock) {
       try { lock.releaseLock(); } catch(e) {}
     }
   }
@@ -752,15 +819,19 @@ function replaceFinancialEvents(sourceId, newEvents, reason, ssTarget) {
   if (!sourceId) return { success: false, message: "❌ Thiếu SourceID." };
 
   let lock = null;
+  let acquiredLock = false;
   try {
     if (typeof LockService !== 'undefined' && LockService.getScriptLock) {
       lock = LockService.getScriptLock();
-      lock.waitLock(15000);
+      if (!lock.hasLock || !lock.hasLock()) {
+        lock.waitLock(15000);
+        acquiredLock = true;
+      }
     }
   } catch(e) {}
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     const sheet = getOrCreateLedgerSheet(ss);
     if (!sheet) return { success: false, message: "❌ Không thể mở Sheet WalletLedger." };
 
@@ -796,6 +867,15 @@ function replaceFinancialEvents(sourceId, newEvents, reason, ssTarget) {
         }
       }
       if (typeof clearAppDataCache === 'function') clearAppDataCache();
+      if (typeof clearAllWalletStatementCaches === 'function') {
+        try { clearAllWalletStatementCaches(); } catch(e) {}
+      }
+      if (typeof incrementDataVersion === 'function') {
+        try { incrementDataVersion(); } catch(e) {}
+      }
+      if (typeof checkAndSyncWalletLedgerChanges === 'function') {
+        try { checkAndSyncWalletLedgerChanges(ss, true); } catch(e) {}
+      }
       return { success: true, message: "✅ Đã xóa toàn bộ bút toán Sổ Cái của SourceID: " + sourceId };
     }
 
@@ -893,6 +973,15 @@ function replaceFinancialEvents(sourceId, newEvents, reason, ssTarget) {
     }
 
     if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+    if (typeof incrementDataVersion === 'function') {
+      try { incrementDataVersion(); } catch(e) {}
+    }
+    if (typeof checkAndSyncWalletLedgerChanges === 'function') {
+      try { checkAndSyncWalletLedgerChanges(ss, true); } catch(e) {}
+    }
 
     return {
       success: true,
@@ -904,7 +993,7 @@ function replaceFinancialEvents(sourceId, newEvents, reason, ssTarget) {
     if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi replaceFinancialEvents: " + err);
     return { success: false, message: "❌ Lỗi replaceFinancialEvents: " + err.toString() };
   } finally {
-    if (lock) {
+    if (lock && acquiredLock) {
       try { lock.releaseLock(); } catch(e) {}
     }
   }
@@ -918,7 +1007,7 @@ function markCheckpointInLedger(walletId, walletName, checkpointId, ssTarget) {
   if (!checkpointId) return { success: false, message: "Thiếu CheckpointID." };
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     const sheet = getOrCreateLedgerSheet(ss);
     if (!sheet || sheet.getLastRow() < 2) return { success: true, markedCount: 0 };
 
@@ -935,6 +1024,16 @@ function markCheckpointInLedger(walletId, walletName, checkpointId, ssTarget) {
       const rowWId = String(data[i][1] || "").trim().toLowerCase();
       const rowWName = String(data[i][2] || "").trim().toLowerCase();
       const rowCpRef = String(data[i][15] || "").trim();
+      const status = String(data[i][11] || "POSTED").trim().toUpperCase();
+
+      // Chỉ chốt các giao dịch thực tế đã phát sinh (POSTED)
+      // KHÔNG chốt các khoản chờ trừ thẻ (PENDING / PRE-ORDER) vì chưa phát sinh sao kê thực tế
+      if (status === "PENDING" || status === "PRE-ORDER" || status === "PREORDER") {
+        continue;
+      }
+      if (status === "REVERSED" || status === "HUY" || status === "DELETED") {
+        continue;
+      }
 
       const matchWallet = (!targetWId && !targetWName) ||
                           (targetWId && rowWId === targetWId) ||
@@ -948,6 +1047,16 @@ function markCheckpointInLedger(walletId, walletName, checkpointId, ssTarget) {
 
     if (markedCount > 0) {
       range.setValues(data);
+      if (typeof clearAppDataCache === 'function') clearAppDataCache();
+      if (typeof clearAllWalletStatementCaches === 'function') {
+        try { clearAllWalletStatementCaches(); } catch(e) {}
+      }
+      if (typeof incrementDataVersion === 'function') {
+        try { incrementDataVersion(); } catch(e) {}
+      }
+      if (typeof checkAndSyncWalletLedgerChanges === 'function') {
+        try { checkAndSyncWalletLedgerChanges(ss, true); } catch(e) {}
+      }
     }
 
     return {
@@ -967,7 +1076,7 @@ function markCheckpointInLedger(walletId, walletName, checkpointId, ssTarget) {
 function getWalletBalancesFromLedger(month, year, ssTarget) {
   const balances = {}; // walletKey -> { inc: 0, dec: 0, delta: 0, currentBalance: 0 }
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return { balances, checkpointMap: {} };
 
     // 1. Tải Checkpoints mới nhất từ WalletCheckpoints
@@ -1074,7 +1183,7 @@ function getWalletBalancesFromLedger(month, year, ssTarget) {
 function getCardDebtFromLedger(month, year, ssTarget) {
   const cardDebts = {}; // cardKey -> { increase: 0, decrease: 0, currentDebt: 0, name: cardName }
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return cardDebts;
 
     const lSheet = ss.getSheetByName(SHEET_WALLET_LEDGER);
@@ -1133,7 +1242,7 @@ function getPartnerDebtFromLedger(ssTarget) {
   };
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return result;
 
     const lSheet = ss.getSheetByName(SHEET_WALLET_LEDGER);
@@ -1185,6 +1294,158 @@ function getPartnerDebtFromLedger(ssTarget) {
 }
 
 /**
+ * 7.1. LẤY DANH SÁCH PRE-ORDER CHỜ TRỪ THẺ TỪ WALLET LEDGER (Status = PENDING & EffectType = PREORDER_HOLD)
+ */
+function getPendingPreOrdersFromLedger(ssTarget) {
+  const preorders = [];
+  try {
+    const ss = resolveLedgerSpreadsheet(ssTarget);
+    if (!ss) return preorders;
+
+    const lSheet = ss.getSheetByName(SHEET_WALLET_LEDGER);
+    if (!lSheet || lSheet.getLastRow() < 2) return preorders;
+
+    const lData = lSheet.getRange(2, 1, lSheet.getLastRow() - 1, Math.max(lSheet.getLastColumn(), 16)).getValues();
+
+    for (let i = 0; i < lData.length; i++) {
+      const status = String(lData[i][11] || "").trim().toUpperCase(); // Col L: Status
+      const effectType = String(lData[i][6] || "").trim().toUpperCase(); // Col G: EffectType
+      const eventType = String(lData[i][9] || "").trim().toUpperCase(); // Col J: EventType
+
+      const isPendingPreorder = (status === "PENDING" && effectType === "PREORDER_HOLD") || eventType === "PREORDER";
+      if (!isPendingPreorder) continue;
+
+      const ledgerId = String(lData[i][0] || "").trim();
+      const walletId = String(lData[i][1] || "").trim();
+      const walletName = String(lData[i][2] || "").trim();
+      const dateStr = formatLedgerDate(lData[i][3]);
+      const amt = parseBizMoney(lData[i][4]);
+      const srcModule = String(lData[i][7] || "").trim();
+      const srcId = String(lData[i][8] || "").trim();
+      const noteStr = String(lData[i][12] || "").trim();
+
+      // Trích xuất nội dung từ note ([Pre] - Nội dung)
+      let cleanContent = noteStr.replace(/^\[Pre\]\s*-\s*/i, '').replace(/^\[Pre-order\]\s*-\s*/i, '').replace(/^\[Pre\]/i, '').trim();
+      if (!cleanContent) cleanContent = noteStr;
+
+      preorders.push({
+        id: srcId || ledgerId,
+        ledgerId: ledgerId,
+        date: dateStr,
+        ngayMua: dateStr,
+        content: cleanContent,
+        tenSP: cleanContent,
+        category: cleanContent,
+        qty: 1,
+        price: amt,
+        amount: amt,
+        total: amt,
+        wallet: walletName,
+        nguonTien: walletName,
+        walletId: walletId,
+        sourceSheet: srcModule || "Purchase",
+        ghiChu: noteStr,
+        status: "PRE-ORDER"
+      });
+    }
+
+    return preorders;
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi getPendingPreOrdersFromLedger: " + err);
+    return [];
+  }
+}
+
+/**
+ * 7.2. XÁC NHẬN TRỪ THẺ THỰC TẾ CHO PRE-ORDER TRONG WALLET LEDGER
+ * Cập nhật dòng PENDING -> POSTED, Direction HOLD -> INCREASE, EffectType -> CARD_DEBT, Note -> Tiền tố chuẩn ([Mua hàng] / [Chi tiêu] / [Công nợ])
+ */
+function confirmLedgerPreOrders(targetIds, customDate, ssTarget) {
+  try {
+    const ss = resolveLedgerSpreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "Không tìm thấy Spreadsheet." };
+
+    const lSheet = ss.getSheetByName(SHEET_WALLET_LEDGER);
+    if (!lSheet || lSheet.getLastRow() < 2) return { success: true, count: 0 };
+
+    const idSet = new Set((Array.isArray(targetIds) ? targetIds : [targetIds]).map(id => String(id).trim()).filter(Boolean));
+    if (idSet.size === 0) return { success: true, count: 0 };
+
+    // Tạo tập hợp các base ID (loại bỏ hậu tố -1, -2 nếu có) để khớp mã đơn cha-con
+    const baseIdSet = new Set();
+    idSet.forEach(id => {
+      baseIdSet.add(id);
+      const match = id.match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+      if (match && match[1]) {
+        baseIdSet.add(match[1]);
+      }
+    });
+
+    const dateVal = formatLedgerDate(customDate || new Date());
+    const lData = lSheet.getRange(2, 1, lSheet.getLastRow() - 1, Math.max(lSheet.getLastColumn(), 16)).getValues();
+    let updatedCount = 0;
+    let lChanged = false;
+
+    for (let i = 0; i < lData.length; i++) {
+      const ledgerId = String(lData[i][0] || "").trim();
+      const srcId = String(lData[i][8] || "").trim();
+      const status = String(lData[i][11] || "").trim().toUpperCase();
+
+      let matchSrcId = false;
+      if (srcId) {
+        if (idSet.has(srcId) || baseIdSet.has(srcId)) {
+          matchSrcId = true;
+        } else {
+          const matchLedger = srcId.match(/^([A-Za-z0-9]+[-_].+?)[-_]([1-9]\d{0,2})$/);
+          if (matchLedger && matchLedger[1] && (idSet.has(matchLedger[1]) || baseIdSet.has(matchLedger[1]))) {
+            matchSrcId = true;
+          }
+        }
+      }
+
+      if ((idSet.has(ledgerId) || matchSrcId) && status === "PENDING") {
+        const srcModule = String(lData[i][7] || "Purchase").trim();
+        let curNote = String(lData[i][12] || "").trim();
+        let cleanName = curNote.replace(/^\[Pre\]\s*-\s*/i, '').replace(/^\[Pre-order\]\s*-\s*/i, '').trim();
+        if (!cleanName) cleanName = curNote;
+
+        let newNotePrefix = "[Mua hàng]";
+        if (srcModule === "Family") newNotePrefix = "[Chi tiêu]";
+        else if (srcModule === "Debt") newNotePrefix = "[Công nợ]";
+
+        if (!lData[i][3]) lData[i][3] = dateVal; // Col D: Giữ nguyên ngày mua gốc nếu đã có
+        lData[i][5] = "INCREASE"; // Col F: Direction
+        lData[i][6] = "CARD_DEBT"; // Col G: EffectType
+        lData[i][9] = "PURCHASE_CHARGE"; // Col J: EventType (Đã trừ thẻ thực tế)
+        lData[i][10] = `${srcModule}_${srcId || ledgerId}_CHARGED_${lData[i][1]}_CARD_DEBT_INCREASE_0`; // Col K: IdempotencyKey
+        lData[i][11] = "POSTED"; // Col L: Status
+        lData[i][12] = `${newNotePrefix} - ${cleanName}`; // Col M: Note
+        lData[i][14] = dateVal; // Col O: StatementDate (Kỳ sao kê đã chọn khi ấn nút trừ thẻ!)
+        lChanged = true;
+        updatedCount++;
+      }
+    }
+
+    if (lChanged) {
+      lSheet.getRange(2, 1, lData.length, 16).setValues(lData);
+      if (typeof clearAppDataCache === 'function') clearAppDataCache();
+    if (typeof clearAllWalletStatementCaches === 'function') {
+      try { clearAllWalletStatementCaches(); } catch(e) {}
+    }
+      // Xóa cache statement để các tab tải lại dữ liệu mới nhất
+      idSet.forEach(id => {
+        if (typeof invalidateWalletTransactionCache === 'function') invalidateWalletTransactionCache(id);
+      });
+    }
+
+    return { success: true, count: updatedCount };
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi confirmLedgerPreOrders: " + err);
+    return { success: false, message: err.toString() };
+  }
+}
+
+/**
  * 8. MIGRATION & RECONCILIATION ENGINE (DRY-RUN & COMMIT)
  * Quét toàn bộ lịch sử từ Family, Purchase, Sales, Debt -> sinh events 16 cột -> đối chiếu số dư -> nạp vào WalletLedger
  * @param {Object} options { dryRun: Boolean, cutoverDate: String (YYYY-MM-DD) }
@@ -1193,7 +1454,7 @@ function getPartnerDebtFromLedger(ssTarget) {
 function syncLedgerFromHistory(options, ssTarget) {
   const isDryRun = options && options.dryRun !== false;
   const cutoverDate = options && options.cutoverDate ? String(options.cutoverDate).trim() : null;
-  const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+  const ss = resolveLedgerSpreadsheet(ssTarget);
   if (!ss) return { success: false, message: "Không tìm thấy Spreadsheet." };
 
   const walletMaps = getWalletLookupMaps(ss);
@@ -1255,8 +1516,7 @@ function syncLedgerFromHistory(options, ssTarget) {
             note: noiDung
           });
         }
-      } else if (isSettlement) {
-        // Tất toán thẻ 2 vế: Giảm tiền ở ví Debit (OUT CASH) và Giảm nợ ở thẻ Credit (DECREASE CARD_DEBT)
+        // Tất toán thẻ 2 vế: Giảm tiền ở ví thanh toán nguồn (OUT CASH) và Giảm dư nợ ở thẻ Credit (DECREASE CARD_DEBT)
         const settleInfo = parseSettlementDetails(noiDung, walletName);
         const srcResolved = resolveWalletAndId("", settleInfo.sourceWallet || walletName, walletMaps, ss);
         const cardResolved = resolveWalletAndId("", settleInfo.cardName, walletMaps, ss);
@@ -1301,31 +1561,79 @@ function syncLedgerFromHistory(options, ssTarget) {
           note: noiDung
         });
       } else if (loai === "thu" || loai === "thu nhập" || loai.includes("tất toán thu") || loai.includes("thu nợ") || loai.includes("thu hồi")) {
+        const isFamCreditInc = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(walletName, ss) : (/^c[-_\s]/i.test(walletName) || walletName.toLowerCase().includes("thẻ") || walletName.toLowerCase().includes("credit"));
         events.push({
           walletId: walletId,
           walletName: walletName,
           date: dateStr,
           amount: amt,
-          direction: "IN",
-          effectType: "CASH",
+          direction: isFamCreditInc ? "DECREASE" : "IN",
+          effectType: isFamCreditInc ? "CARD_DEBT" : "CASH",
+          status: "POSTED",
           sourceModule: "Family",
           sourceId: id,
           eventType: "FAMILY_INCOME",
-          note: noiDung
+          note: `[Thu nhập] - ${noiDung}`
         });
       } else {
-        events.push({
-          walletId: walletId,
-          walletName: walletName,
-          date: dateStr,
-          amount: amt,
-          direction: "OUT",
-          effectType: "CASH",
-          sourceModule: "Family",
-          sourceId: id,
-          eventType: "FAMILY_EXPENSE",
-          note: noiDung
-        });
+        const isFamCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(walletName, ss) : (/^c[-_\s]/i.test(walletName) || walletName.toLowerCase().includes("thẻ") || walletName.toLowerCase().includes("credit"));
+        const rawStatusFam = String(row[9] || "").trim().toUpperCase();
+        const rawGhiChuFam = String(row[8] || "").trim().toLowerCase();
+        const isFamPre = isFamCredit && (
+          rawStatusFam === "PRE-ORDER" ||
+          rawStatusFam.includes("PRE") ||
+          rawGhiChuFam.includes("pre-order") ||
+          rawGhiChuFam.includes("preorder") ||
+          rawGhiChuFam.includes("chờ sao kê") ||
+          rawGhiChuFam.includes("chờ trừ") ||
+          noiDung.toLowerCase().includes("pre-order") ||
+          noiDung.toLowerCase().includes("preorder")
+        ) && rawStatusFam !== "HOAN_TAT" && !rawStatusFam.includes("ĐÃ TRỪ") && !rawStatusFam.includes("ĐÃ SAO KÊ");
+
+        if (isFamPre) {
+          // Ghi nhận bút toán PRE-ORDER PENDING
+          events.push({
+            walletId: walletId,
+            walletName: walletName,
+            date: dateStr,
+            amount: amt,
+            direction: "HOLD",
+            effectType: "PREORDER_HOLD",
+            status: "PENDING",
+            sourceModule: "Family",
+            sourceId: id,
+            eventType: "PREORDER",
+            note: `[Pre] - ${noiDung || "Chi tiêu đặt trước"}`
+          });
+        } else if (isFamCredit) {
+          events.push({
+            walletId: walletId,
+            walletName: walletName,
+            date: dateStr,
+            amount: amt,
+            direction: "INCREASE",
+            effectType: "CARD_DEBT",
+            status: "POSTED",
+            sourceModule: "Family",
+            sourceId: id,
+            eventType: "FAMILY_EXPENSE",
+            note: `[Chi tiêu] - ${noiDung}`
+          });
+        } else {
+          events.push({
+            walletId: walletId,
+            walletName: walletName,
+            date: dateStr,
+            amount: amt,
+            direction: "OUT",
+            effectType: "CASH",
+            status: "POSTED",
+            sourceModule: "Family",
+            sourceId: id,
+            eventType: "FAMILY_EXPENSE",
+            note: `[Chi tiêu] - ${noiDung}`
+          });
+        }
       }
     });
   }
@@ -1370,7 +1678,7 @@ function syncLedgerFromHistory(options, ssTarget) {
               sourceModule: "Purchase",
               sourceId: id + "_REFUND",
               eventType: "PURCHASE_CARD_REFUND",
-              note: `Hoàn tiền đơn hủy: ${tenSP}`
+              note: `[Hoàn tiền] ${tenSP}`
             });
           } else {
             events.push({
@@ -1383,7 +1691,7 @@ function syncLedgerFromHistory(options, ssTarget) {
               sourceModule: "Purchase",
               sourceId: id + "_REFUND",
               eventType: "PURCHASE_REFUND_IN",
-              note: `Hoàn tiền đơn hủy: ${tenSP}`
+              note: `[Hoàn tiền] ${tenSP}`
             });
           }
         }
@@ -1391,7 +1699,31 @@ function syncLedgerFromHistory(options, ssTarget) {
       }
 
       if (isCredit) {
-        if (isCardDone) {
+        const lowerWhP = statusWh.toLowerCase();
+        const lowerCardP = statusValP.toLowerCase();
+        const lowerNoteP = note.toLowerCase();
+        const isPreP = !isCancelled && !isCardDone && (
+          lowerWhP.includes("đặt trước") || lowerWhP.includes("dat truoc") || lowerWhP.includes("preorder") || lowerWhP.includes("pre-order") ||
+          statusValP === "PRE-ORDER" || lowerCardP.includes("pre-order") || lowerCardP.includes("preorder") ||
+          lowerNoteP.includes("pre-order") || lowerNoteP.includes("đặt trước") || lowerNoteP.includes("chờ trừ")
+        );
+
+        if (isPreP) {
+          // Ghi nhận bút toán PRE-ORDER PENDING
+          events.push({
+            walletId: walletId,
+            walletName: walletName,
+            date: formatLedgerDate(row[1]),
+            amount: total,
+            direction: "HOLD",
+            effectType: "PREORDER_HOLD",
+            status: "PENDING",
+            sourceModule: "Purchase",
+            sourceId: id,
+            eventType: "PREORDER",
+            note: `[Pre] - ${tenSP}`
+          });
+        } else if (isCardDone) {
           events.push({
             walletId: walletId,
             walletName: walletName,
@@ -1399,10 +1731,11 @@ function syncLedgerFromHistory(options, ssTarget) {
             amount: total,
             direction: "INCREASE",
             effectType: "CARD_DEBT",
+            status: "POSTED",
             sourceModule: "Purchase",
             sourceId: id,
             eventType: "PURCHASE_CARD_DEBT",
-            note: `Mua hàng quẹt thẻ: ${tenSP} (x${qty})`
+            note: `[Mua hàng] - ${tenSP}`
           });
         }
       } else {
@@ -1417,7 +1750,7 @@ function syncLedgerFromHistory(options, ssTarget) {
           sourceModule: "Purchase",
           sourceId: id,
           eventType: "PURCHASE_CASH_OUT",
-          note: `Mua hàng: ${tenSP} (x${qty})`
+          note: `[Mua hàng] ${tenSP} (x${qty})`
         });
       }
     });
@@ -1453,7 +1786,7 @@ function syncLedgerFromHistory(options, ssTarget) {
           sourceModule: "Sales",
           sourceId: id,
           eventType: "SALES_DEBT_RECORD",
-          note: `Bán hàng ghi nợ: ${tenSP}`
+          note: `[Bán ghi nợ] ${tenSP}`
         });
       } else if (nhanTienVao) {
         // Bán hàng thu tiền ngay vào ví
@@ -1467,7 +1800,7 @@ function syncLedgerFromHistory(options, ssTarget) {
           sourceModule: "Sales",
           sourceId: id,
           eventType: "SALES_CASH_IN",
-          note: `Bán hàng thu tiền: ${tenSP}`
+          note: `[Bán hàng] ${tenSP}`
         });
       }
     });
@@ -1487,10 +1820,12 @@ function syncLedgerFromHistory(options, ssTarget) {
       const walletName = resolved.walletName;
       const walletId = resolved.walletId;
       const partnerName = String(row[2] || "").trim() || "Đối tác";
-      const note = String(row[8] || "").trim();
+      const noiDung = String(row[4] || "").trim(); // Cột E (index 4) là Nội dung
+      const noteSuffix = noiDung ? ` (${noiDung})` : "";
+      const colNote = String(row[8] || "").trim(); // Cột I (index 8)
 
       // Kiểm tra nếu là nợ kế thừa từ Tab 7 (chứa GroupID / TripID)
-      const isInheritedTrip = note.includes("TRIP_") || note.includes("GRP_") || id.startsWith("TRIP_");
+      const isInheritedTrip = noiDung.includes("TRIP_") || noiDung.includes("GRP_") || colNote.includes("TRIP_") || id.startsWith("TRIP_");
 
       if (amt <= 0) return;
 
@@ -1506,7 +1841,7 @@ function syncLedgerFromHistory(options, ssTarget) {
             sourceModule: "Debt",
             sourceId: id,
             eventType: "LEND_MONEY",
-            note: `Cho vay: ${partnerName}`
+            note: `[Cho vay] ${partnerName}${noteSuffix}`
           });
         }
       } else if (loai === "VAY" || loai === "TRA") {
@@ -1521,7 +1856,7 @@ function syncLedgerFromHistory(options, ssTarget) {
             sourceModule: "Debt",
             sourceId: id,
             eventType: "BORROW_MONEY",
-            note: `Đi vay: ${partnerName}`
+            note: `[Đi mượn] ${partnerName}${noteSuffix}`
           });
         }
       }
@@ -1684,6 +2019,142 @@ function syncLedgerFromHistory(options, ssTarget) {
   };
 }
 
+/**
+ * 8.1. ĐỒNG BỘ BỔ SUNG CÁC ĐƠN PRE-ORDER LỊCH SỬ TỪ PURCHASE & FAMILY VÀO WALLETLEDGER
+ * Quét các đơn pre-order cũ chưa có dòng PENDING/POSTED trong WalletLedger và bổ sung an toàn (idempotent, không ghi đè số dư)
+ */
+function syncMissingHistoricalPreOrdersToLedger(ssTarget) {
+  try {
+    const ss = resolveLedgerSpreadsheet(ssTarget);
+    if (!ss) return { success: false, message: "Không tìm thấy Spreadsheet." };
+
+    const walletMaps = getWalletLookupMaps(ss);
+    const preOrderEvents = [];
+
+    // 1. Quét Sheet Purchase
+    const pSheet = ss.getSheetByName("Purchase");
+    if (pSheet && pSheet.getLastRow() >= 2) {
+      const pData = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, Math.max(pSheet.getLastColumn(), 13)).getValues();
+      pData.forEach(row => {
+        const id = String(row[0] || "").trim();
+        const statusWh = String(row[3] || "").trim().toLowerCase();
+        const statusValP = String(row[9] || "").trim().toUpperCase();
+        const isCancelled = statusWh.includes("hủy") || statusWh.includes("cancel");
+        const isCardDone = !isCancelled && (statusValP === "HOAN_TAT" || statusValP.includes("HOÀN TẤT") || statusValP.includes("ĐÃ TRỪ") || statusValP.includes("ĐÃ SAO KÊ"));
+
+        const rawWallet = String(row[8] || "").trim();
+        const resolved = resolveWalletAndId("", rawWallet, walletMaps, ss);
+        const walletName = resolved.walletName;
+        const walletId = resolved.walletId;
+        const qty = parseBizMoney(row[5]) || 1;
+        const price = parseBizMoney(row[6]);
+        const total = parseBizMoney(row[7]) || (qty * price);
+        const note = String(row[10] || "").trim();
+        const tenSP = String(row[4] || "").trim();
+
+        if (!walletName || total <= 0 || isCancelled) return;
+
+        const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(walletName, ss) : (/^c[-_\s]/i.test(walletName) || walletName.toLowerCase().includes("thẻ") || walletName.toLowerCase().includes("credit"));
+        if (!isCredit) return;
+
+        const lowerWhP = statusWh.toLowerCase();
+        const lowerCardP = statusValP.toLowerCase();
+        const lowerNoteP = note.toLowerCase();
+        const isPreP = !isCancelled && !isCardDone && (
+          lowerWhP.includes("đặt trước") || lowerWhP.includes("dat truoc") || lowerWhP.includes("preorder") || lowerWhP.includes("pre-order") ||
+          statusValP === "PRE-ORDER" || lowerCardP.includes("pre-order") || lowerCardP.includes("preorder") ||
+          lowerNoteP.includes("pre-order") || lowerNoteP.includes("đặt trước") || lowerNoteP.includes("chờ trừ")
+        );
+
+        if (isPreP) {
+          preOrderEvents.push({
+            walletId: walletId,
+            walletName: walletName,
+            date: formatLedgerDate(row[1]),
+            amount: total,
+            direction: "HOLD",
+            effectType: "PREORDER_HOLD",
+            status: "PENDING",
+            sourceModule: "Purchase",
+            sourceId: id,
+            eventType: "PREORDER",
+            note: `[Pre] - ${tenSP}`
+          });
+        }
+      });
+    }
+
+    // 2. Quét Sheet Family
+    const fSheet = (typeof getSheetByNames === 'function') ? getSheetByNames("Family", "ThuChi", ss) : (ss.getSheetByName("Family") || ss.getSheetByName("ThuChi"));
+    if (fSheet && fSheet.getLastRow() >= 2) {
+      const fData = fSheet.getRange(2, 1, fSheet.getLastRow() - 1, Math.max(fSheet.getLastColumn(), 11)).getValues();
+      fData.forEach(row => {
+        const id = String(row[0] || "").trim();
+        const dateStr = formatLedgerDate(row[1]);
+        const noiDung = String(row[4] || "").trim();
+        const amt = parseBizMoney(row[5]);
+        const rawWallet = String(row[6] || "").trim();
+        const resolved = resolveWalletAndId("", rawWallet, walletMaps, ss);
+        const walletName = resolved.walletName;
+        const walletId = resolved.walletId;
+
+        if (!walletName || amt <= 0) return;
+
+        const isFamCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(walletName, ss) : (/^c[-_\s]/i.test(walletName) || walletName.toLowerCase().includes("thẻ") || walletName.toLowerCase().includes("credit"));
+        if (!isFamCredit) return;
+
+        const rawStatusFam = String(row[9] || "").trim().toUpperCase();
+        const rawGhiChuFam = String(row[8] || "").trim().toLowerCase();
+        const isFamPre = (
+          rawStatusFam === "PRE-ORDER" ||
+          rawStatusFam.includes("PRE") ||
+          rawGhiChuFam.includes("pre-order") ||
+          rawGhiChuFam.includes("preorder") ||
+          rawGhiChuFam.includes("chờ sao kê") ||
+          rawGhiChuFam.includes("chờ trừ") ||
+          noiDung.toLowerCase().includes("pre-order") ||
+          noiDung.toLowerCase().includes("preorder")
+        ) && rawStatusFam !== "HOAN_TAT" && !rawStatusFam.includes("ĐÃ TRỪ") && !rawStatusFam.includes("ĐÃ SAO KÊ");
+
+        if (isFamPre) {
+          preOrderEvents.push({
+            walletId: walletId,
+            walletName: walletName,
+            date: dateStr,
+            amount: amt,
+            direction: "HOLD",
+            effectType: "PREORDER_HOLD",
+            status: "PENDING",
+            sourceModule: "Family",
+            sourceId: id,
+            eventType: "PREORDER",
+            note: `[Pre] - ${noiDung || "Chi tiêu đặt trước"}`
+          });
+        }
+      });
+    }
+
+    if (preOrderEvents.length === 0) {
+      const msg = "Không có đơn pre-order nào cần đồng bộ (hoặc tất cả đã được ghi nhận vào WalletLedger).";
+      if (typeof Logger !== 'undefined' && Logger.log) Logger.log(msg);
+      return { success: true, count: 0, message: msg };
+    }
+
+    const postRes = postFinancialEvents(preOrderEvents, ss);
+    const msg = `✅ Đã quét ${preOrderEvents.length} đơn pre-order, ghi nhận thành công ${postRes ? postRes.count : 0} bút toán mới vào WalletLedger.`;
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log(msg);
+    return {
+      success: true,
+      scanned: preOrderEvents.length,
+      inserted: postRes ? postRes.count : 0,
+      message: msg
+    };
+  } catch (err) {
+    if (typeof Logger !== 'undefined' && Logger.log) Logger.log("Lỗi syncMissingHistoricalPreOrdersToLedger: " + err);
+    return { success: false, message: "❌ Lỗi: " + err.toString() };
+  }
+}
+
 var SHEET_AUDIT_LOGS = "AuditLogs";
 var AUDIT_LOGS_HEADERS = [
   "AuditID",
@@ -1699,7 +2170,7 @@ var AUDIT_LOGS_HEADERS = [
 
 function getOrCreateAuditLogsSheet(ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = resolveLedgerSpreadsheet(ssTarget);
     if (!ss) return null;
     let sheet = ss.getSheetByName(SHEET_AUDIT_LOGS);
     if (!sheet) {
@@ -1719,7 +2190,7 @@ function getOrCreateAuditLogsSheet(ssTarget) {
  * Discrepancy logged as PENDING_REVIEW in AuditLogs sheet (NEVER blindly overwrite)
  */
 function runNightlyLedgerAudit(ssTarget) {
-  const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+  const ss = resolveLedgerSpreadsheet(ssTarget);
   if (!ss) return { success: false, message: "Không tìm thấy Spreadsheet." };
 
   const nowIso = new Date().toISOString();
@@ -1851,7 +2322,10 @@ if (typeof module !== 'undefined' && module.exports) {
     getWalletBalancesFromLedger,
     getCardDebtFromLedger,
     getPartnerDebtFromLedger,
+    getPendingPreOrdersFromLedger,
+    confirmLedgerPreOrders,
     syncLedgerFromHistory,
+    syncMissingHistoricalPreOrdersToLedger,
     runNightlyLedgerAudit,
     resolveWalletCanonicalName,
     parseSettlementDetails,

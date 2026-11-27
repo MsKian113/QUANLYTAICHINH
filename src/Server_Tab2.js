@@ -9,7 +9,7 @@ const SHEET_JAR = "JAR";
 const SHEET_WALLETS_T2 = "Wallets";
 
 function getFamilySheetHelper(ssTarget) {
-  const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+  const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
   if (!ss) return null;
   let sheet = ss.getSheetByName(SHEET_FAMILY) || ss.getSheetByName("ThuChi") || ss.getSheetByName("FAMILY") || ss.getSheetByName("THUCHI");
   if (!sheet && ss) {
@@ -24,7 +24,7 @@ if (typeof validateWalletExists === 'undefined') {
     const rawStr = String(walletNameOrId).trim();
     if (!rawStr) return false;
     try {
-      const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+      const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null));
       if (!ss) return true;
       const wSheet = (typeof getSheetByNames === 'function') ? getSheetByNames("Wallets", "Ví", ss) : (ss.getSheetByName("Wallets") || ss.getSheetByName("Ví"));
       if (!wSheet || wSheet.getLastRow() < 2) return false;
@@ -68,10 +68,12 @@ function formatToDDMMYYYY(val) {
     return typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(val, "Asia/Tokyo", "dd/MM/yyyy") : String(val.getDate()).padStart(2, '0') + "/" + String(val.getMonth() + 1).padStart(2, '0') + "/" + val.getFullYear();
   }
   const str = String(val).trim();
-  if (!str) return "";
+  if (!str || str === 'undefined' || str === 'null' || str === 'Invalid Date') return "";
 
-  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
-    const parts = str.split(' ')[0].split('/');
+  // dd/MM/yyyy or dd-MM-yyyy or d/M/yyyy
+  if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(str)) {
+    const sep = str.includes('/') ? '/' : '-';
+    const parts = str.split(' ')[0].split(sep);
     const d = parts[0].padStart(2, '0');
     const m = parts[1].padStart(2, '0');
     let y = parts[2];
@@ -79,8 +81,20 @@ function formatToDDMMYYYY(val) {
     return `${d}/${m}/${y}`;
   }
 
-  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
-    const parts = str.split(' ')[0].split('-');
+  // dd/MM or d/M (không có năm -> lấy năm hiện tại)
+  if (/^\d{1,2}[\/\-]\d{1,2}$/.test(str)) {
+    const sep = str.includes('/') ? '/' : '-';
+    const parts = str.split(sep);
+    const d = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    const y = new Date().getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+
+  // yyyy-MM-dd or yyyy/MM/dd
+  if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(str)) {
+    const sep = str.includes('-') ? '-' : '/';
+    const parts = str.split(' ')[0].split(sep);
     const y = parts[0];
     const m = parts[1].padStart(2, '0');
     const d = parts[2].padStart(2, '0');
@@ -88,7 +102,8 @@ function formatToDDMMYYYY(val) {
   }
 
   try {
-    const d = new Date(str);
+    const cleanedStr = str.replace(/\s*\([^)]*\)$/, '');
+    const d = new Date(cleanedStr);
     if (!isNaN(d.getTime())) {
       return typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(d, "Asia/Tokyo", "dd/MM/yyyy") : String(d.getDate()).padStart(2, '0') + "/" + String(d.getMonth() + 1).padStart(2, '0') + "/" + d.getFullYear();
     }
@@ -102,11 +117,34 @@ function formatToDDMMYYYY(val) {
  */
 function getInitialData(ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') 
+      ? resolveSpreadsheet(ssTarget) 
+      : ((typeof ssTarget === 'object' && ssTarget !== null && typeof ssTarget.getSheetByName === 'function')
+        ? ssTarget
+        : (typeof SpreadsheetApp !== 'undefined' && typeof SpreadsheetApp.openById === 'function' && typeof ssTarget === 'string' && ssTarget.trim()
+            ? (function() { try { return SpreadsheetApp.openById(ssTarget.trim()); } catch(e){ return null; } })()
+            : (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null)));
+    if (!ss || typeof ss.getSheetByName !== 'function') {
+      return { 
+        success: false, 
+        connectionError: true, 
+        message: "❌ Lỗi kết nối dữ liệu: Không thể mở bảng tính cá nhân (" + (typeof ssTarget === 'string' ? ssTarget : "") + ")",
+        categories: [],
+        wallets: [],
+        accounts: []
+      };
+    }
     let categories = [];
+    const isCatHidden = typeof isCategoryHidden === 'function' ? isCategoryHidden : function(str) {
+      if (!str) return false;
+      const s = String(str).trim().toUpperCase();
+      return s.startsWith("[HIDDEN]") || s.startsWith("[ĐÃ ẨN]") || s.startsWith("[AN]") || s.startsWith("_HIDDEN_");
+    };
     let wRes = typeof getWalletsFromSheet === 'function' ? getWalletsFromSheet(null, null, ss) : null;
     let rawW = (wRes && Array.isArray(wRes.wallets)) ? wRes.wallets : (Array.isArray(wRes) ? wRes : []);
-    let wallets = rawW.map(w => typeof w === 'object' ? (w.name || w.ten || '') : String(w));
+    let wallets = rawW
+      .filter(w => !w.is_hidden && w.status !== 'DELETED' && !w.is_deleted)
+      .map(w => typeof w === 'object' ? (w.name || w.ten || '') : String(w));
 
     let accounts = [];
 
@@ -130,7 +168,7 @@ function getInitialData(ssTarget) {
           if (!jar) jar = String(r[8] || r[4] || r[1] || "").trim();
           if (!source) source = String(r[9] || r[5] || r[2] || "").trim();
           
-          if (name && !["Nội dung", "Nội dung mẫu", "Tên Mẫu", "Mẫu Nội Dung Thu Chi"].includes(name)) {
+          if (name && !["Nội dung", "Nội dung mẫu", "Tên Mẫu", "Mẫu Nội Dung Thu Chi"].includes(name) && !isCatHidden(name)) {
             customCats.push({ name: name, jar: jar, source: source });
           }
 
@@ -138,7 +176,7 @@ function getInitialData(ssTarget) {
           const accK = String(r[10] || "").trim();
           const accG = String(r[6] || "").trim();
           [accK, accG].forEach(acc => {
-            if (acc && !["Tài khoản mua", "Tài khoản", "Tài khoản đặt hàng", "TK Mua", "Danh sách Tài khoản", "Tài Khoản Đặt Hàng"].includes(acc) && !customAccounts.includes(acc)) {
+            if (acc && !["Tài khoản mua", "Tài khoản", "Tài khoản đặt hàng", "TK Mua", "Danh sách Tài khoản", "Tài Khoản Đặt Hàng"].includes(acc) && !customAccounts.includes(acc) && !isCatHidden(acc)) {
               customAccounts.push(acc);
             }
           });
@@ -172,12 +210,12 @@ function getInitialData(ssTarget) {
     };
   } catch (err) {
     return {
-      success: true,
-      categories: [
-        { name: "Đổ xăng Eneos", jar: "Thiết yếu", source: "Thẻ Rakuten" },
-        { name: "Đi siêu thị Aeon", jar: "Thiết yếu", source: "Ví Tiền Mặt" }
-      ],
-      wallets: (typeof getWalletsFromSheet === 'function' && getWalletsFromSheet().wallets) ? getWalletsFromSheet().wallets.map(w => w.name) : []
+      success: false,
+      connectionError: true,
+      message: "❌ Lỗi kết nối dữ liệu: " + (err && err.message ? err.message : err.toString()),
+      categories: [],
+      wallets: [],
+      accounts: []
     };
   }
 }
@@ -188,7 +226,8 @@ function getInitialData(ssTarget) {
 function saveFamilyTransaction(formData, ssTarget) {
   const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
   return runner(15000, function() {
-    const ss = ssTarget || (formData && formData.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const rawSs = ssTarget || (formData && formData.ssTarget) || null;
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(rawSs) : (rawSs || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null));
     const requestId = formData ? (formData.requestId || formData.clientRequestId) : null;
 
     // 1. Idempotency Check
@@ -204,22 +243,41 @@ function saveFamilyTransaction(formData, ssTarget) {
     const newId = (typeof generateUniqueMaGD === 'function') ? generateUniqueMaGD("TC") : ("TC" + Date.now().toString().slice(-6) + Math.floor(10 + Math.random() * 90));
 
     const nguonTien = String(formData.nguontien || "").trim();
-    if (!nguonTien) {
+    const isAllowEmptyWallet = Boolean(
+      formData.allowEmptyWallet === true ||
+      String(formData.ghichu || "").includes("Chi phí thực tế gia đình gánh chịu")
+    );
+    if (!nguonTien && !isAllowEmptyWallet) {
       return { success: false, message: "❌ Vui lòng chọn nguồn tiền (Ví/Thẻ) hợp lệ!" };
     }
-    if (typeof validateWalletExists === 'function' && !validateWalletExists(nguonTien, ss)) {
+    if (nguonTien && !isAllowEmptyWallet && typeof validateWalletExists === 'function' && !validateWalletExists(nguonTien, ss)) {
       return { success: false, message: `❌ Nguồn tiền '${nguonTien}' không tồn tại trong danh sách Ví/Thẻ (Wallets). Vui lòng chọn nguồn tiền hợp lệ!` };
     }
 
     let loai = String(formData.loai || "CHI").toUpperCase() === "THU" ? "Thu" : "Chi";
     let hu = String(formData.hu || "").trim();
-    if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác" || hu === "----Thu nhập")) {
+    const noidungLower = String(formData.noidung || "").toLowerCase();
+    const ghichuLower = String(formData.ghichu || "").toLowerCase();
+    const isUngNhomTx = noidungLower.includes("ứng hộ nhóm") || noidungLower.includes("ứng cho nhóm") ||
+                        noidungLower.includes("[ứng hộ nhóm]") || noidungLower.includes("[ứng cho nhóm]") ||
+                        ghichuLower.includes("ứng hộ nhóm") || ghichuLower.includes("ứng cho nhóm");
+
+    if (isUngNhomTx && (!hu || hu === "Không cần hũ" || hu === "Khác")) {
+      hu = "Ứng cho nhóm";
+    } else if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác" || hu === "----Thu nhập")) {
       hu = "THU NHẬP";
     }
 
-    const isCredit = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(nguonTien, ss) : false;
-    const isPreOrderReq = (formData.isPreOrder === true || formData.isPreOrder === "true" || formData.status === "PRE-ORDER" || isCredit);
-    const statusVal = formData.status || (isPreOrderReq ? "PRE-ORDER" : "HOAN_TAT");
+    const isThu = loai === "Thu";
+    let isCredit = false;
+    if (typeof isCreditCardWallet === 'function') {
+      isCredit = isCreditCardWallet(nguonTien, ss);
+    } else {
+      const nameClean = String(nguonTien || "").trim().toLowerCase();
+      isCredit = nameClean.startsWith("c-") || nameClean.startsWith("c_") || nameClean.includes("credit") || nameClean.includes("tín dụng") || nameClean.includes("rakuten");
+    }
+    const isPreOrderReq = Boolean(formData.isPreOrder === true || formData.isPreOrder === "true" || formData.status === "PRE-ORDER" || (formData.fromTab2 && !isThu && isCredit));
+    const statusVal = isPreOrderReq ? "PRE-ORDER" : (formData.status || "HOAN_TAT");
     const ngaySaoKe = statusVal === "HOAN_TAT" ? timestamp : "";
     const amt = Number(formData.sotien) || 0;
 
@@ -241,37 +299,55 @@ function saveFamilyTransaction(formData, ssTarget) {
       sheet.appendRow(rowData);
     }
 
-    // Direct update to Wallets sheet balance & collect updated wallet info
+    // Direct update to Wallets sheet balance & collect updated wallet info (chỉ cập nhật nếu KHÔNG phải pre-order)
     const updatedWallets = [];
-    const isThu = String(formData.loai || "CHI").toUpperCase() === "THU";
     const changeAmt = isThu ? amt : -amt;
-    if (typeof updateWalletBalanceHelper === 'function' && nguonTien) {
+    const skipWalletUpdate = Boolean(formData.skipWalletUpdate || formData.skipWallet || formData.skipLedger || isAllowEmptyWallet);
+    if (!skipWalletUpdate && statusVal !== "PRE-ORDER" && typeof updateWalletBalanceHelper === 'function' && nguonTien) {
       const wInfo = updateWalletBalanceHelper(nguonTien, changeAmt, ss);
       if (wInfo) updatedWallets.push(wInfo);
     }
 
     // Ghi nhận sự kiện tài chính vào WalletLedger
-    if (typeof postFinancialEvents === 'function' && nguonTien && amt > 0 && statusVal === "HOAN_TAT") {
-      const isFee = hu.toLowerCase().includes("phí") || String(formData.noidung || "").toLowerCase().includes("phí");
-      const isInterest = hu.toLowerCase().includes("lãi") || String(formData.noidung || "").toLowerCase().includes("tiền lãi");
-      let evType = isThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
-      if (isFee) evType = "FEE";
-      if (isInterest) evType = "INTEREST";
+    if (!skipWalletUpdate && typeof postFinancialEvents === 'function' && nguonTien && amt > 0) {
+      const ledgerDate = (typeof formatLedgerDate === 'function') ? formatLedgerDate(formData.ngay || timestamp) : (formData.ngay || timestamp);
+      if (statusVal === "PRE-ORDER") {
+        // Ghi bút toán theo dõi PREORDER_HOLD (Status PENDING, không trừ hạn mức)
+        postFinancialEvents([{
+          walletName: formData.nguontien,
+          date: ledgerDate,
+          amount: amt,
+          direction: "HOLD",
+          effectType: "PREORDER_HOLD",
+          eventType: "PREORDER",
+          status: "PENDING",
+          sourceModule: "Family",
+          sourceId: newId,
+          note: `[Pre] - ${formData.noidung || "Chi tiêu đặt trước"}`
+        }], ss);
+      } else {
+        const isFee = hu.toLowerCase().includes("phí") || String(formData.noidung || "").toLowerCase().includes("phí");
+        const isInterest = hu.toLowerCase().includes("lãi") || String(formData.noidung || "").toLowerCase().includes("tiền lãi");
+        let evType = isThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
+        if (isFee) evType = "FEE";
+        if (isInterest) evType = "INTEREST";
 
-      const effectType = isCredit ? "CARD_DEBT" : "CASH";
-      const dir = isCredit ? "INCREASE" : (isThu ? "IN" : "OUT");
+        const effectType = isCredit ? "CARD_DEBT" : "CASH";
+        const dir = isCredit ? "INCREASE" : (isThu ? "IN" : "OUT");
 
-      postFinancialEvents([{
-        walletName: formData.nguontien,
-        date: formData.ngay || timestamp,
-        amount: amt,
-        direction: dir,
-        effectType: effectType,
-        sourceModule: "Family",
-        sourceId: newId,
-        eventType: evType,
-        note: formData.noidung || ""
-      }], ss);
+        postFinancialEvents([{
+          walletName: formData.nguontien,
+          date: ledgerDate,
+          amount: amt,
+          direction: dir,
+          effectType: effectType,
+          status: "POSTED",
+          sourceModule: "Family",
+          sourceId: newId,
+          eventType: evType,
+          note: `[Chi tiêu] - ${formData.noidung || ""}`
+        }], ss);
+      }
     }
 
     // Nếu chọn Lưu Mẫu (formData.mau) -> ghi thông tin mẫu gợi ý sang Categories
@@ -330,7 +406,8 @@ function saveFamilyTransaction(formData, ssTarget) {
 function updateFamilyTransaction(formData, ssTarget) {
   const runner = typeof executeWithLock === 'function' ? executeWithLock : function(ms, fn) { return fn(); };
   return runner(15000, function() {
-    const ss = ssTarget || (formData && formData.ssTarget) || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+    const rawSs = ssTarget || (formData && formData.ssTarget) || null;
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(rawSs) : (rawSs || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null));
     const requestId = formData ? (formData.requestId || formData.clientRequestId) : null;
 
     // 1. Idempotency Check
@@ -366,18 +443,15 @@ function updateFamilyTransaction(formData, ssTarget) {
         const oldSource = String(data[i][6] || "").trim();
         const oldChange = (oldLoai === "THU" || oldLoai === "KHOẢN THU") ? oldAmt : -oldAmt;
 
+        const curStatus = String(data[i][9] || "").trim().toUpperCase();
+        const oldIsPreOrder = (curStatus === "PRE-ORDER" || curStatus.includes("PRE"));
+
         const updatedWalletsMap = {};
 
-        // Revert old transaction balance
-        if (typeof updateWalletBalanceHelper === 'function' && oldSource) {
+        // Revert old transaction balance (chỉ hoàn trả nếu giao dịch cũ KHÔNG phải PRE-ORDER)
+        if (!oldIsPreOrder && typeof updateWalletBalanceHelper === 'function' && oldSource) {
           const wOld = updateWalletBalanceHelper(oldSource, -oldChange, ss);
           if (wOld && wOld.name) updatedWalletsMap[wOld.name] = wOld;
-        }
-
-        let loai = String(formData.loai || "CHI").toUpperCase() === "THU" ? "Thu" : "Chi";
-        let hu = String(formData.hu || "").trim();
-        if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác" || hu === "----Thu nhập")) {
-          hu = "THU NHẬP";
         }
 
         const curDate = data[i][1];
@@ -386,7 +460,20 @@ function updateFamilyTransaction(formData, ssTarget) {
         const curSource = data[i][6];
         const curFixed = data[i][7];
         const curNote = data[i][8];
-        const curStatus = data[i][9];
+
+        let loai = String(formData.loai || "CHI").toUpperCase() === "THU" ? "Thu" : "Chi";
+        let hu = String(formData.hu || "").trim();
+        const noidungLower = String(formData.noidung !== undefined ? formData.noidung : (curDesc || "")).toLowerCase();
+        const ghichuLower = String(formData.ghichu !== undefined ? formData.ghichu : (curNote || "")).toLowerCase();
+        const isUngNhomTx = noidungLower.includes("ứng hộ nhóm") || noidungLower.includes("ứng cho nhóm") ||
+                            noidungLower.includes("[ứng hộ nhóm]") || noidungLower.includes("[ứng cho nhóm]") ||
+                            ghichuLower.includes("ứng hộ nhóm") || ghichuLower.includes("ứng cho nhóm");
+
+        if (isUngNhomTx && (!hu || hu === "Không cần hũ" || hu === "Khác")) {
+          hu = "Ứng cho nhóm";
+        } else if (loai === "Thu" && (!hu || hu === "Thu Chi" || hu === "Khác" || hu === "----Thu nhập")) {
+          hu = "THU NHẬP";
+        }
 
         const newDateVal = formData.ngay !== undefined ? formatToDDMMYYYY(formData.ngay) : curDate;
         const newDescVal = formData.noidung !== undefined ? formData.noidung : curDesc;
@@ -394,7 +481,18 @@ function updateFamilyTransaction(formData, ssTarget) {
         const newSourceVal = formData.nguontien !== undefined ? formData.nguontien : curSource;
         const newFixedVal = formData.codinh !== undefined ? (formData.codinh ? "Có" : "") : curFixed;
         const newNoteVal = formData.ghichu !== undefined ? formData.ghichu : curNote;
-        const newStatusVal = formData.status !== undefined ? formData.status : curStatus;
+
+        const newLoaiStr = formData.loai !== undefined ? String(formData.loai).toUpperCase() : oldLoai;
+        const newIsThu = (newLoaiStr === "THU" || newLoaiStr === "KHOẢN THU");
+        let isCreditNew = false;
+        if (typeof isCreditCardWallet === 'function') {
+          isCreditNew = isCreditCardWallet(newSourceVal, ss);
+        } else {
+          const nameCleanNew = String(newSourceVal || "").trim().toLowerCase();
+          isCreditNew = nameCleanNew.startsWith("c-") || nameCleanNew.startsWith("c_") || nameCleanNew.includes("credit") || nameCleanNew.includes("tín dụng") || nameCleanNew.includes("rakuten");
+        }
+        const isPreOrderReqNew = Boolean(formData.isPreOrder === true || formData.isPreOrder === "true" || formData.status === "PRE-ORDER" || (formData.fromTab2 && !newIsThu && isCreditNew));
+        const newStatusVal = isPreOrderReqNew ? "PRE-ORDER" : (formData.status !== undefined ? formData.status : (curStatus || "HOAN_TAT"));
 
         if (formData.nguontien !== undefined) {
           const sourceCheck = String(newSourceVal || "").trim();
@@ -418,14 +516,13 @@ function updateFamilyTransaction(formData, ssTarget) {
           newStatusVal
         ]]);
 
-        // Apply new transaction balance
+        // Apply new transaction balance (chỉ cập nhật nếu giao dịch mới KHÔNG phải PRE-ORDER)
         const newAmt = formData.sotien !== undefined ? (Number(formData.sotien) || 0) : oldAmt;
-        const newLoaiStr = formData.loai !== undefined ? String(formData.loai).toUpperCase() : oldLoai;
-        const newIsThu = (newLoaiStr === "THU" || newLoaiStr === "KHOẢN THU");
         const newSource = formData.nguontien !== undefined ? String(formData.nguontien).trim() : oldSource;
         const newChange = newIsThu ? newAmt : -newAmt;
+        const newIsPreOrder = (newStatusVal === "PRE-ORDER" || String(newStatusVal).toUpperCase().includes("PRE"));
 
-        if (typeof updateWalletBalanceHelper === 'function' && newSource) {
+        if (!newIsPreOrder && typeof updateWalletBalanceHelper === 'function' && newSource) {
           const wNew = updateWalletBalanceHelper(newSource, newChange, ss);
           if (wNew && wNew.name) updatedWalletsMap[wNew.name] = wNew;
         }
@@ -433,29 +530,45 @@ function updateFamilyTransaction(formData, ssTarget) {
         const updatedWallets = Object.values(updatedWalletsMap);
 
         // Cập nhật sự kiện trong WalletLedger
-        if (typeof replaceFinancialEvents === 'function' && newSourceVal && newAmtVal > 0 && newStatusVal === "HOAN_TAT") {
-          const isFee = hu.toLowerCase().includes("phí") || String(newDescVal || "").toLowerCase().includes("phí");
-          const isInterest = hu.toLowerCase().includes("lãi") || String(newDescVal || "").toLowerCase().includes("tiền lãi");
-          let evType = newIsThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
-          if (isFee) evType = "FEE";
-          if (isInterest) evType = "INTEREST";
+        if (typeof replaceFinancialEvents === 'function' && newSourceVal && newAmtVal > 0) {
+          const ledgerDate = (typeof formatLedgerDate === 'function') ? formatLedgerDate(formData.ngay || newDateVal) : (formData.ngay || newDateVal);
+          if (newIsPreOrder) {
+            replaceFinancialEvents(rowId, [{
+              walletName: newSourceVal,
+              date: ledgerDate,
+              amount: newAmtVal,
+              direction: "HOLD",
+              effectType: "PREORDER_HOLD",
+              sourceModule: "Family",
+              sourceId: rowId,
+              eventType: "PREORDER",
+              status: "PENDING",
+              rev: 1,
+              note: `[Pre] - ${newDescVal || "Chi tiêu đặt trước"}`
+            }], "Sửa giao dịch Family", ss);
+          } else {
+            const isFee = hu.toLowerCase().includes("phí") || String(newDescVal || "").toLowerCase().includes("phí");
+            const isInterest = hu.toLowerCase().includes("lãi") || String(newDescVal || "").toLowerCase().includes("tiền lãi");
+            let evType = newIsThu ? "FAMILY_INCOME" : "FAMILY_EXPENSE";
+            if (isFee) evType = "FEE";
+            if (isInterest) evType = "INTEREST";
 
-          const isCreditNew = (typeof isCreditCardWallet === 'function') ? isCreditCardWallet(newSourceVal, ss) : false;
-          const effectType = isCreditNew ? "CARD_DEBT" : "CASH";
-          const dir = isCreditNew ? "INCREASE" : (newIsThu ? "IN" : "OUT");
+            const effectType = isCreditNew ? "CARD_DEBT" : "CASH";
+            const dir = isCreditNew ? "INCREASE" : (newIsThu ? "IN" : "OUT");
 
-          replaceFinancialEvents(rowId, [{
-            walletName: newSourceVal,
-            date: newDateVal,
-            amount: newAmtVal,
-            direction: dir,
-            effectType: effectType,
-            sourceModule: "Family",
-            sourceId: rowId,
-            eventType: evType,
-            rev: 1,
-            note: newDescVal || ""
-          }], "Sửa giao dịch Family", ss);
+            replaceFinancialEvents(rowId, [{
+              walletName: newSourceVal,
+              date: ledgerDate,
+              amount: newAmtVal,
+              direction: dir,
+              effectType: effectType,
+              sourceModule: "Family",
+              sourceId: rowId,
+              eventType: evType,
+              rev: 1,
+              note: `[Chi tiêu] - ${newDescVal || ""}`
+            }], "Sửa giao dịch Family", ss);
+          }
         }
 
         if (typeof clearAppDataCache === 'function') clearAppDataCache();
@@ -521,7 +634,7 @@ function deleteTransaction(rowIdOrData, ssTarget) {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) return { success: false, message: "Không có dữ liệu để xóa!" };
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const data = sheet.getRange(2, 1, lastRow - 1, Math.max(sheet.getLastColumn(), 10)).getValues();
     for (let i = 0; i < data.length; i++) {
       const curRowId = String(data[i][0] || "").trim();
       const rowIndex = i + 2;
@@ -535,12 +648,14 @@ function deleteTransaction(rowIdOrData, ssTarget) {
         const oldLoai = String(data[i][2] || "").trim().toUpperCase();
         const oldAmt = Number(data[i][5]) || 0;
         const oldSource = String(data[i][6] || "").trim();
+        const oldStatus = String(data[i][9] || "").trim().toUpperCase();
+        const oldIsPreOrder = (oldStatus === "PRE-ORDER" || oldStatus.includes("PRE"));
         const oldChange = (oldLoai === "THU" || oldLoai === "KHOẢN THU") ? oldAmt : -oldAmt;
 
         const updatedWallets = [];
 
-        // Revert transaction balance from wallet
-        if (typeof updateWalletBalanceHelper === 'function' && oldSource) {
+        // Revert transaction balance from wallet (chỉ hoàn trả nếu KHÔNG phải pre-order)
+        if (!oldIsPreOrder && typeof updateWalletBalanceHelper === 'function' && oldSource) {
           const w = updateWalletBalanceHelper(oldSource, -oldChange, ss);
           if (w) updatedWallets.push(w);
         }
@@ -579,7 +694,11 @@ function deleteTransaction(rowIdOrData, ssTarget) {
  */
 function getTab2Data(month, year, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
+    if (!ss) return { success: false, summary: { net: 0, income: 0, expense: 0 }, transactions: [], jars: [], message: "Không thể mở bảng tính cá nhân: " + ssTarget };
+    if (typeof syncMissingFinalizedGroupFamilyShares === 'function') {
+      try { syncMissingFinalizedGroupFamilyShares(ss); } catch (eSync) {}
+    }
     const sheet = getFamilySheetHelper(ss);
 
     const isAllMonth = (!month || month === "ALL" || String(month).toUpperCase() === "ALL");
@@ -600,15 +719,23 @@ function getTab2Data(month, year, ssTarget) {
       if (!val) return null;
       if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
       const str = String(val).trim();
-      if (!str) return null;
-      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
-        const p = str.split(' ')[0].split('/');
+      if (!str || str === 'undefined' || str === 'null' || str === 'Invalid Date') return null;
+      if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(str)) {
+        const sep = str.includes('/') ? '/' : '-';
+        const p = str.split(' ')[0].split(sep);
         let yr = parseInt(p[2], 10);
         if (yr < 100) yr += 2000;
         return new Date(yr, parseInt(p[1], 10) - 1, parseInt(p[0], 10));
       }
-      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
-        const p = str.split(' ')[0].split('-');
+      if (/^\d{1,2}[\/\-]\d{1,2}$/.test(str)) {
+        const sep = str.includes('/') ? '/' : '-';
+        const p = str.split(sep);
+        const yr = new Date().getFullYear();
+        return new Date(yr, parseInt(p[1], 10) - 1, parseInt(p[0], 10));
+      }
+      if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(str)) {
+        const sep = str.includes('-') ? '-' : '/';
+        const p = str.split(' ')[0].split(sep);
         return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
       }
       const d = new Date(str);
@@ -617,7 +744,11 @@ function getTab2Data(month, year, ssTarget) {
 
     const preordersList = [];
     if (sheet && sheet.getLastRow() >= 2) {
-      const lastCol = Math.max(sheet.getLastColumn(), 11);
+      if (sheet.getMaxColumns && sheet.insertColumnsAfter && sheet.getMaxColumns() < 11) {
+        try { sheet.insertColumnsAfter(sheet.getMaxColumns(), 11 - sheet.getMaxColumns()); } catch(e) {}
+      }
+      const maxCols = sheet.getMaxColumns ? sheet.getMaxColumns() : sheet.getLastColumn();
+      const lastCol = Math.min(Math.max(sheet.getLastColumn(), 10), maxCols);
       const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
 
       for (let i = 0; i < data.length; i++) {
@@ -661,9 +792,12 @@ function getTab2Data(month, year, ssTarget) {
         }
 
         // Tính thu nhập tháng trước để chia hũ
-        const prevM = targetMonth === 1 ? 12 : (targetMonth ? targetMonth - 1 : null);
-        const prevY = targetMonth === 1 ? (targetYear ? targetYear - 1 : new Date().getFullYear() - 1) : targetYear;
-        if (prevM && y === prevY && m === prevM && loai === "Thu") {
+        const now = new Date();
+        const activeMonth = targetMonth || (now.getMonth() + 1);
+        const activeYear = targetYear || now.getFullYear();
+        const prevM = activeMonth === 1 ? 12 : (activeMonth - 1);
+        const prevY = activeMonth === 1 ? (activeYear - 1) : activeYear;
+        if (y === prevY && m === prevM && loai === "Thu") {
           prevMonthIncome += sotien;
         }
 
@@ -675,9 +809,14 @@ function getTab2Data(month, year, ssTarget) {
           const loaiLower = loai.toLowerCase();
           const huLower = hu.toLowerCase();
           const noidungStr = String(row[4] || "").trim();
+          const noidungLower = noidungStr.toLowerCase();
           const ghichuStr = String(row[8] || "").trim();
+          const ghichuLower = ghichuStr.toLowerCase();
           const isTagExcluded = noidungStr.includes("[Ứng hộ nhóm]") || noidungStr.includes("[Tất toán công nợ]") || noidungStr.includes("[Thu nợ]") || noidungStr.includes("[Trả nợ]") ||
                                 ghichuStr.includes("[Ứng hộ nhóm]") || ghichuStr.includes("[Tất toán công nợ]") || ghichuStr.includes("[Thu nợ]") || ghichuStr.includes("[Trả nợ]") ||
+                                noidungLower.includes("ứng cho nhóm") || noidungLower.includes("ứng hộ nhóm") ||
+                                ghichuLower.includes("ứng cho nhóm") || ghichuLower.includes("ứng hộ nhóm") ||
+                                huLower.includes("ứng cho nhóm") || huLower.includes("ứng hộ nhóm") ||
                                 huLower.includes("ck nội bộ") || huLower.includes("công nợ") || huLower.includes("tất toán thẻ") ||
                                 noidungStr.includes("Chuyển tiền:") || noidungStr.includes("Tất toán thẻ:");
 
@@ -791,6 +930,7 @@ function getTab2Data(month, year, ssTarget) {
       jars: jars
     };
   } catch (err) {
+    if (typeof Logger !== 'undefined') Logger.log("getTab2Data error: " + (err ? err.stack || err : err));
     return {
       success: true,
       summary: { net: 0, income: 0, expense: 0, prevMonthIncome: 0, netBalance: 0, totalIncome: 0, totalExpense: 0 },
@@ -817,7 +957,7 @@ function getSavedJarConfigInternal(month, year, prevIncome, ssTarget) {
   };
 
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     if (!ss) return defaultResult;
 
     const sheet = ss.getSheetByName("JAR") || ss.getSheetByName("Jar") || ss.getSheetByName("jar");
@@ -997,7 +1137,7 @@ function getJarDataForWeb() {
  */
 function getQuickFixedItems(month, year, ssTarget) {
   try {
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     const isAllMonth = (!month || month === "ALL" || String(month).toUpperCase() === "ALL" || month === "All");
     const targetMonth = isAllMonth ? (new Date().getMonth() + 1) : parseInt(month, 10);
     const isAllYear = (!year || year === "ALL" || String(year).toUpperCase() === "ALL" || year === "All");
@@ -1016,7 +1156,107 @@ function getQuickFixedItems(month, year, ssTarget) {
 
     const paidCurrentMonthSet = new Set();
     const prevMonthFixedMap = new Map();
+    const historicalDayMap = new Map();
 
+    // 1. Quét cấu hình danh mục cố định từ Sheet Categories / DanhMuc
+    const catConfigMap = new Map();
+    if (ss) {
+      const catSheet = ss.getSheetByName(SHEET_CATEGORIES) || ss.getSheetByName("DanhMuc");
+      if (catSheet && catSheet.getLastRow() >= 2) {
+        const lastRow = catSheet.getLastRow();
+        const lastCol = Math.max(catSheet.getLastColumn(), 10);
+        const allCatRows = catSheet.getRange(1, 1, lastRow, lastCol).getValues();
+        const headerRow = allCatRows[0] || [];
+
+        let colDay = -1;
+        let colContent = -1;
+        let colJar = -1;
+        let colType = -1;
+        let colSource = -1;
+
+        headerRow.forEach((h, idx) => {
+          const hStr = String(h || "").trim().toLowerCase();
+          if (/(?:ngày|ngay|day|hạn|han)/.test(hStr) && colDay === -1) colDay = idx;
+          if (/(?:nội dung|noi dung|noidung|khoản|khoan)/.test(hStr) && colContent === -1) colContent = idx;
+          if (/(?:hũ|hu|nhóm|nhom)/.test(hStr) && colJar === -1) colJar = idx;
+          if (/(?:loại|loai|type)/.test(hStr) && colType === -1) colType = idx;
+          if (/(?:phương thức|phuong thuc|ví|vi|nguồn|nguon|tài khoản|tai khoan)/.test(hStr) && colSource === -1) colSource = idx;
+        });
+
+        for (let rIdx = 1; rIdx < allCatRows.length; rIdx++) {
+          const r = allCatRows[rIdx];
+          let catNoidung = "";
+          if (colContent !== -1 && r[colContent]) {
+            catNoidung = String(r[colContent] || "").trim();
+          }
+          if (!catNoidung) {
+            // Thử cột F (index 5) hoặc cột B (index 1) hoặc cột H (index 7) hoặc cột D (index 3)
+            catNoidung = String(r[5] || r[1] || r[7] || r[3] || "").trim();
+          }
+
+          if (!catNoidung || ["nội dung", "nội dung mẫu", "tên mẫu", "mẫu nội dung thu chi", "tiêu đề"].includes(catNoidung.toLowerCase())) {
+            continue;
+          }
+
+          let catType = (colType !== -1 && r[colType]) ? String(r[colType]).trim() : String(r[3] || "Chi").trim();
+          let catJar = (colJar !== -1 && r[colJar]) ? String(r[colJar]).trim() : String(r[4] || r[2] || "Thiết yếu").trim();
+          let catSource = (colSource !== -1 && r[colSource]) ? String(r[colSource]).trim() : String(r[6] || r[3] || "").trim();
+
+          // Tìm ngày cố định (1..31)
+          let foundDay = null;
+          if (colDay !== -1 && r[colDay]) {
+            const p = parseInt(r[colDay], 10);
+            if (!isNaN(p) && p >= 1 && p <= 31) foundDay = p;
+          }
+          if (!foundDay) {
+            // Thử Cột C (index 2) hoặc Cột A (index 0)
+            const p2 = parseInt(r[2], 10);
+            if (!isNaN(p2) && p2 >= 1 && p2 <= 31) foundDay = p2;
+            else {
+              const p0 = parseInt(r[0], 10);
+              if (!isNaN(p0) && p0 >= 1 && p0 <= 31) foundDay = p0;
+            }
+          }
+          if (!foundDay) {
+            // Quét tất cả các ô trong dòng xem có ô nào chứa số 1..31 là ngày cố định
+            for (let c = 0; c < r.length; c++) {
+              const cellVal = r[c];
+              if (typeof cellVal === 'number' && Number.isInteger(cellVal) && cellVal >= 1 && cellVal <= 31) {
+                foundDay = cellVal;
+                break;
+              } else if (typeof cellVal === 'string' && /^\s*\d{1,2}\s*$/.test(cellVal)) {
+                const num = parseInt(cellVal.trim(), 10);
+                if (num >= 1 && num <= 31) {
+                  foundDay = num;
+                  break;
+                }
+              }
+            }
+          }
+          if (!foundDay) {
+            const matchDay = catNoidung.match(/(?:ngày\s*(\d{1,2})|(\d{1,2})\s*hàng\s*tháng)/i);
+            if (matchDay) foundDay = parseInt(matchDay[1] || matchDay[2], 10);
+          }
+
+          const nKey = catNoidung.toLowerCase();
+          if (!catConfigMap.has(nKey)) {
+            catConfigMap.set(nKey, {
+              noidung: catNoidung,
+              loai: catType || "Chi",
+              hu: catJar || "Thiết yếu",
+              nguontien: catSource || "",
+              day: foundDay,
+              prevAmount: 0
+            });
+          } else {
+            const existing = catConfigMap.get(nKey);
+            if (!existing.day && foundDay) existing.day = foundDay;
+          }
+        }
+      }
+    }
+
+    // 2. Quét sheet Family (ThuChi) để lấy lịch sử và các khoản tháng trước
     const fSheet = ss ? (ss.getSheetByName(SHEET_FAMILY) || ss.getSheetByName("ThuChi")) : null;
     if (fSheet && fSheet.getLastRow() >= 2) {
       const fData = fSheet.getRange(2, 1, fSheet.getLastRow() - 1, 10).getValues();
@@ -1057,14 +1297,19 @@ function getQuickFixedItems(month, year, ssTarget) {
           const nguontien = String(r[6] || "").trim();
           const isFixed = String(r[7] || "").trim() === "Có" || r[7] === true || r[7] === 1;
 
-          // 1. Quét các khoản ĐÃ ĐÓNG trong tháng hiện tại (month/year)
+          // Lưu ngày thực tế trong tháng của khoản cố định
+          if (isFixed && noidungLower) {
+            historicalDayMap.set(noidungLower, d.getDate());
+          }
+
+          // Quét các khoản ĐÃ ĐÓNG trong tháng hiện tại (month/year)
           if (m === targetMonth && y === targetYear) {
             if (noidungLower && amt > 0) {
               paidCurrentMonthSet.add(noidungLower);
             }
           }
 
-          // 2. Quét các khoản CỐ ĐỊNH (cột H = "Có") của THÁNG TRƯỚC (prevMonth/prevYear)
+          // Quét các khoản CỐ ĐỊNH (cột H = "Có") của THÁNG TRƯỚC (prevMonth/prevYear)
           if (m === prevMonth && y === prevYear) {
             if (isFixed && noidungLower) {
               if (!prevMonthFixedMap.has(noidungLower)) {
@@ -1073,7 +1318,8 @@ function getQuickFixedItems(month, year, ssTarget) {
                   hu: hu || "Thiết yếu",
                   nguontien: nguontien,
                   prevAmount: amt,
-                  loai: String(r[2] || "Chi").trim()
+                  loai: String(r[2] || "Chi").trim(),
+                  day: d.getDate()
                 });
               }
             }
@@ -1082,38 +1328,73 @@ function getQuickFixedItems(month, year, ssTarget) {
       }
     }
 
-    const candidateItems = Array.from(prevMonthFixedMap.values());
+    // 3. Hợp nhất danh sách ứng viên (candidateItems)
+    const candidateMap = new Map();
 
-    // Nếu tháng trước chưa có khoản cố định nào, bổ sung thêm các danh mục cố định từ "Categories"
-    if (candidateItems.length === 0 && ss) {
-      const catSheet = ss.getSheetByName(SHEET_CATEGORIES) || ss.getSheetByName("DanhMuc");
-      if (catSheet && catSheet.getLastRow() >= 2) {
-        const catData = catSheet.getRange(2, 1, catSheet.getLastRow() - 1, 8).getValues();
-        catData.forEach(r => {
-          const isFixed = String(r[2] || "").trim() === "Có" || r[2] === 1 || r[2] === true || String(r[7] || "").trim() === "Có" || r[7] === true;
-          const noidung = String(r[3] || "").trim();
-          const hu = String(r[4] || "").trim();
-          const nguontien = String(r[5] || "").trim();
-          const amt = Number(r[6]) || 0;
+    // Nạp từ tháng trước
+    prevMonthFixedMap.forEach((val, key) => {
+      const catCfg = catConfigMap.get(key);
+      const effectiveDay = (catCfg && catCfg.day) ? catCfg.day : (val.day || historicalDayMap.get(key) || null);
+      candidateMap.set(key, {
+        ...val,
+        day: effectiveDay,
+        hu: val.hu || (catCfg ? catCfg.hu : "Thiết yếu"),
+        nguontien: val.nguontien || (catCfg ? catCfg.nguontien : ""),
+        loai: val.loai || (catCfg ? catCfg.loai : "Chi")
+      });
+    });
 
-          if (isFixed && noidung) {
-            if (!candidateItems.some(it => it.noidung.toLowerCase() === noidung.toLowerCase())) {
-              candidateItems.push({
-                noidung: noidung,
-                hu: hu || "Thiết yếu",
-                nguontien: nguontien,
-                prevAmount: amt,
-                loai: "Chi"
-              });
-            }
-          }
-        });
+    // Bổ sung các khoản từ Categories nếu chưa có trong danh sách
+    catConfigMap.forEach((val, key) => {
+      if (!candidateMap.has(key)) {
+        if (val.day) {
+          candidateMap.set(key, {
+            noidung: val.noidung,
+            hu: val.hu || "Thiết yếu",
+            nguontien: val.nguontien,
+            prevAmount: 0,
+            loai: val.loai || "Chi",
+            day: val.day
+          });
+        }
+      } else {
+        // Cập nhật lại day nếu candidateMap chưa có day nhưng Categories có
+        const ex = candidateMap.get(key);
+        if (!ex.day && val.day) ex.day = val.day;
       }
-    }
+    });
 
-    // Lọc ra các khoản chưa được đóng trong tháng này
+    const candidateItems = Array.from(candidateMap.values());
+
+    // Lọc ra các khoản chưa được đóng trong tháng này và tính chính xác ngày trong tháng mục tiêu
     const todayIso = typeof Utilities !== 'undefined' && Utilities.formatDate ? Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd") : new Date().toISOString().split('T')[0];
-    const quickFixedItems = candidateItems.filter(it => !paidCurrentMonthSet.has(it.noidung.toLowerCase())).map(it => ({ ...it, sotien: 0, ngay: todayIso }));
+    const maxDays = new Date(targetYear, targetMonth, 0).getDate();
+
+    const quickFixedItems = candidateItems
+      .filter(it => !paidCurrentMonthSet.has((it.noidung || "").toLowerCase()))
+      .map(it => {
+        const noidungLower = (it.noidung || "").toLowerCase();
+        const catCfg = catConfigMap.get(noidungLower);
+        let itemDay = (catCfg && catCfg.day) || it.day || historicalDayMap.get(noidungLower);
+        if (!itemDay) {
+          const matchDay = (it.noidung || "").match(/(?:ngày\s*(\d{1,2})|(\d{1,2})\s*hàng\s*tháng)/i);
+          if (matchDay) itemDay = parseInt(matchDay[1] || matchDay[2], 10);
+        }
+        let dateIso;
+        if (itemDay && itemDay >= 1 && itemDay <= 31) {
+          const actualDay = Math.min(itemDay, maxDays);
+          dateIso = targetYear + "-" + String(targetMonth).padStart(2, '0') + "-" + String(actualDay).padStart(2, '0');
+        } else {
+          dateIso = todayIso;
+        }
+        const { _date, ...cleanItem } = it;
+        return {
+          ...cleanItem,
+          day: itemDay,
+          sotien: 0,
+          ngay: dateIso
+        };
+      });
 
     return {
       success: true,
@@ -1135,7 +1416,7 @@ function saveBatchQuickFixedAmounts(items, ssTarget) {
         return { success: false, message: "❌ Dữ liệu không hợp lệ." };
       }
 
-      const ss = ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null);
+      const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet ? SpreadsheetApp.getActiveSpreadsheet() : null));
       let sheet = getFamilySheetHelper(ss);
 
       // Pre-validate all item sources against Wallets
@@ -1261,7 +1542,7 @@ function processJarTransfer(data, ssTarget) {
       return { success: false, message: "❌ Hũ từ và Hũ đến không được trùng nhau!" };
     }
 
-    const ss = ssTarget || SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     let sheet = getFamilySheetHelper(ss);
 
     const now = formatToDDMMYYYY(new Date());
@@ -1290,9 +1571,9 @@ function processJarTransfer(data, ssTarget) {
 /**
  * 11. TỰ ĐỘNG NẠP CÔNG THỨC CHUẨN XUỐNG SHEET "JAR" (THÁNG 1 - THÁNG 12)
  */
-function setupJarSheetFormulas() {
+function setupJarSheetFormulas(ssTarget) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = (typeof resolveSpreadsheet === 'function') ? resolveSpreadsheet(ssTarget) : (ssTarget || SpreadsheetApp.getActiveSpreadsheet());
     if (!ss) return { success: false, message: "❌ Không tìm thấy Spreadsheet!" };
 
     let sheet = ss.getSheetByName("JAR") || ss.getSheetByName("Jar") || ss.getSheetByName("jar");

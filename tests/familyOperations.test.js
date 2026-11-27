@@ -230,21 +230,34 @@ test('processJarTransfer rejects invalid amounts or identical source and target 
 test('getQuickFixedItems fetches previous month fixed transactions with prevAmount reference and filters current month paid items', () => {
   createMockSpreadsheetDB();
 
-  // In Sept 2026: Aug 2026 fixed item is "Tiền mạng Internet" (4500). "Tiền nhà Leo" is paid in Sept 2026.
+  // In Sept 2026: Aug 2026 fixed item is "Tiền mạng Internet" (4500 on day 25). "Tiền nhà Leo" is paid in Sept 2026.
   const resSept = getQuickFixedItems('9', '2026');
   assert.equal(resSept.success, true);
   assert.equal(resSept.items.length, 1);
   assert.equal(resSept.items[0].noidung, 'Tiền mạng Internet');
   assert.equal(resSept.items[0].sotien, 0);
   assert.equal(resSept.items[0].prevAmount, 4500);
+  assert.equal(resSept.items[0].ngay, '2026-09-25'); // Preserves recurring day 25, not today
 
-  // In Oct 2026: Sept 2026 fixed item is "Tiền nhà Leo" (50000). Not paid in Oct 2026 yet.
+  // In Oct 2026: Sept 2026 fixed item is "Tiền nhà Leo" (50000 on day 27). Not paid in Oct 2026 yet.
   const resOct = getQuickFixedItems('10', '2026');
   assert.equal(resOct.success, true);
   assert.equal(resOct.items.length, 1);
   assert.equal(resOct.items[0].noidung, 'Tiền nhà Leo');
   assert.equal(resOct.items[0].sotien, 0);
   assert.equal(resOct.items[0].prevAmount, 50000);
+  assert.equal(resOct.items[0].ngay, '2026-10-27'); // Preserves recurring day 27, not today
+});
+
+test('getQuickFixedItems preserves recurring day (e.g. 24 for Luong KA) for target month', () => {
+  const db = createMockSpreadsheetDB();
+  db.Family.push(['TC999', '2026-10-24', 'Thu', '----Thu nhập', 'Lương KA', 300000, 'Ví Tiền Mặt', 'Có', '', 'HOAN_TAT']);
+
+  const resNov = getQuickFixedItems('11', '2026');
+  assert.equal(resNov.success, true);
+  const luongItem = resNov.items.find(it => it.noidung === 'Lương KA');
+  assert.ok(luongItem, 'Must find Luong KA');
+  assert.equal(luongItem.ngay, '2026-11-24'); // Must be 2026-11-24, NOT today!
 });
 
 test('updateFamilyTransaction and deleteTransaction support ROW_ fallback IDs when column A ID is empty', () => {
@@ -302,4 +315,89 @@ test('saveBatchQuickFixedAmounts writes to Family sheet, updates wallet balance,
   assert.equal(postedEvents[0].eventType, 'FAMILY_EXPENSE');
   assert.equal(res.updatedWallets.length, 1);
 });
+
+test('Tab 2: Credit expenses automatically jump to Chờ Trừ Thẻ (PRE-ORDER) and post to WalletLedger as PENDING PREORDER_HOLD', () => {
+  const db = createMockSpreadsheetDB();
+  const postedEvents = [];
+  global.postFinancialEvents = (events) => {
+    postedEvents.push(...events);
+  };
+
+  // Add credit card to Wallets sheet
+  db.Wallets.push(['W003', 'Thẻ Rakuten', 'CREDIT', 500000, 15, 27, 0, 0, 0, 0, 'Ví Tiền Mặt', '']);
+
+  // 1. Giao dịch Chi từ Tab 2 với Thẻ Tín Dụng (Credit Card)
+  const res = saveFamilyTransaction({
+    fromTab2: true,
+    ngay: '2026-10-12',
+    loai: 'Chi',
+    noidung: 'Mua bàn học online',
+    sotien: 15000,
+    nguontien: 'Thẻ Rakuten',
+    hu: 'Thiết yếu'
+  });
+
+  assert.equal(res.success, true);
+  assert.equal(res.savedItem.status, 'PRE-ORDER');
+  
+  // Kiểm tra dòng ghi vào Family sheet
+  const newRow = db.Family[db.Family.length - 1];
+  assert.equal(newRow[9], 'PRE-ORDER');
+  assert.equal(newRow[10], ''); // Chưa có ngày sao kê
+
+  // Kiểm tra bút toán ghi nhận vào WalletLedger
+  assert.equal(postedEvents.length, 1);
+  assert.equal(postedEvents[0].walletName, 'Thẻ Rakuten');
+  assert.equal(postedEvents[0].amount, 15000);
+  assert.equal(postedEvents[0].direction, 'HOLD');
+  assert.equal(postedEvents[0].effectType, 'PREORDER_HOLD');
+  assert.equal(postedEvents[0].eventType, 'PREORDER');
+  assert.equal(postedEvents[0].status, 'PENDING');
+  assert.equal(postedEvents[0].sourceModule, 'Family');
+
+  // Kiểm tra getTab2Data nạp khoản này vào preorders (Chờ Trừ Thẻ)
+  const t2Data = getTab2Data('10', '2026');
+  const foundPre = t2Data.preorders.find(p => p.noidung === 'Mua bàn học online');
+  assert.ok(foundPre, 'Khoản chi credit phải xuất hiện trong danh sách preorders (Chờ Trừ Thẻ)');
+  assert.equal(foundPre.sotien, 15000);
+  assert.equal(foundPre.nguontien, 'Thẻ Rakuten');
+});
+
+test('saveFamilyTransaction and getTab2Data: Ung cho nhom does not require Jar and is excluded from family expenses and jars', () => {
+  const db = createMockSpreadsheetDB();
+
+  // 1. Lưu giao dịch Ứng cho nhóm mà KHÔNG cần truyền hu
+  const resSave = saveFamilyTransaction({
+    ngay: '2026-09-06',
+    loai: 'CHI',
+    noidung: 'Ứng cho nhóm tiền ăn tối BBQ',
+    sotien: 8000,
+    nguontien: 'Ví Tiền Mặt',
+    hu: '',
+    codinh: false,
+    mau: false
+  });
+
+  assert.equal(resSave.success, true);
+  const lastRow = db.Family[db.Family.length - 1];
+  assert.equal(lastRow[3], 'Ứng cho nhóm', 'Hu should default to Ứng cho nhóm when empty');
+  assert.equal(lastRow[4], 'Ứng cho nhóm tiền ăn tối BBQ');
+  assert.equal(lastRow[5], 8000);
+
+  // 2. getTab2Data: khoản này phải bị loại trừ khỏi summary.expense và các Hũ
+  const t2Data = getTab2Data('9', '2026');
+  // Initial expenses in mock db:
+  // TC001: 50000 (Thiết yếu)
+  // TC002: 5000 (Thiết yếu)
+  // Total = 55000. 8000 của Ứng cho nhóm KHÔNG được cộng vào summary.expense!
+  assert.equal(t2Data.summary.expense, 55000, 'Total expense must not include Ung cho nhom');
+  const thietYeuJar = t2Data.jars.find(j => j.name === 'Thiết yếu');
+  assert.equal(thietYeuJar.spent, 55000, 'Jars spent must not include Ung cho nhom');
+
+  // Giao dịch vẫn có trong transactions để hiển thị trong nhật ký
+  const foundUng = t2Data.transactions.find(tx => tx.noidung.includes('BBQ'));
+  assert.ok(foundUng, 'Ung cho nhom must appear in transactions list');
+  assert.equal(foundUng.hu, 'Ứng cho nhóm');
+});
+
 

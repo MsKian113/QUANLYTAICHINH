@@ -484,5 +484,99 @@ test('Phase 4: finalizeTripAndExportDebts appends family expense share into Fami
   assert.strictEqual(loggedRow[3], 'Giải trí');
   assert.strictEqual(loggedRow[4], 'Ăn chơi : Ăn cháo lòng');
   assert.strictEqual(loggedRow[5], 225000); // 2F share (Quậy 75k + Chi 75k + Chít 75k = 225,000 ¥)
-  assert.strictEqual(loggedRow[6], ''); // Nguồn tiền rỗng
+  assert.strictEqual(loggedRow[6], 'Tiền mặt'); // Nguồn tiền là Tiền mặt, không ghi vào WalletLedger vì đã ứng ban đầu
+  assert.ok(finRes.groupData && finRes.groupData.group.status === 'CLOSED');
+  assert.ok(Array.isArray(finRes.groups));
+});
+
+test('Phase 4: syncMissingFinalizedGroupFamilyShares backfills missing family expense share for already-CLOSED groups', () => {
+  const ss = new MockSpreadsheet();
+  global.SpreadsheetApp.db = ss;
+
+  const gRes = serverTab7.saveSplitGroup({
+    name: 'Lẩu bò cuối tuần',
+    category: 'DINING',
+    status: 'CLOSED',
+    members: [
+      { id: 'MBR_2F_Q', name: 'Quậy', family: '2F', sortOrder: 1 },
+      { id: 'MBR_1F_A', name: 'Bạn A', family: '1F', sortOrder: 2 }
+    ]
+  }, ss);
+
+  // Tạm mở để ghi expense rồi đóng lại (giả lập nhóm đã CLOSED từ trước khi có bản vá)
+  serverTab7.reopenSplitGroup(gRes.group.id, ss);
+  serverTab7.saveSplitExpense({
+    groupId: gRes.group.id,
+    description: 'Lẩu bò',
+    amount: 12000,
+    payerId: 'MBR_2F_Q',
+    splitType: 'EQUAL',
+    participants: [
+      { memberId: 'MBR_2F_Q' },
+      { memberId: 'MBR_1F_A' }
+    ]
+  }, ss);
+  // Set status manually to CLOSED without writing family share
+  const gSheet = ss.getSheetByName('SplitGroups');
+  gSheet.rows.forEach((r, idx) => { if (idx >= 1) r[4] = 'CLOSED'; });
+
+  const syncRes = serverTab7.syncMissingFinalizedGroupFamilyShares(ss);
+  assert.strictEqual(syncRes.success, true);
+  assert.strictEqual(syncRes.syncedCount, 1);
+
+  const famSheet = ss.getSheetByName('Family');
+  assert.ok(famSheet);
+  const loggedRow = famSheet.rows.find(r => String(r[4]).includes('Ăn chơi : Lẩu bò cuối tuần'));
+  assert.ok(loggedRow);
+  assert.strictEqual(loggedRow[3], 'Giải trí');
+  assert.strictEqual(loggedRow[5], 6000);
+  assert.strictEqual(loggedRow[6], 'Tiền mặt');
+
+  // Calling again is idempotent (syncedCount === 0)
+  const syncRes2 = serverTab7.syncMissingFinalizedGroupFamilyShares(ss);
+  assert.strictEqual(syncRes2.syncedCount, 0);
+});
+
+test('Phase 4: finalizeTripAndExportDebts accurately logs 2F share even when 1F and 2F share identical member names (Người lớn 1, Người lớn 2) or refinalized', () => {
+  const ss = new MockSpreadsheet();
+  global.SpreadsheetApp.db = ss;
+
+  const gRes = serverTab7.saveSplitGroup({
+    name: 'Ăn lẩu cua',
+    category: 'DINING',
+    members: [
+      { id: 'FM-1F-1', name: 'Người lớn 1', family: '1F', type: 'ADULT', sortOrder: 1 },
+      { id: 'FM-1F-2', name: 'Người lớn 2', family: '1F', type: 'ADULT', sortOrder: 2 },
+      { id: 'FM-2F-1', name: 'Người lớn 1', family: '2F', type: 'ADULT', isMe: true, sortOrder: 3 },
+      { id: 'FM-2F-2', name: 'Người lớn 2', family: '2F', type: 'ADULT', sortOrder: 4 }
+    ]
+  }, ss);
+
+  // Simulate expense where participants have stale IDs (not matching FM-1F-* or FM-2F-*) and only generic names
+  serverTab7.saveSplitExpense({
+    groupId: gRes.group.id,
+    description: 'Tiền lẩu',
+    amount: 10000,
+    date: '2026-10-20',
+    payerId: 'FM-2F-1',
+    splitType: 'WEIGHT',
+    participants: [
+      { memberId: 'OLD_ID_1', name: 'Người lớn 1', calculatedAmount: 2500 },
+      { memberId: 'OLD_ID_2', name: 'Người lớn 2', calculatedAmount: 2500 },
+      { memberId: 'OLD_ID_3', name: 'Người lớn 1', calculatedAmount: 2500 },
+      { memberId: 'OLD_ID_4', name: 'Người lớn 2', calculatedAmount: 2500 }
+    ]
+  }, ss);
+
+  const finRes = serverTab7.finalizeTripAndExportDebts(gRes.group.id, { consolidateByFamily: true, allowRefinalize: true }, ss);
+  assert.strictEqual(finRes.success, true);
+  assert.strictEqual(finRes.meOwed, 5000);
+
+  const famSheet = ss.getSheetByName('Family');
+  const loggedRow = famSheet.rows.find(r => String(r[4]).includes('Ăn chơi : Ăn lẩu cua'));
+  assert.ok(loggedRow, 'Should log Ăn chơi : Ăn lẩu cua into Family sheet');
+  assert.strictEqual(loggedRow[1], '2026-10-20');
+  assert.strictEqual(loggedRow[2], 'Chi');
+  assert.strictEqual(loggedRow[3], 'Giải trí');
+  assert.strictEqual(loggedRow[5], 5000);
 });

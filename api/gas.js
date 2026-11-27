@@ -6725,7 +6725,15 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ success: false, message: 'Method Not Allowed' });
 
-  const { action, args = [] } = req.body || {};
+  const body = req.body || {};
+  let action = body.action;
+  let args = body.args || [];
+
+  // Hỗ trợ Direct Webhook (Cloudflare Email Worker, Google Apps Script, Zapier, Make, v.v.)
+  if (!action && (body.rawEmail || body.emailText || body.text || body.body || body.from || body.sender || req.query.webhook === 'email')) {
+    action = 'syncEmailTransactions';
+    args = [body];
+  }
   const authHeader = req.headers['authorization'] || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   const session = parseSessionToken(token);

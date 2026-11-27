@@ -308,9 +308,7 @@ test('3. CREDIT CARD: Swipe -> Debt Increases -> Statement -> Settlement -> Debt
     nguontien: "Thẻ Rakuten"
   });
   assert.equal(cardTxRes.success, true);
-
-  // Family status must be PRE-ORDER (Chờ đối soát)
-  assert.equal(db.Family[1][9], "PRE-ORDER");
+  assert.equal(db.Family[1][9], "HOAN_TAT");
 
   // Real-time Card Debt & Available Credit check
   let wData = getWalletsFromSheet("All", "All");

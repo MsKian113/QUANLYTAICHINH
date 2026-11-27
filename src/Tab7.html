@@ -109,7 +109,7 @@
       </div>
 
       <!-- OVERVIEW SUMMARY BANNER & HEADCOUNT BREAKDOWN (SINGLE CLICK TO VIEW GROUP DETAILS) -->
-      <div onclick="t7_openEditCurrentGroup()" title="Nhấp 1 lần để xem chi tiết nhóm & thành viên" class="bg-gradient-to-r from-teal-50 to-emerald-50 p-2.5 rounded-xl border border-teal-200/80 space-y-2 cursor-pointer select-none hover:border-teal-400 transition">
+      <div onclick="t7_openEditCurrentGroup()" style="touch-action: manipulation;" class="bg-gradient-to-r from-teal-50 to-emerald-50 p-2.5 rounded-xl border border-teal-200/80 space-y-2 cursor-pointer select-none hover:border-teal-400 active:scale-[0.99] transition">
         <div class="flex justify-between items-center">
           <span class="text-xs font-extrabold text-teal-900">💵 Tổng chi:</span>
           <span id="t7-stat-total-expense" class="text-base font-black text-emerald-700">0 ¥</span>
@@ -409,8 +409,7 @@
     <div class="shrink-0 bg-slate-50 p-2 rounded-xl border border-slate-200">
       <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">👤 Chọn Gia Đình / Cá Nhân Cần Xuất Báo Cáo:</label>
       <select id="t7-finalize-member-select" onchange="t7_renderFinalizeReportView()" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-800 text-xs focus:ring-2 focus:ring-emerald-500 cursor-pointer">
-        <option value="ALL">📌 Tất Cả Gia Đình (Báo Cáo Tổng Hợp)</option>
-        <option value="1F">🏠 1F (Tuyết Anh)</option>
+                <option value="1F">🏠 1F (Tuyết Anh)</option>
       </select>
     </div>
 
@@ -528,6 +527,8 @@
         </div>
 
       </div>
+
+      <div id="t7-finalize-caption-text" class="hidden"></div>
     </div>
 
     <!-- ACTION BUTTONS -->
@@ -657,25 +658,70 @@
     isBalanceSectionOpen: true
   };
 
+  function getT7TenantKey(key) {
+    const tid = window.CURRENT_USER_SS_ID ? window.CURRENT_USER_SS_ID.slice(-8) : "default";
+    return key + "_" + tid;
+  }
+
+  window.clearTab7Data = function() {
+    window.T7_STATE = {
+      groups: [],
+      activeGroupId: "",
+      activeGroup: null,
+      activeCategory: "DINING",
+      currentView: "LIST",
+      expenses: [],
+      memberBalances: [],
+      settlements: [],
+      currentSplitMode: "WEIGHT",
+      isBalanceSectionOpen: true,
+      splitFamilies: [],
+      rawFamilyMembers: []
+    };
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('T7_')) {
+          localStorage.removeItem(k);
+        }
+      }
+      t7_renderUI();
+    } catch(e) {}
+  };
+
   // 1. INITIALIZATION & DATA LOADING
   function initTab7() {
     // Instant 0ms load from localStorage cache if available
     try {
-      const cachedGroups = localStorage.getItem('T7_CACHE_GROUPS');
+      const kGroups = getT7TenantKey('T7_CACHE_GROUPS');
+      let cachedGroups = localStorage.getItem(kGroups);
+      if (!cachedGroups && !window.CURRENT_USER_SS_ID) {
+        cachedGroups = localStorage.getItem('T7_CACHE_GROUPS');
+      }
       if (cachedGroups) {
         const parsed = JSON.parse(cachedGroups);
         if (Array.isArray(parsed) && parsed.length > 0) {
           window.T7_STATE.groups = parsed;
         }
       }
-      const cachedFams = localStorage.getItem('T7_CACHE_SPLIT_FAMILIES');
+
+      const kFams = getT7TenantKey('T7_CACHE_SPLIT_FAMILIES');
+      let cachedFams = localStorage.getItem(kFams);
+      if (!cachedFams && !window.CURRENT_USER_SS_ID) {
+        cachedFams = localStorage.getItem('T7_CACHE_SPLIT_FAMILIES');
+      }
       if (cachedFams) {
         const parsedFams = JSON.parse(cachedFams);
         if (Array.isArray(parsedFams) && parsedFams.length > 0) {
           window.T7_STATE.splitFamilies = parsedFams;
         }
       }
-      const cachedRaw = localStorage.getItem('T7_CACHE_RAW_MEMBERS');
+
+      const kRaw = getT7TenantKey('T7_CACHE_RAW_MEMBERS');
+      let cachedRaw = localStorage.getItem(kRaw);
+      if (!cachedRaw && !window.CURRENT_USER_SS_ID) {
+        cachedRaw = localStorage.getItem('T7_CACHE_RAW_MEMBERS');
+      }
       if (cachedRaw) {
         const parsedRaw = JSON.parse(cachedRaw);
         if (Array.isArray(parsedRaw) && parsedRaw.length > 0) {
@@ -754,6 +800,9 @@
   }
 
   function t7_loadAllData(forceRefresh) {
+    if (forceRefresh) {
+      if (typeof clearTab7Data === 'function') clearTab7Data();
+    }
     if (window.T7_STATE && window.T7_STATE.groups && window.T7_STATE.groups.length > 0 && window.T7_STATE.splitFamilies && window.T7_STATE.splitFamilies.length > 0 && !forceRefresh) {
       if (typeof t7_renderUI === 'function') t7_renderUI();
       return;
@@ -764,12 +813,14 @@
       return;
     }
 
+    const tenantTarget = (typeof getTenantTarget === 'function') ? getTenantTarget() : (window.CURRENT_SESSION_TOKEN || window.CURRENT_USER_SS_ID || null);
+
     google.script.run
       .withSuccessHandler(function(res) {
         if (res && res.success) {
           window.T7_STATE.groups = res.groups || [];
           try {
-            localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(res.groups || []));
+            localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(res.groups || []));
           } catch(e) {}
 
           t7_renderUI();
@@ -780,7 +831,7 @@
       .withFailureHandler(function(err) {
         showToast("❌ Lỗi kết nối máy chủ: " + err, true);
       })
-      .getSplitGroups();
+      .getSplitGroups(tenantTarget);
 
     google.script.run
       .withSuccessHandler(function(res) {
@@ -788,21 +839,26 @@
           window.T7_STATE.splitFamilies = res.families || [];
           window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
           try {
-            localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
-            localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawMembers || []));
-            localStorage.removeItem('T7_DELETED_FAMILIES');
+            localStorage.setItem(getT7TenantKey('T7_CACHE_SPLIT_FAMILIES'), JSON.stringify(res.families || []));
+            localStorage.setItem(getT7TenantKey('T7_CACHE_RAW_MEMBERS'), JSON.stringify(res.rawMembers || []));
+            localStorage.removeItem(getT7TenantKey('T7_DELETED_FAMILIES'));
           } catch(e) {}
 
           t7_renderUI();
         }
       })
-      .getSplitFamilies();
+      .getSplitFamilies(tenantTarget);
   }
 
   function t7_openGroupDetail(groupId) {
     if (!groupId) return;
     window.T7_STATE.currentView = 'DETAIL';
     window.T7_STATE.activeGroupId = groupId;
+    const match = (window.T7_STATE.groups || []).find(g => g.id === groupId);
+    if (match) {
+      window.T7_STATE.activeGroup = match;
+    }
+    t7_renderUI();
     t7_loadActiveGroupData(groupId);
   }
 
@@ -817,7 +873,7 @@
 
     // Instant render from local cache if available
     try {
-      const cached = localStorage.getItem('T7_CACHE_FULL_' + groupId);
+      const cached = localStorage.getItem(getT7TenantKey('T7_CACHE_FULL_' + groupId));
       if (cached) {
         const cData = JSON.parse(cached);
         if (cData && cData.group) {
@@ -842,10 +898,19 @@
           const activeTotal = (res.expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
           if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.totalExpense = activeTotal;
           const match = (window.T7_STATE.groups || []).find(g => g.id === groupId);
-          if (match) match.totalExpense = activeTotal;
+          if (match) {
+            match.totalExpense = activeTotal;
+            if (res.group) {
+              if (res.group.status) match.status = res.group.status;
+              if (res.group.name) match.name = res.group.name;
+              if (res.group.members) match.members = res.group.members;
+              if (res.group.category) match.category = res.group.category;
+            }
+            try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+          }
 
           try {
-            localStorage.setItem('T7_CACHE_FULL_' + groupId, JSON.stringify(res));
+            localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + groupId), JSON.stringify(res));
           } catch(e) {}
           t7_renderUI();
         } else {
@@ -855,7 +920,7 @@
       .withFailureHandler(function(err) {
         showToast("❌ Lỗi kết nối: " + err, true);
       })
-      .getTab7FullGroupData(groupId);
+      .getTab7FullGroupData(groupId, window.CURRENT_USER_SS_ID || null);
   }
 
   // 2. RENDER DROPDOWN & ACTIVE GROUP UI
@@ -995,7 +1060,8 @@
 
     filtered.forEach(g => {
       const card = document.createElement('div');
-      card.className = "t7-group-card bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-teal-400 transition cursor-pointer select-none space-y-1";
+      card.className = "t7-group-card bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-teal-400 active:bg-teal-50/50 active:scale-[0.99] transition cursor-pointer select-none space-y-1";
+      card.style.touchAction = 'manipulation';
       card.onclick = function(e) {
         if (e.target.closest('button')) return;
         t7_openGroupDetail(g.id);
@@ -1052,25 +1118,25 @@
           window.T7_STATE.activeGroup = null;
           window.T7_STATE.currentView = 'LIST';
         }
-        try { localStorage.removeItem('T7_CACHE_FULL_' + groupId); } catch(e) {}
-        try { localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+        try { localStorage.removeItem(getT7TenantKey('T7_CACHE_FULL_' + groupId)); } catch(e) {}
+        try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
         t7_renderUI();
 
         google.script.run
           .withSuccessHandler(function(res) {
             if (res && res.success) {
               showToast(res.message);
-              t7_loadAllData();
+              t7_loadAllData(true);
             } else {
               showToast(res ? res.message : "❌ Lỗi xóa", true);
-              t7_loadAllData();
+              t7_loadAllData(true);
             }
           })
           .withFailureHandler(function(err) {
             showToast("❌ Lỗi kết nối máy chủ: " + err, true);
-            t7_loadAllData();
+            t7_loadAllData(true);
           })
-          .deleteSplitGroup(groupId);
+          .deleteSplitGroup(groupId, window.CURRENT_USER_SS_ID || null);
       },
       "🗑️ Xóa Vĩnh Viễn"
     );
@@ -1173,12 +1239,15 @@
       breakdownBox.innerHTML = `
         <div class="bg-white/80 px-1.5 py-1.5 rounded-lg border border-teal-100 text-center flex flex-col items-center justify-center">
           <span class="text-slate-600 font-bold leading-none">👤 người lớn: <b class="text-teal-900">${adultsCount}</b></span>
+          ${perAdult > 0 ? `<span class="text-[9px] font-extrabold text-emerald-700 mt-0.5">${perAdult.toLocaleString()} ¥/1Lớn</span>` : ''}
         </div>
         <div class="bg-white/80 px-1.5 py-1.5 rounded-lg border border-teal-100 text-center flex flex-col items-center justify-center">
           <span class="text-slate-600 font-bold leading-none">🧒 trẻ em: <b class="text-teal-900">${kidsCount}</b></span>
+          ${perKid > 0 ? `<span class="text-[9px] font-extrabold text-teal-700 mt-0.5">${perKid.toLocaleString()} ¥/1em</span>` : ''}
         </div>
         <div class="bg-white/80 px-1.5 py-1.5 rounded-lg border border-teal-100 text-center flex flex-col items-center justify-center">
           <span class="text-slate-600 font-bold leading-none">🍼 em bé: <b class="text-teal-900">${babiesCount}</b></span>
+          <span class="text-[9px] font-bold text-slate-400 mt-0.5">0 ¥/1bé</span>
         </div>
       `;
     }
@@ -1473,29 +1542,36 @@
 
     expenses.forEach(exp => {
       const card = document.createElement('div');
-      card.className = "bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-teal-400 transition cursor-pointer select-none flex justify-between items-center gap-1.5 text-xs";
+      card.className = "bg-white rounded-xl px-2.5 py-1.5 border border-slate-200 shadow-2xs hover:border-teal-400 active:bg-teal-50/50 active:scale-[0.99] transition cursor-pointer select-none flex justify-between items-center gap-1.5 text-xs";
+      card.style.touchAction = 'manipulation';
       card.onclick = function(e) {
         if (e && e.target && e.target.closest('button')) return;
         t7_openEditExpense(exp.id);
       };
-      card.title = "Nhấp 1 lần để xem chi tiết / sửa khoản chi";
 
       const formattedDate = t7_formatExpenseDate(exp.date || exp.created_at);
       const payerFamName = t7_getPayerFamilyName(exp.payerId, exp.payerName);
       const escapedDesc = String(exp.description || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
-      const parts = (exp.participants && exp.participants.length > 0) ? exp.participants : groupMbrs;
-      const partCount = parts.length;
-      const eAdults = parts.filter(p => {
-        const pMbr = groupMbrs.find(m => m.id === (p.memberId || p.id) || m.name === p.name);
-        const pType = ((pMbr ? pMbr.type : p.type) || 'ADULT').toUpperCase();
-        return pType === 'ADULT';
-      }).length;
-      const eKids = parts.filter(p => {
-        const pMbr = groupMbrs.find(m => m.id === (p.memberId || p.id) || m.name === p.name);
-        const pType = ((pMbr ? pMbr.type : p.type) || '').toUpperCase();
-        return pType === 'CHILD';
-      }).length;
+      const rawParts = (exp.participants && exp.participants.length > 0) ? exp.participants : groupMbrs;
+      const usedMbrIds = new Set();
+      const resolvedParts = rawParts.map(p => {
+        const pId = p.memberId || p.member_id || p.id || '';
+        let pMbr = groupMbrs.find(m => (m.id && m.id === pId) || (m.groupMemberId && m.groupMemberId === pId));
+        if (!pMbr) {
+          pMbr = groupMbrs.find(m => !usedMbrIds.has(m.id || m.groupMemberId) && m.name === (p.name || p.member_name));
+        }
+        if (pMbr) usedMbrIds.add(pMbr.id || pMbr.groupMemberId);
+        let pType = String((pMbr ? (pMbr.type || pMbr.member_type) : p.type) || '').toUpperCase();
+        if (!pType) {
+          const wVal = p.weight !== undefined ? Number(p.weight) : (p.inputValue !== undefined ? Number(p.inputValue) : 1.0);
+          pType = wVal === 0 ? 'BABY' : (wVal === 0.5 ? 'CHILD' : 'ADULT');
+        }
+        return { p, pMbr, pType };
+      });
+      const partCount = resolvedParts.length;
+      const eAdults = resolvedParts.filter(r => r.pType === 'ADULT').length;
+      const eKids = resolvedParts.filter(r => r.pType === 'CHILD').length;
       const eWeight = (eAdults * 1.0) + (eKids * 0.5);
       const eAmt = Number(exp.amount) || 0;
       const eRatePerAdult = (eAmt > 0 && eWeight > 0 && eAdults > 0) ? Math.round(eAmt / eWeight) : 0;
@@ -1519,23 +1595,8 @@
   }
 
   // 5. GROUP MODAL & CRUD HANDLERS
-  let t7_lastSummaryTapTime = 0;
-
   function t7_handleSummaryDblClick(e) {
-    const now = Date.now();
-    const timeDiff = now - t7_lastSummaryTapTime;
-
-    if (e && e.type === 'dblclick') {
-      t7_openEditCurrentGroup();
-      return;
-    }
-
-    if (timeDiff < 400 && timeDiff > 0) {
-      t7_openEditCurrentGroup();
-      t7_lastSummaryTapTime = 0;
-    } else {
-      t7_lastSummaryTapTime = now;
-    }
+    t7_openEditCurrentGroup();
   }
 
   function t7_openEditCurrentGroup() {
@@ -1620,7 +1681,7 @@
   // -------------------------------------------------------------------------
   function t7_getDeletedFamiliesSet() {
     try {
-      const stored = localStorage.getItem('T7_DELETED_FAMILIES');
+      const stored = localStorage.getItem(getT7TenantKey('T7_DELETED_FAMILIES'));
       if (stored) {
         const arr = JSON.parse(stored);
         if (Array.isArray(arr)) return new Set(arr.map(s => String(s).trim().toLowerCase()));
@@ -1634,7 +1695,7 @@
     const deletedSet = t7_getDeletedFamiliesSet();
     deletedSet.add(famName.trim().toLowerCase());
     try {
-      localStorage.setItem('T7_DELETED_FAMILIES', JSON.stringify(Array.from(deletedSet)));
+      localStorage.setItem(getT7TenantKey('T7_DELETED_FAMILIES'), JSON.stringify(Array.from(deletedSet)));
     } catch(e) {}
   }
 
@@ -1643,7 +1704,7 @@
     const deletedSet = t7_getDeletedFamiliesSet();
     deletedSet.delete(famName.trim().toLowerCase());
     try {
-      localStorage.setItem('T7_DELETED_FAMILIES', JSON.stringify(Array.from(deletedSet)));
+      localStorage.setItem(getT7TenantKey('T7_DELETED_FAMILIES'), JSON.stringify(Array.from(deletedSet)));
     } catch(e) {}
   }
 
@@ -1715,7 +1776,7 @@
     // 2. Local storage fallback ONLY when server is not loaded
     if (!isServerLoaded) {
       try {
-        const stored = localStorage.getItem('T7_FAMILY_DATABASE');
+        const stored = localStorage.getItem(getT7TenantKey('T7_FAMILY_DATABASE'));
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
@@ -1779,7 +1840,7 @@
   function t7_saveFamilyDatabaseMap(familyMap) {
     try {
       const arr = Array.from(familyMap.values());
-      localStorage.setItem('T7_FAMILY_DATABASE', JSON.stringify(arr));
+      localStorage.setItem(getT7TenantKey('T7_FAMILY_DATABASE'), JSON.stringify(arr));
     } catch(e) {}
   }
 
@@ -2082,9 +2143,9 @@
             window.T7_STATE.splitFamilies = res.families || [];
             window.T7_STATE.rawFamilyMembers = res.rawMembers || [];
             try {
-              localStorage.setItem('T7_CACHE_SPLIT_FAMILIES', JSON.stringify(res.families || []));
-              localStorage.setItem('T7_CACHE_RAW_MEMBERS', JSON.stringify(res.rawMembers || []));
-              localStorage.removeItem('T7_DELETED_FAMILIES');
+              localStorage.setItem(getT7TenantKey('T7_CACHE_SPLIT_FAMILIES'), JSON.stringify(res.families || []));
+              localStorage.setItem(getT7TenantKey('T7_CACHE_RAW_MEMBERS'), JSON.stringify(res.rawMembers || []));
+              localStorage.removeItem(getT7TenantKey('T7_DELETED_FAMILIES'));
             } catch(e) {}
             t7_renderFamilyCardsList();
             t7_renderPresetFamilyChips();
@@ -2100,7 +2161,7 @@
           isme: isFamMe,
           members: members,
           removed_members: removedMembers
-        });
+        }, window.CURRENT_USER_SS_ID || null);
     }
 
     closeModal('modal-tab7-add-family');
@@ -2137,7 +2198,7 @@
               showToast("❌ Lỗi xóa gia đình: " + err, true);
               t7_loadAllData(true);
             })
-            .deleteSplitFamilyEntirely(famName);
+            .deleteSplitFamilyEntirely(famName, window.CURRENT_USER_SS_ID || null);
         }
 
         t7_renderFamilyCardsList();
@@ -2267,7 +2328,7 @@
   // PRESET CUSTOM FAMILY PERSISTENCE
   function t7_getCustomPresetFamilies() {
     try {
-      const stored = localStorage.getItem('T7_CUSTOM_PRESET_FAMILIES');
+      const stored = localStorage.getItem(getT7TenantKey('T7_CUSTOM_PRESET_FAMILIES'));
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) return parsed;
@@ -2278,7 +2339,7 @@
 
   function t7_saveCustomPresetFamilies(fams) {
     try {
-      localStorage.setItem('T7_CUSTOM_PRESET_FAMILIES', JSON.stringify(fams || []));
+      localStorage.setItem(getT7TenantKey('T7_CUSTOM_PRESET_FAMILIES'), JSON.stringify(fams || []));
     } catch(e) {}
   }
 
@@ -2658,7 +2719,7 @@
       if (mName) {
         const cleanFam = (mFam || '1F').replace(/[^a-zA-Z0-9]/g, '');
         const cleanName = mName.replace(/[^a-zA-Z0-9]/g, '');
-        const stableId = `MBR_${cleanFam}_${cleanName || (idx + 1)}`;
+        const stableId = `MBR_${cleanFam}_${cleanName || 'M'}_${idx + 1}`;
         members.push({
           id: stableId,
           name: mName,
@@ -2708,6 +2769,10 @@
     window.T7_STATE.activeCategory = category;
     window.T7_STATE.currentView = 'DETAIL';
 
+    // Tự động tính lại chi tiết / trên đầu người cho các khoản chi khi số người tham gia thay đổi
+    t7_syncExpensesWithGroupMembers(groupData);
+    window.T7_STATE.memberBalances = t7_computeLocalBalances();
+
     const groups = window.T7_STATE.groups || [];
     const idx = groups.findIndex(g => g.id === groupData.id);
     if (idx !== -1) groups[idx] = groupData;
@@ -2715,7 +2780,8 @@
     window.T7_STATE.groups = groups;
 
     try {
-      localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(groups));
+      localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(groups));
+      localStorage.removeItem(getT7TenantKey('T7_CACHE_FULL_' + groupData.id));
     } catch(e) {}
 
     t7_renderPresetFamilyChips();
@@ -2723,7 +2789,7 @@
     t7_updateHistoryDatalists();
     t7_renderUI();
 
-    showToast("✅ Đã lưu nhóm!");
+    showToast("✅ Đã lưu nhóm & cập nhật lại chi phí trên đầu người!");
 
     google.script.run
       .withSuccessHandler(function(res) {
@@ -2734,7 +2800,19 @@
             const idx2 = (window.T7_STATE.groups || []).findIndex(g => g.id === groupData.id || g.id === res.group.id);
             if (idx2 !== -1) window.T7_STATE.groups[idx2] = res.group;
             else window.T7_STATE.groups.unshift(res.group);
-            try { localStorage.setItem('T7_CACHE_GROUPS', JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+            try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+          }
+          if (res.groupData && res.groupData.success) {
+            window.T7_STATE.activeGroup = res.groupData.group || window.T7_STATE.activeGroup;
+            window.T7_STATE.expenses = res.groupData.expenses || window.T7_STATE.expenses || [];
+            window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
+            window.T7_STATE.settlements = res.groupData.settlements || [];
+            try {
+              localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + window.T7_STATE.activeGroupId), JSON.stringify(res.groupData));
+            } catch(e) {}
+          } else {
+            t7_syncExpensesWithGroupMembers(window.T7_STATE.activeGroup);
+            window.T7_STATE.memberBalances = t7_computeLocalBalances();
           }
           t7_renderUI();
         } else {
@@ -2744,7 +2822,83 @@
       .withFailureHandler(function(err) {
         showToast("❌ Lỗi kết nối máy chủ: " + err, true);
       })
-      .saveSplitGroup(groupData);
+      .saveSplitGroup(groupData, window.CURRENT_USER_SS_ID || null);
+  }
+
+  function t7_syncExpensesWithGroupMembers(groupObj) {
+    if (!groupObj || !Array.isArray(groupObj.members) || groupObj.members.length === 0) return;
+    const exps = window.T7_STATE.expenses || [];
+    const newMembers = groupObj.members;
+    exps.forEach(exp => {
+      const eAmt = Number(exp.amount) || 0;
+      const sMode = String(exp.splitType || 'WEIGHT').toUpperCase();
+      if (sMode === 'CUSTOM') return;
+
+      if (sMode === 'FIXED_KIDS_EQUAL_ADULT') {
+        const extra = exp.extraOptions || {};
+        const kidAmt = Number(extra.fixedChildAmount) || 3000;
+        const babyAmt = Number(extra.fixedBabyAmount) || 0;
+        let kidsTotal = 0;
+        const adultsCount = newMembers.filter(m => String(m.type || 'ADULT').toUpperCase() === 'ADULT').length;
+        newMembers.forEach(m => {
+          const t = String(m.type || 'ADULT').toUpperCase();
+          if (t === 'CHILD') kidsTotal += kidAmt;
+          else if (t === 'BABY') kidsTotal += babyAmt;
+        });
+        const remAdult = Math.max(0, eAmt - kidsTotal);
+        const adultShare = adultsCount > 0 ? Math.floor(remAdult / adultsCount) : 0;
+        let adultRem = adultsCount > 0 ? (remAdult - (adultShare * adultsCount)) : 0;
+
+        exp.participants = newMembers.map(m => {
+          const t = String(m.type || 'ADULT').toUpperCase();
+          let cAmt = 0;
+          if (t === 'CHILD') cAmt = kidAmt;
+          else if (t === 'BABY') cAmt = babyAmt;
+          else {
+            cAmt = adultShare + (adultRem > 0 ? adultRem : 0);
+            adultRem = 0;
+          }
+          return {
+            memberId: m.id || m.groupMemberId,
+            id: m.id || m.groupMemberId,
+            name: m.name,
+            family: m.family || m.familyName,
+            type: t,
+            weight: m.weight !== undefined ? Number(m.weight) : (t === 'CHILD' ? 0.5 : (t === 'BABY' ? 0 : 1.0)),
+            calculatedAmount: cAmt
+          };
+        });
+      } else {
+        const sumW = newMembers.reduce((s, m) => {
+          const t = String(m.type || 'ADULT').toUpperCase();
+          const w = m.weight !== undefined ? Number(m.weight) : (t === 'CHILD' ? 0.5 : (t === 'BABY' ? 0 : 1.0));
+          return s + w;
+        }, 0);
+        let sumCalc = 0;
+        const newParts = newMembers.map(m => {
+          const t = String(m.type || 'ADULT').toUpperCase();
+          const w = m.weight !== undefined ? Number(m.weight) : (t === 'CHILD' ? 0.5 : (t === 'BABY' ? 0 : 1.0));
+          const cAmt = sumW > 0 ? Math.floor((w / sumW) * eAmt) : 0;
+          sumCalc += cAmt;
+          return {
+            memberId: m.id || m.groupMemberId,
+            id: m.id || m.groupMemberId,
+            name: m.name,
+            family: m.family || m.familyName,
+            type: t,
+            weight: w,
+            calculatedAmount: cAmt
+          };
+        });
+        let rem = eAmt - sumCalc;
+        if (rem > 0 && newParts.length > 0) {
+          for (let r = 0; r < rem; r++) {
+            newParts[r % newParts.length].calculatedAmount += 1;
+          }
+        }
+        exp.participants = newParts;
+      }
+    });
   }
 
   function t7_confirmDeleteGroup() {
@@ -2763,7 +2917,7 @@
         window.T7_STATE.activeGroupId = "";
         window.T7_STATE.activeGroup = null;
         try {
-          localStorage.removeItem('T7_CACHE_FULL_' + gId);
+          localStorage.removeItem(getT7TenantKey('T7_CACHE_FULL_' + gId));
         } catch(e) {}
         t7_renderUI();
 
@@ -2771,17 +2925,17 @@
           .withSuccessHandler(function(res) {
             if (res && res.success) {
               showToast(res.message);
-              t7_loadAllData();
+              t7_loadAllData(true);
             } else {
               showToast(res ? res.message : "❌ Lỗi xóa chuyến đi", true);
-              t7_loadAllData();
+              t7_loadAllData(true);
             }
           })
           .withFailureHandler(function(err) {
             showToast("❌ Lỗi kết nối máy chủ: " + err, true);
-            t7_loadAllData();
+            t7_loadAllData(true);
           })
-          .deleteSplitGroup(gId);
+          .deleteSplitGroup(gId, window.CURRENT_USER_SS_ID || null);
       },
       "🗑️ Xóa Vĩnh Viễn"
     );
@@ -2797,8 +2951,6 @@
       t7_openExpenseModal(exp);
     }
   }
-
-  let t7_lastExpenseTapTime = {};
 
   function t7_handleExpenseDblClick(expId, e) {
     if (!expId) return;
@@ -3491,13 +3643,21 @@
             window.T7_STATE.expenses = res.groupData.expenses || [];
             window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
             window.T7_STATE.settlements = res.groupData.settlements || [];
+            const activeTotal = (window.T7_STATE.expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.totalExpense = activeTotal;
+            const matchGrp = (window.T7_STATE.groups || []).find(g => g.id === activeGroupId);
+            if (matchGrp) {
+              matchGrp.totalExpense = activeTotal;
+              try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+            }
             try {
-              localStorage.setItem('T7_CACHE_FULL_' + activeGroupId, JSON.stringify(res.groupData));
+              localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + activeGroupId), JSON.stringify(res.groupData));
             } catch(e) {}
             t7_renderUI();
           } else {
             t7_loadActiveGroupData(activeGroupId);
           }
+          if (typeof window.t1_clearAllLocalStatementCaches === 'function') window.t1_clearAllLocalStatementCaches();
         } else {
           showToast(res ? res.message : "❌ Lỗi lưu khoản chi", true);
           t7_loadActiveGroupData(activeGroupId);
@@ -3507,7 +3667,7 @@
         showToast("❌ Lỗi lưu khoản chi: " + err, true);
         t7_loadActiveGroupData(activeGroupId);
       })
-      .saveSplitExpense(expenseData);
+      .saveSplitExpense(expenseData, window.CURRENT_USER_SS_ID || null);
   }
 
   function t7_confirmDeleteExpense(expId, expDesc) {
@@ -3521,7 +3681,7 @@
           window.T7_STATE.expenses = window.T7_STATE.expenses.filter(e => e.id !== expId);
           window.T7_STATE.memberBalances = t7_computeLocalBalances();
           try {
-            localStorage.setItem('T7_CACHE_FULL_' + activeGroupId, JSON.stringify({
+            localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + activeGroupId), JSON.stringify({
               success: true,
               group: window.T7_STATE.activeGroup,
               expenses: window.T7_STATE.expenses,
@@ -3541,13 +3701,21 @@
                 window.T7_STATE.expenses = res.groupData.expenses || [];
                 window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
                 window.T7_STATE.settlements = res.groupData.settlements || [];
+                const activeTotal = (window.T7_STATE.expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+                if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.totalExpense = activeTotal;
+                const matchGrp = (window.T7_STATE.groups || []).find(g => g.id === activeGroupId);
+                if (matchGrp) {
+                  matchGrp.totalExpense = activeTotal;
+                  try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(window.T7_STATE.groups)); } catch(e) {}
+                }
                 try {
-                  localStorage.setItem('T7_CACHE_FULL_' + activeGroupId, JSON.stringify(res.groupData));
+                  localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + activeGroupId), JSON.stringify(res.groupData));
                 } catch(e) {}
                 t7_renderUI();
               } else {
                 t7_loadActiveGroupData(activeGroupId);
               }
+              if (typeof window.t1_clearAllLocalStatementCaches === 'function') window.t1_clearAllLocalStatementCaches();
             } else {
               showToast(res ? res.message : "❌ Lỗi xóa khoản chi", true);
               t7_loadActiveGroupData(activeGroupId);
@@ -3557,7 +3725,7 @@
             showToast("❌ Lỗi xóa khoản chi: " + err, true);
             t7_loadActiveGroupData(activeGroupId);
           })
-          .deleteSplitExpense(expId);
+          .deleteSplitExpense(expId, window.CURRENT_USER_SS_ID || null);
       },
       "🗑️ Xóa Khoản Chi"
     );
@@ -3599,6 +3767,14 @@
       const day = dmyMatch[1].padStart(2, '0');
       const month = dmyMatch[2].padStart(2, '0');
       const year = dmyMatch[3];
+      return `${year}-${month}-${day}`;
+    }
+    // DD/MM or DD-MM (không có năm -> lấy năm hiện tại)
+    const dmMatch = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})$/);
+    if (dmMatch) {
+      const day = dmMatch[1].padStart(2, '0');
+      const month = dmMatch[2].padStart(2, '0');
+      const year = new Date().getFullYear();
       return `${year}-${month}-${day}`;
     }
     // YYYY/MM/DD
@@ -3660,28 +3836,24 @@
     if (selectEl) {
       selectEl.innerHTML = '';
       
-      const optAll = document.createElement('option');
-      optAll.value = 'ALL';
-      optAll.innerText = '📌 Tất Cả Gia Đình (Báo Cáo Tổng Hợp)';
-      selectEl.appendChild(optAll);
-
       const familyMap = {};
       (group.members || []).forEach(m => {
-        const tag = m.familyTag || m.family || m.name;
+        const tag = m.familyName || m.familyTag || m.family || m.family_name || m.name;
         if (tag) {
           if (!familyMap[tag]) familyMap[tag] = [];
           if (m.name && !familyMap[tag].includes(m.name)) familyMap[tag].push(m.name);
         }
       });
 
-      Object.keys(familyMap).forEach(tag => {
+      const tags = Object.keys(familyMap);
+      tags.forEach(tag => {
         const opt = document.createElement('option');
         opt.value = tag;
         opt.innerText = `🏠 ${tag}`;
         selectEl.appendChild(opt);
       });
       
-      selectEl.value = 'ALL';
+      selectEl.value = tags[0] || '';
     }
 
     try {
@@ -3702,20 +3874,23 @@
     const targetSet = new Set();
     const members = group.members || [];
     if (!selectedTarget || selectedTarget === 'ALL') {
-      members.forEach(m => { if (m.id) targetSet.add(m.id); });
+      members.forEach(m => {
+        const idVal = m.id || m.groupMemberId || m.member_id;
+        if (idVal) targetSet.add(idVal);
+      });
       return targetSet;
     }
 
     const selLower = selectedTarget.toLowerCase().trim();
 
     members.forEach(m => {
-      const mId = m.id || m.member_id || '';
+      const mId = m.id || m.groupMemberId || m.member_id || '';
       const mName = (m.name || m.member_name || '').toLowerCase().trim();
-      const mFam = (m.familyTag || m.family || m.family_name || '').toLowerCase().trim();
+      const mFam = (m.familyName || m.familyTag || m.family || m.family_name || '').toLowerCase().trim();
 
       let isMatch = false;
-      if (mFam && (selLower.includes(mFam) || mFam.includes(selLower))) isMatch = true;
-      if (mName && (selLower.includes(mName) || mName.includes(selLower))) isMatch = true;
+      if (mFam && (selLower === mFam || selLower.includes(mFam) || mFam.includes(selLower))) isMatch = true;
+      if (mName && (selLower === mName || selLower.includes(mName) || mName.includes(selLower))) isMatch = true;
       if (mId && selLower.includes(mId.toLowerCase())) isMatch = true;
 
       if (isMatch && mId) {
@@ -3734,9 +3909,9 @@
 
     const targetMemberSet = new Set();
     members.forEach(m => {
-      const mId = String(m.id || m.member_id || '').trim();
+      const mId = String(m.id || m.groupMemberId || m.member_id || '').trim();
       const mName = String(m.name || m.member_name || '').toLowerCase().trim();
-      const mFam = String(m.family || m.family_name || m.familyTag || '').toLowerCase().trim();
+      const mFam = String(m.familyName || m.family || m.family_name || m.familyTag || '').toLowerCase().trim();
 
       if ((mFam && (selLower === mFam || selLower.includes(mFam) || mFam.includes(selLower))) ||
           (mName && (selLower === mName || selLower.includes(mName) || mName.includes(selLower))) ||
@@ -3757,20 +3932,20 @@
     }
 
     const payerMember = members.find(m => {
-      const mId = String(m.id || m.member_id || '').trim();
+      const mId = String(m.id || m.groupMemberId || m.member_id || '').trim();
       const mName = String(m.name || m.member_name || '').toLowerCase().trim();
-      const mFam = String(m.family || m.family_name || m.familyTag || '').toLowerCase().trim();
+      const mFam = String(m.familyName || m.family || m.family_name || m.familyTag || '').toLowerCase().trim();
       return (mId && (mId === expPayerRaw || mId.toLowerCase() === expPayerLower)) ||
              (mName && mName === expPayerLower) ||
              (mFam && mFam === expPayerLower);
     });
 
     if (payerMember) {
-      const pFam = String(payerMember.family || payerMember.family_name || payerMember.familyTag || '').toLowerCase().trim();
+      const pFam = String(payerMember.familyName || payerMember.family || payerMember.family_name || payerMember.familyTag || '').toLowerCase().trim();
       if (pFam && (selLower === pFam || selLower.includes(pFam) || pFam.includes(selLower))) {
         return true;
       }
-      if (targetMemberSet.has(payerMember.id || payerMember.member_id)) {
+      if (targetMemberSet.has(payerMember.id || payerMember.groupMemberId || payerMember.member_id)) {
         return true;
       }
     }
@@ -3818,38 +3993,40 @@
         if (Array.isArray(exp.participants) && exp.participants.length > 0) {
           exp.participants.forEach(p => {
             const pId = p.memberId || p.id;
-            const pObj = (groupMembers.find(m => m.id === pId || String(m.name || '').toLowerCase() === String(p.name || pId || '').toLowerCase().trim())) || {};
-            const pFam = (pObj.family || pObj.familyTag || p.family || '').toLowerCase().trim();
+            const pObj = (groupMembers.find(m => (m.id || m.groupMemberId) === pId || String(m.name || '').toLowerCase() === String(p.name || pId || '').toLowerCase().trim())) || {};
+            const pFam = (pObj.familyName || pObj.family || pObj.familyTag || p.familyName || p.family || '').toLowerCase().trim();
             const pName = (pObj.name || p.name || '').toLowerCase().trim();
 
             if (targetMemberIds.has(pId) || (pFam && (selLower === pFam || selLower.includes(pFam) || pFam.includes(selLower))) || (pName && (selLower === pName || selLower.includes(pName) || pName.includes(selLower)))) {
-              splitShareSum += Number(p.calculatedAmount) || 0;
-              hasSplits = true;
+              const cAmt = Number(p.calculatedAmount) || 0;
+              if (cAmt > 0) {
+                splitShareSum += cAmt;
+                hasSplits = true;
+              }
             }
           });
         }
       });
 
-      if (hasSplits) {
+      if (hasSplits && splitShareSum > 0) {
         totalShare = splitShareSum;
       } else {
-        const anyExpHasParticipants = rawExps.some(exp => Array.isArray(exp.participants) && exp.participants.length > 0);
-        if (anyExpHasParticipants) {
-          totalShare = 0;
-        } else {
-          const targetMembers = groupMembers.filter(m => targetMemberIds.has(m.id) || (m.family && (selLower.includes(m.family.toLowerCase()) || m.family.toLowerCase().includes(selLower))) || (m.familyTag && (selLower.includes(m.familyTag.toLowerCase()) || m.familyTag.toLowerCase().includes(selLower))));
-          const tAdults = targetMembers.filter(m => !m.type || m.type === 'ADULT').length;
-          const tKids = targetMembers.filter(m => m.type === 'CHILD').length;
-          const tBabies = targetMembers.filter(m => m.type === 'BABY').length;
+        const targetMembers = groupMembers.filter(m => {
+          const mId = m.id || m.groupMemberId || m.member_id;
+          const mFam = String(m.familyName || m.family || m.familyTag || m.family_name || '').toLowerCase().trim();
+          return targetMemberIds.has(mId) || (mFam && (selLower === mFam || selLower.includes(mFam) || mFam.includes(selLower)));
+        });
+        const tAdults = targetMembers.filter(m => !m.type || m.type === 'ADULT').length;
+        const tKids = targetMembers.filter(m => m.type === 'CHILD').length;
+        const tBabies = targetMembers.filter(m => m.type === 'BABY').length;
 
-          if (tAdults > 0 || tKids > 0 || tBabies > 0) {
-            totalShare = (tAdults * adultRate) + (tKids * kidRate) + (tBabies * babyRate);
-          } else {
-            const targetWeight = targetMembers.reduce((sum, m) => sum + (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0 : 1.0)), 0);
-            const totalGroupWeight = groupMembers.reduce((sum, m) => sum + (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0 : 1.0)), 0) || 1;
-            const ratio = totalGroupWeight > 0 ? (targetWeight / totalGroupWeight) : 0;
-            totalShare = Math.round(totalPurchaseAmount * ratio);
-          }
+        if (tAdults > 0 || tKids > 0 || tBabies > 0) {
+          totalShare = (tAdults * adultRate) + (tKids * kidRate) + (tBabies * babyRate);
+        } else {
+          const targetWeight = targetMembers.reduce((sum, m) => sum + (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0 : 1.0)), 0);
+          const totalGroupWeight = groupMembers.reduce((sum, m) => sum + (m.type === 'CHILD' ? 0.5 : (m.type === 'BABY' ? 0 : 1.0)), 0) || 1;
+          const ratio = totalGroupWeight > 0 ? (targetWeight / totalGroupWeight) : 0;
+          totalShare = Math.round(totalPurchaseAmount * ratio);
         }
       }
     }
@@ -3872,7 +4049,11 @@
   }
 
   function t7_renderFinalizeReportView() {
-    const selectedTarget = document.getElementById('t7-finalize-member-select')?.value || 'ALL';
+    let selectedTarget = document.getElementById('t7-finalize-member-select')?.value;
+    if (!selectedTarget || selectedTarget === 'ALL') {
+      const firstOpt = document.getElementById('t7-finalize-member-select')?.options[0];
+      selectedTarget = firstOpt ? firstOpt.value : (Object.keys(window.T7_STATE?.activeGroup?.members || {})[0] || '');
+    }
     const group = window.T7_STATE.activeGroup || {};
     const groupName = group.name || "";
     const catType = (group.category === 'DINING' || groupName.toLowerCase().includes('ăn') || groupName.toLowerCase().includes('lòng') || groupName.toLowerCase().includes('tiệc')) ? '🥣 Ăn uống' : '✈️ Chuyến đi';
@@ -3931,10 +4112,10 @@
     let formattedShareVal = summaryData.totalShare.toLocaleString() + " ¥";
 
     if (selectedTarget !== 'ALL') {
-      const targetMembers = (group.members || []).filter(m =>
-        (m.family || m.family_name || m.familyTag || m.name || '').toLowerCase().includes(selLower) ||
-        selLower.includes((m.family || m.family_name || m.familyTag || m.name || '').toLowerCase())
-      );
+      const targetMembers = (group.members || []).filter(m => {
+        const mFamStr = (m.familyName || m.family || m.family_name || m.familyTag || m.name || '').toLowerCase();
+        return mFamStr.includes(selLower) || selLower.includes(mFamStr);
+      });
       const fAdults = targetMembers.filter(m => String(m.member_type || m.type || m.age_group || 'ADULT').toUpperCase() === 'ADULT').length;
       const fKids = targetMembers.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'CHILD').length;
       const fBabies = targetMembers.filter(m => String(m.member_type || m.type || m.age_group || '').toUpperCase() === 'BABY').length;
@@ -3993,6 +4174,52 @@
         netValEl.innerText = `-${Math.abs(summaryData.netBalance).toLocaleString()} ¥`;
       }
     }
+
+    // Tính số tiền cần trả hiển thị trong câu nhắn đi kèm ảnh
+    let payableAmt = 0;
+    if (selectedTarget !== 'ALL') {
+      payableAmt = Math.abs(summaryData.netBalance) > 0
+        ? Math.abs(summaryData.netBalance)
+        : (summaryData.totalShare || summaryData.totalPurchaseAmount || 0);
+    } else {
+      const toMeStls = rawStls.filter(s => s.toIsMe);
+      if (toMeStls.length > 0) {
+        payableAmt = toMeStls.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+      } else if (rawStls.length > 0) {
+        payableAmt = rawStls.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+      } else {
+        // Fallback: tìm gia đình khách (không phải 2F/nhà mình) để lấy số tiền cần trả
+        const famSet = new Set();
+        (group.members || []).forEach(m => {
+          const fn = String(m.familyName || m.family_name || '').trim();
+          const fnLower = fn.toLowerCase();
+          if (fn && fnLower !== '2f' && !fnLower.includes('nhà mình') && !fnLower.includes('quậy') && !m.isMe) {
+            famSet.add(fn);
+          }
+        });
+        if (famSet.size > 0) {
+          let guestSum = 0;
+          famSet.forEach(fn => {
+            const gSum = t7_calculateReportSummaryData(group, rawExps, fn);
+            guestSum += Math.abs(gSum.netBalance) > 0 ? Math.abs(gSum.netBalance) : (gSum.totalShare || 0);
+          });
+          payableAmt = guestSum;
+        }
+        if (!payableAmt) {
+          payableAmt = summaryData.totalPurchaseAmount || 0;
+        }
+      }
+    }
+    const captionMsg = typeof buildReportAccompanyingMessage === 'function'
+      ? buildReportAccompanyingMessage(payableAmt, groupName)
+      : `Alo ! Cho Quậy gửi tổng tiền${groupName ? ' - ' + groupName : ''} ! Số tiền cần trả ${(Number(payableAmt) || 0).toLocaleString()} ¥ (kiểm tra lại nội dung trên hình giúp nha.)`;
+    window.T7_CURRENT_REPORT_CAPTION = captionMsg;
+    window.CURRENT_REPORT_CAPTION_TEXT = captionMsg;
+
+    const cardCaptionAmtEl = document.getElementById('t7-card-caption-amt');
+    if (cardCaptionAmtEl) cardCaptionAmtEl.innerText = `${(Number(payableAmt) || 0).toLocaleString()} ¥`;
+    const captionTextEl = document.getElementById('t7-finalize-caption-text');
+    if (captionTextEl) captionTextEl.innerText = captionMsg;
 
     // Settlements for preview
     let displayStls = rawStls;
@@ -4059,7 +4286,7 @@
       }
     }
 
-    // Render All Expenses Detail (Khoản chi: ghi rõ số lượng & đơn giá trên đầu người)
+      // Render All Expenses Detail (Khoản chi: ghi rõ số lượng & đơn giá trên đầu người)
     const expDetailContainer = document.getElementById('t7-finalize-expenses-detail');
     if (expDetailContainer) {
       expDetailContainer.innerHTML = '';
@@ -4073,23 +4300,26 @@
           ? exp.participants
           : (group.members || []);
 
-        const totalAdultsInExp = parts.filter(p => {
-          const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.member_id || p.id) || m.name === (p.name || p.member_name));
-          const pType = String((pMbr ? pMbr.type || pMbr.member_type : p.type) || 'ADULT').toUpperCase();
-          return pType === 'ADULT';
-        }).length;
+        const groupMbrList = group.members || [];
+        const usedIds = new Set();
+        const resolvedParts = parts.map(p => {
+          const pId = p.memberId || p.member_id || p.id || '';
+          let pMbr = groupMbrList.find(m => (m.id && m.id === pId) || (m.groupMemberId && m.groupMemberId === pId));
+          if (!pMbr) {
+            pMbr = groupMbrList.find(m => !usedIds.has(m.id || m.groupMemberId) && m.name === (p.name || p.member_name));
+          }
+          if (pMbr) usedIds.add(pMbr.id || pMbr.groupMemberId);
+          let pType = String((pMbr ? (pMbr.type || pMbr.member_type) : p.type) || '').toUpperCase();
+          if (!pType) {
+            const wVal = p.weight !== undefined ? Number(p.weight) : (p.inputValue !== undefined ? Number(p.inputValue) : 1.0);
+            pType = wVal === 0 ? 'BABY' : (wVal === 0.5 ? 'CHILD' : 'ADULT');
+          }
+          return { p, pMbr, pType };
+        });
 
-        const totalKidsInExp = parts.filter(p => {
-          const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.member_id || p.id) || m.name === (p.name || p.member_name));
-          const pType = String((pMbr ? pMbr.type || pMbr.member_type : p.type) || '').toUpperCase();
-          return pType === 'CHILD';
-        }).length;
-
-        const totalBabiesInExp = parts.filter(p => {
-          const pMbr = (group.members || []).find(m => m.id === (p.memberId || p.member_id || p.id) || m.name === (p.name || p.member_name));
-          const pType = String((pMbr ? pMbr.type || pMbr.member_type : p.type) || '').toUpperCase();
-          return pType === 'BABY';
-        }).length;
+        const totalAdultsInExp = resolvedParts.filter(r => r.pType === 'ADULT').length;
+        const totalKidsInExp = resolvedParts.filter(r => r.pType === 'CHILD').length;
+        const totalBabiesInExp = resolvedParts.filter(r => r.pType === 'BABY').length;
 
         const totalWeightInExp = (totalAdultsInExp * 1.0) + (totalKidsInExp * 0.5);
         const expRatePerAdult = (eAmt > 0 && totalWeightInExp > 0 && totalAdultsInExp > 0) ? Math.round(eAmt / totalWeightInExp) : 0;
@@ -4114,105 +4344,180 @@
         expDetailContainer.appendChild(item);
       });
     }
+
+    // Đặt lại trạng thái nút Xuất BC về Bước 1 và dựng sẵn ảnh PNG ở hậu trường (để Web Share trên Điện thoại & Copy Ảnh chạy tức thì 0ms)
+    window.T7_EXPORT_STEP = 1;
+    window.T7_PRE_RENDERED_BLOB = null;
+    window.T7_PRE_RENDERED_CANVAS = null;
+    const copyBtn = document.getElementById('btn-t7-copy-img');
+    if (copyBtn) {
+      copyBtn.disabled = false;
+      copyBtn.innerHTML = '<span>📸</span> <span>Xuất BC</span>';
+      copyBtn.setAttribute('data-export-step', '1');
+    }
+    setTimeout(() => {
+      if (typeof t7_preparePreRenderedReportBlob === 'function') {
+        t7_preparePreRenderedReportBlob();
+      }
+    }, 120);
+  }
+
+  function t7_preparePreRenderedReportBlob() {
+    const cardEl = document.getElementById('t7-report-card-canvas');
+    if (!cardEl || typeof html2canvas === 'undefined') return Promise.resolve(null);
+    return new Promise((resolve) => {
+      t7_renderCaptureElement(cardEl, (canvas, err) => {
+        if (err || !canvas) {
+          resolve(null);
+          return;
+        }
+        window.T7_PRE_RENDERED_CANVAS = canvas;
+        canvas.toBlob(blob => {
+          window.T7_PRE_RENDERED_BLOB = blob || null;
+          resolve(blob || null);
+        }, 'image/png');
+      });
+    });
+  }
+
+  function t7_renderCaptureElement(el, callback) {
+    if (!el) {
+      callback(null, new Error("Không tìm thấy thẻ báo cáo để chụp"));
+      return;
+    }
+    if (typeof html2canvas === 'undefined') {
+      callback(null, new Error("Thư viện chụp ảnh html2canvas chưa sẵn sàng!"));
+      return;
+    }
+
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = '360px';
+    container.style.zIndex = '-9999';
+    container.style.backgroundColor = '#ffffff';
+    container.style.padding = '0';
+    container.style.margin = '0';
+
+    const clone = el.cloneNode(true);
+    clone.style.transform = 'none';
+    clone.style.animation = 'none';
+    clone.style.maxWidth = '360px';
+    clone.style.width = '100%';
+    clone.style.maxHeight = 'none';
+    clone.style.overflow = 'visible';
+    clone.style.height = 'auto';
+    clone.style.boxSizing = 'border-box';
+    clone.style.margin = '0 auto';
+
+    const textNodes = clone.querySelectorAll('span, h2, h3, p, div');
+    textNodes.forEach(node => {
+      node.style.lineHeight = '1.5';
+      node.style.letterSpacing = 'normal';
+    });
+
+    container.appendChild(clone);
+    document.body.appendChild(container);
+
+    const renderWidth = Math.ceil(clone.offsetWidth || 360);
+    const renderHeight = Math.ceil(clone.offsetHeight);
+
+    html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: "#ffffff",
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      width: renderWidth,
+      height: renderHeight,
+      windowWidth: renderWidth,
+      windowHeight: renderHeight
+    }).then(canvas => {
+      try { document.body.removeChild(container); } catch(e) {}
+      callback(canvas, null);
+    }).catch(err => {
+      try { document.body.removeChild(container); } catch(e) {}
+      callback(null, err);
+    });
+  }
+
+  function t7_copyAccompanyingCaptionOnly() {
+    const msg = window.T7_CURRENT_REPORT_CAPTION || document.getElementById('t7-finalize-caption-text')?.innerText || '';
+    if (!msg) return;
+    if (typeof copyTextSynchronously === 'function') {
+      copyTextSynchronously(msg);
+      showToast("✅ Đã sao chép tin nhắn Text: " + msg);
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(msg).then(() => {
+        showToast("✅ Đã sao chép câu nhắn: " + msg);
+      }).catch(() => {
+        showToast("💡 Hãy bôi đen câu nhắn bên dưới để sao chép.");
+      });
+    }
   }
 
   function t7_copyReportImageToClipboard() {
     const cardEl = document.getElementById('t7-report-card-canvas');
     const btn = document.getElementById('btn-t7-copy-img');
-    if (!cardEl || typeof html2canvas === 'undefined') {
-      showToast("❌ Thư viện chụp ảnh html2canvas chưa sẵn sàng!", true);
+    if (!cardEl) {
+      showToast("⚠️ Thư viện chụp ảnh html2canvas chưa sẵn sàng!", true);
       return;
     }
 
-    const origText = btn ? btn.innerHTML : '<span>📸</span> <span>Xuất Ảnh</span>';
-    if (btn) {
-      btn.disabled = true;
-      btn.innerText = "⏳ Đang tạo ảnh...";
+    const captionMsg = (window.T7_CURRENT_REPORT_CAPTION || document.getElementById('t7-finalize-caption-text')?.innerText || '').trim();
+    if (typeof executeUnifiedReportExport === 'function') {
+      executeUnifiedReportExport({
+        btn: btn,
+        stepStateKey: 'T7_EXPORT_STEP',
+        captionMsg: captionMsg,
+        origBtnHtml: '<span>📸</span> <span>Xuất BC</span>',
+        getPreRenderedBlob: () => window.T7_PRE_RENDERED_BLOB || null,
+        getPreRenderedCanvas: () => window.T7_PRE_RENDERED_CANVAS || null,
+        renderBlobPromise: () => t7_preparePreRenderedReportBlob()
+      });
     }
-
-    html2canvas(cardEl, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      onclone: function(clonedDoc) {
-        const clonedCard = clonedDoc.getElementById('t7-report-card-canvas');
-        if (clonedCard) {
-          clonedCard.style.maxHeight = 'none';
-          clonedCard.style.overflow = 'visible';
-          clonedCard.style.height = 'auto';
-        }
-      }
-    }).then(canvas => {
-      canvas.toBlob(blob => {
-        if (!blob) {
-          if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-          showToast("❌ Lỗi tạo file ảnh!", true);
-          return;
-        }
-        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-          navigator.clipboard.write([
-            new ClipboardItem({ 'image/png': blob })
-          ]).then(() => {
-            if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-            showToast("✅ Đã sao chép ảnh báo cáo! Bạn có thể dán (Ctrl+V) gửi ngay.");
-          }).catch(err => {
-            if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-            t7_downloadReportImage();
-          });
-        } else {
-          if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-          t7_downloadReportImage();
-        }
-      }, 'image/png');
-    }).catch(err => {
-      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-      showToast("❌ Lỗi xuất ảnh: " + err, true);
-    });
   }
 
   function t7_downloadReportImage() {
     const cardEl = document.getElementById('t7-report-card-canvas');
     const btn = document.getElementById('btn-t7-download-img');
-    if (!cardEl || typeof html2canvas === 'undefined') {
-      showToast("❌ Thư viện chụp ảnh html2canvas chưa sẵn sàng!", true);
+    if (!cardEl) {
+      showToast("⚠️ Thư viện chụp ảnh html2canvas chưa sẵn sàng!", true);
       return;
     }
 
+    const captionMsg = window.T7_CURRENT_REPORT_CAPTION || document.getElementById('t7-finalize-caption-text')?.innerText || '';
     const origText = btn ? btn.innerHTML : '<span>📥</span> <span>Tải File</span>';
     if (btn) {
       btn.disabled = true;
       btn.innerText = "⏳ Đang tải...";
     }
 
-    html2canvas(cardEl, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      onclone: function(clonedDoc) {
-        const clonedCard = clonedDoc.getElementById('t7-report-card-canvas');
-        if (clonedCard) {
-          clonedCard.style.maxHeight = 'none';
-          clonedCard.style.overflow = 'visible';
-          clonedCard.style.height = 'auto';
-        }
-      }
-    }).then(canvas => {
+    t7_renderCaptureElement(cardEl, (canvas, err) => {
       if (btn) {
         btn.disabled = false;
         btn.innerHTML = origText;
       }
-      const selectedVal = (document.getElementById('t7-finalize-member-select')?.value || 'BaoCao').replace(/[^a-zA-Z0-9_\-]/g, '_');
-      const link = document.createElement('a');
-      link.download = `BaoCao_ChiTra_${selectedVal}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-      showToast("✅ Đã tải file ảnh báo cáo thành công!");
-    }).catch(err => {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = origText;
+      if (err || !canvas) {
+        showToast("❌ Lỗi tải ảnh: " + (err ? (err.message || err) : "Không tạo được canvas"), true);
+        return;
       }
-      showToast("❌ Lỗi tải ảnh: " + err, true);
+      if (typeof showRenderedImagePreviewModal === 'function') {
+        showRenderedImagePreviewModal(canvas, captionMsg);
+      }
+      try {
+        const selectedVal = (document.getElementById('t7-finalize-member-select')?.value || 'BaoCao').replace(/[^a-zA-Z0-9_\-]/g, '_');
+        const link = document.createElement('a');
+        link.download = `BaoCao_ChiTra_${selectedVal}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast("✅ Đã tải file ảnh! Câu nhắn đi kèm đã sẵn sàng để copy/gửi.");
+      } catch(e) {
+        showToast("💡 Chạm giữ vào ảnh bên dưới để Lưu hình ảnh vào thiết bị.");
+      }
     });
   }
 
@@ -4229,8 +4534,10 @@
     const shareStr = summaryData.totalShare.toLocaleString() + ' ¥';
     const netStr = (selectedTarget === 'ALL') ? '+0 ¥' : (summaryData.netBalance >= 0 ? `+${summaryData.netBalance.toLocaleString()} ¥` : `-${Math.abs(summaryData.netBalance).toLocaleString()} ¥`);
     const gDate = t7_formatExpenseDate(group.created_at || new Date().toISOString().split('T')[0]);
+    const captionHeader = window.T7_CURRENT_REPORT_CAPTION || `Alo ! Cho Quậy gửi tổng tiền nha! Số tiền cần trả ${Math.abs(summaryData.netBalance || summaryData.totalShare || 0).toLocaleString()} ¥ (kiểm tra lại nội dung trên hình giúp nha.)`;
 
-    let text = `📊 BÁO CÁO CÔNG NỢ & CHI TRẢ - ${selectedTarget.toUpperCase()}\n`;
+    let text = `${captionHeader}\n\n`;
+    text += `📊 BÁO CÁO CÔNG NỢ & CHI TRẢ - ${selectedTarget.toUpperCase()}\n`;
     text += `${catType}: ${groupName.toUpperCase()}\n`;
     if (gDate) text += `📅 Ngày: ${gDate}\n`;
     text += `=====================================\n\n`;
@@ -4284,8 +4591,24 @@
     const gId = window.T7_STATE.activeGroupId;
     if (!gId) return;
 
+    // Tính trước phần chi thực tế của gia đình nhà mình (2F) trên UI để đảm bảo đồng bộ 100% xuống Sheet Family (Thu Chi)
+    let myShareAmt = 0;
+    try {
+      const grp = window.T7_STATE.activeGroup || {};
+      const exps = window.T7_STATE.expenses || [];
+      let meFamName = '2F';
+      const meMbr = (grp.members || []).find(m => m.isMe || String(m.familyName || m.family_name || '').trim().toLowerCase() === '2f' || String(m.familyName || m.family_name || '').trim().toLowerCase().includes('nhà mình'));
+      if (meMbr && (meMbr.familyName || meMbr.family_name)) {
+        meFamName = String(meMbr.familyName || meMbr.family_name).trim();
+      }
+      const meSummary = t7_calculateReportSummaryData(grp, exps, meFamName);
+      if (meSummary && meSummary.totalShare > 0) {
+        myShareAmt = Math.round(meSummary.totalShare);
+      }
+    } catch (e) {}
+
     closeModal('modal-tab7-finalize');
-    showToast("⏳ Đang kết thúc chuyến đi & xuất công nợ...");
+    showToast("⏳ Đang chốt công nợ & ghi chi phí ăn chơi vào Thu Chi...");
 
     // Optimistic status update & cache clearance
     if (window.T7_STATE.activeGroup) {
@@ -4314,38 +4637,47 @@
             }
           } catch(e) {}
 
-          const now = new Date();
-          const curM = (now.getMonth() + 1).toString();
-          const curY = now.getFullYear().toString();
-
-          if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getAppData === 'function') {
-            google.script.run
-              .withSuccessHandler(function(appRes) {
-                if (appRes && appRes.success) {
-                  if (typeof applyAppData === 'function') applyAppData(appRes);
-                  try { localStorage.setItem("APP_LOCAL_CACHE_V25", JSON.stringify(appRes)); } catch(e) {}
-                  t7_renderUI();
-                  t7_loadActiveGroupData(gId);
-                  if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
-                }
-              })
-              .withFailureHandler(function(err) {
-                t7_loadAllData();
-                if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
-              })
-              .getAppData(curM, curY, null, true);
-          } else {
-            t7_loadAllData();
-            if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
+          if (res.groups && Array.isArray(res.groups)) {
+            window.T7_STATE.groups = res.groups;
+            try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(res.groups)); } catch(e) {}
           }
+          if (res.groupData && res.groupData.success) {
+            window.T7_STATE.activeGroup = res.groupData.group || window.T7_STATE.activeGroup;
+            if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.status = 'CLOSED';
+            window.T7_STATE.expenses = res.groupData.expenses || [];
+            window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
+            window.T7_STATE.settlements = res.groupData.settlements || [];
+            const activeTotal = (window.T7_STATE.expenses || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+            if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.totalExpense = activeTotal;
+            try { localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + gId), JSON.stringify(res.groupData)); } catch(e) {}
+          }
+
+          t7_renderUI();
+          t7_loadAllData(true);
+          t7_loadActiveGroupData(gId);
+
+          if (typeof window.t1_clearAllLocalStatementCaches === 'function') window.t1_clearAllLocalStatementCaches();
+          if (res.tab2Data && typeof applyTab2Data === 'function') {
+            applyTab2Data(res.tab2Data);
+            if (window.SERVER_INITIAL_DATA) window.SERVER_INITIAL_DATA.tab2 = res.tab2Data;
+            try { localStorage.setItem('T2_CACHE_DATA_LATEST', JSON.stringify(res.tab2Data)); } catch(e) {}
+          } else if (window.SERVER_INITIAL_DATA) {
+            window.SERVER_INITIAL_DATA.tab2 = null;
+          }
+          if (typeof reloadTab2Data === 'function') reloadTab2Data();
+          if (typeof reloadTab4Data === 'function') reloadTab4Data(true);
         } else {
           showToast(res ? res.message : "❌ Lỗi chốt nợ", true);
+          t7_loadAllData(true);
+          t7_loadActiveGroupData(gId);
         }
       })
       .withFailureHandler(function(err) {
         showToast("❌ Lỗi kết nối khi chốt nợ: " + err, true);
+        t7_loadAllData(true);
+        t7_loadActiveGroupData(gId);
       })
-      .finalizeTripAndExportDebts(gId, { consolidateByFamily: true });
+      .finalizeTripAndExportDebts(gId, { consolidateByFamily: true, allowRefinalize: true, familyShareAmount: myShareAmt }, window.CURRENT_USER_SS_ID || null);
   }
 
   function t7_reopenCurrentGroup() {
@@ -4362,8 +4694,8 @@
       if (gObj) gObj.status = 'OPEN';
     }
     try {
-      localStorage.removeItem('T7_CACHE_FULL_' + gId);
-      localStorage.removeItem('T7_CACHE_GROUPS');
+      localStorage.removeItem(getT7TenantKey('T7_CACHE_FULL_' + gId));
+      localStorage.removeItem(getT7TenantKey('T7_CACHE_GROUPS'));
     } catch(e) {}
     t7_renderUI();
 
@@ -4371,17 +4703,49 @@
       .withSuccessHandler(function(res) {
         if (res && res.success) {
           showToast(res.message);
-          t7_loadAllData();
+          if (res.groups && Array.isArray(res.groups)) {
+            window.T7_STATE.groups = res.groups;
+            try { localStorage.setItem(getT7TenantKey('T7_CACHE_GROUPS'), JSON.stringify(res.groups)); } catch(e) {}
+          }
+          if (res.groupData && res.groupData.success) {
+            window.T7_STATE.activeGroup = res.groupData.group || window.T7_STATE.activeGroup;
+            if (window.T7_STATE.activeGroup) window.T7_STATE.activeGroup.status = 'OPEN';
+            window.T7_STATE.expenses = res.groupData.expenses || [];
+            window.T7_STATE.memberBalances = res.groupData.memberBalances || [];
+            window.T7_STATE.settlements = res.groupData.settlements || [];
+            try { localStorage.setItem(getT7TenantKey('T7_CACHE_FULL_' + gId), JSON.stringify(res.groupData)); } catch(e) {}
+          }
+          t7_renderUI();
+          t7_loadAllData(true);
           t7_loadActiveGroupData(gId);
         } else {
           showToast(res ? res.message : "❌ Lỗi mở lại nhóm", true);
+          t7_loadAllData(true);
+          t7_loadActiveGroupData(gId);
         }
       })
-      .reopenSplitGroup(gId);
+      .withFailureHandler(function(err) {
+        showToast("❌ Lỗi kết nối khi mở lại nhóm: " + err, true);
+        t7_loadAllData(true);
+        t7_loadActiveGroupData(gId);
+      })
+      .reopenSplitGroup(gId, window.CURRENT_USER_SS_ID || null);
   }
 
+  window.initTab7 = initTab7;
+  window.t7_renderUI = t7_renderUI;
+  window.t7_loadAllData = t7_loadAllData;
+  window.t7_loadActiveGroupData = t7_loadActiveGroupData;
+  window.t7_switchCategory = t7_switchCategory;
+  window.t7_openGroupDetail = t7_openGroupDetail;
+  window.t7_backToGroupList = t7_backToGroupList;
+
   // AUTO INIT LISTENERS
-  document.addEventListener('DOMContentLoaded', function() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      initTab7();
+    });
+  } else {
     initTab7();
-  });
+  }
 </script>

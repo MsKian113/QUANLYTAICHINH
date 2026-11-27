@@ -87,6 +87,12 @@ function createFreshDB() {
           getName: () => name,
           getLastRow: () => rows.length,
           getLastColumn: () => rows[0] ? rows[0].length : 19,
+          getMaxColumns: () => rows[0] ? rows[0].length : 19,
+          insertColumnsAfter: (col, num) => {
+            rows.forEach(r => {
+              for (let i = 0; i < num; i++) r.push("");
+            });
+          },
           getRange: (startRow, startCol, numRows, numCols) => ({
             getValue: () => {
               const r = rows[startRow - 1];
@@ -403,9 +409,11 @@ test('BUS001 | [P0] Immediate business purchase reduces wallet & records expense
 test('BUS002 | [P0] Business pre-order captures once without duplicate', () => {
   const db = createFreshDB();
   savePurchaseOrder({ ngay: "2026-10-08", noiMua: "Yodobashi", trangThaiKho: "Kho Nhật", nguonTien: "Ví Tiền Mặt", isPreOrder: true, items: [{ tenSP: "Film", qty: 5, price: 10000 }] });
-  assert.equal(db.WalletLedger.length, 1); // Not in ledger yet
+  assert.equal(db.WalletLedger.length, 2); // Recorded as PENDING in ledger
+  assert.equal(db.WalletLedger[1][11], "PENDING");
   confirmPreOrderPayment(db.Purchase[1][0], "2026-10-15");
-  assert.equal(db.WalletLedger.length, 2); // Recorded exactly once
+  assert.equal(db.WalletLedger.length, 2); // Updated in-place to POSTED
+  assert.equal(db.WalletLedger[1][11], "POSTED");
 });
 
 test('BUS003 | [P0] Immediate sale increases wallet & decrements inventory', () => {

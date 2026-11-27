@@ -171,3 +171,92 @@ test('deleteDebtRecord removes debt row by ID', () => {
   assert.equal(db.Debt.length, 2);
   assert.ok(!db.Debt.some(r => r[0] === 'VN0001'));
 });
+
+test('settleDebtPayment for TRA debt (Quậy nợ đối tác - tổng âm) sets direction: OUT in WalletLedger and updates sheet Debt', () => {
+  const db = createMockTab4DB();
+  let capturedLedgerEvents = [];
+  global.postFinancialEvents = (evs) => { capturedLedgerEvents = evs; };
+
+  // VN0001 is TRA debt: 50,000 ¥ (Quậy đang nợ Chị B)
+  const res = settleDebtPayment({
+    ids: ['VN0001'],
+    amount: 50000,
+    date: '2026-10-28',
+    sourceWallet: 'Ví Tiền Mặt',
+    name: 'Chị B',
+    type: 'TRA'
+  });
+
+  assert.equal(res.success, true);
+  assert.equal(res.targetType, 'TRA');
+
+  // Kiểm tra Sheet Debt: Cột 8 (Đã thanh toán), Cột 10 (Dư nợ), Cột 11 (Trạng thái)
+  assert.equal(db.Debt[2][7], 50000); // Đã thanh toán = 50,000
+  assert.equal(db.Debt[2][9], 0);     // Dư nợ còn lại = 0
+  assert.equal(db.Debt[2][10], 'DA_TRA'); // Trạng thái = DA_TRA
+
+  // Kiểm tra WalletLedger: Direction PHẢI LÀ OUT (tiền ra khỏi ví)
+  assert.equal(capturedLedgerEvents.length, 1);
+  assert.equal(capturedLedgerEvents[0].direction, 'OUT');
+  assert.equal(capturedLedgerEvents[0].eventType, 'REPAY_LOAN');
+  assert.equal(capturedLedgerEvents[0].amount, 50000);
+});
+
+test('settleDebtPayment for row without ID in Col A matches via MANUAL_i/ROW_r, assigns ID and updates sheet Debt', () => {
+  const db = createMockTab4DB();
+  let capturedLedgerEvents = [];
+  global.postFinancialEvents = (evs) => { capturedLedgerEvents = evs; };
+
+  // Thêm dòng nợ thủ công không có ID ở Cột A (index 0 là '')
+  db.Debt.push(['', '2026-10-20', 'Anh Nam', 'TRA', 'Mượn tiền mặt', 30000, 'Ví Tiền Mặt', 0, '', 30000, 'DANG_NO', 'HOAN_TAT']);
+  // Dòng này có index trong data là 2 (tương ứng row 4 trong sheet, MANUAL_2)
+
+  const res = settleDebtPayment({
+    ids: ['MANUAL_2'], // ID tạm từ getTab4Data
+    amount: 30000,
+    date: '2026-10-28',
+    sourceWallet: 'Ví Tiền Mặt',
+    name: 'Anh Nam'
+  });
+
+  assert.equal(res.success, true);
+  assert.equal(res.targetType, 'TRA');
+
+  // Kiểm tra dòng trong Sheet Debt đã được cập nhật
+  const row = db.Debt[3];
+  assert.ok(row[0].startsWith('CN'), 'Phải tự động cấp mã ID mới cho dòng rỗng ID');
+  assert.equal(row[7], 30000);  // Đã thanh toán
+  assert.equal(row[9], 0);      // Dư nợ còn lại
+  assert.equal(row[10], 'DA_TRA'); // Trạng thái
+
+  // WalletLedger phải ghi nhận OUT
+  assert.equal(capturedLedgerEvents[0].direction, 'OUT');
+  assert.equal(capturedLedgerEvents[0].eventType, 'REPAY_LOAN');
+});
+
+test('lockDebtsBatch locks debts and prevents delete and edit', () => {
+  const db = createMockTab4DB();
+  
+  // 1. Chốt khoản nợ CN0001
+  const lockRes = lockDebtsBatch(['CN0001']);
+  assert.equal(lockRes.success, true);
+  assert.equal(lockRes.lockedCount, 1);
+  assert.equal(db.Debt[1][10], 'DA_CHOT');
+
+  // 2. Thử xóa khoản nợ đã chốt -> phải bị từ chối
+  const delRes = deleteDebtRecord('CN0001');
+  assert.equal(delRes.success, false);
+  assert.ok(delRes.message.includes('chốt đối soát') || delRes.message.includes('không được phép xóa'));
+  assert.equal(db.Debt.length, 3); // Dòng nợ vẫn còn nguyên vẹn trong DB
+
+  // 3. Thử sửa khoản nợ đã chốt -> phải bị từ chối
+  const editRes = saveDebtTransaction({
+    id: 'CN0001',
+    ten: 'Chị Kẹo Sửa',
+    loai: 'THU',
+    sotien: 999999,
+    ngay: '2026-09-01'
+  });
+  assert.equal(editRes.success, false);
+  assert.ok(editRes.message.includes('chốt đối soát') || editRes.message.includes('không được phép chỉnh sửa'));
+});

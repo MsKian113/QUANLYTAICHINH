@@ -1,9 +1,15 @@
 <!-- HEADER TAB 4 (Tông Chàm) -->
-<div class="pt-3 pb-3 px-4 text-white bg-indigo-600 shadow-md flex justify-between items-center z-10 relative shrink-0">
-  <h1 class="text-base font-bold flex items-center gap-1.5">🤝 <span>Công Nợ</span></h1>
-  <div class="flex gap-2 items-center">
+<div class="pt-3 pb-3 px-3 sm:px-4 text-white bg-indigo-600 shadow-md flex justify-between items-center z-10 relative shrink-0 gap-1.5 whitespace-nowrap">
+  <h1 class="text-sm sm:text-base font-bold flex items-center gap-1 shrink-0"><span>🤝</span><span>Công Nợ</span></h1>
+  <div class="flex gap-1.5 sm:gap-2 items-center shrink-0">
       <select id="t4-filter-month" onchange="reloadTab4Data()" class="bg-indigo-700/80 border border-indigo-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
       <select id="t4-filter-year" onchange="reloadTab4Data()" class="bg-indigo-700/80 border border-indigo-400 text-white text-xs px-2.5 py-1.5 rounded-xl font-medium outline-none cursor-pointer"></select>
+      <button type="button" onclick="openMiniCalc()" title="Máy tính cầm tay" class="bg-indigo-700/80 hover:bg-indigo-800 active:scale-95 border border-indigo-400 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer shadow-xs">
+          🧮
+      </button>
+      <button onclick="reloadTab4Data();" title="Làm mới công nợ" class="bg-indigo-700/80 hover:bg-indigo-800 active:scale-95 border border-indigo-400 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer shadow-xs">
+          🔄
+      </button>
   </div>
 </div>
 
@@ -34,18 +40,21 @@
 
   <!-- SUBTAB 1: 1. CÔNG NỢ -->
   <div id="t4-section-congno" class="space-y-2 shrink-0">
-    <!-- DÒNG 1: Tiêu đề CÔNG NỢ + Badge + 2 nút Cho vay / Đi vay -->
-    <div class="flex justify-between items-center bg-white p-1.5 px-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex-wrap gap-1">
-        <div class="flex items-center gap-1.5">
+    <!-- DÒNG 1: Tiêu đề CÔNG NỢ + Badge + Định kỳ + Cho vay / Đi vay gom chung 1 hàng -->
+    <div class="flex justify-between items-center bg-white p-1.5 px-2 rounded-xl border border-slate-200/80 shadow-2xs flex-nowrap gap-1 overflow-x-auto whitespace-nowrap">
+        <div class="flex items-center gap-1 shrink-0">
             <label class="flex items-center gap-1 cursor-pointer select-none">
-                <input type="checkbox" id="chk-select-all-debts" onchange="toggleSelectAllDebts(this)" class="accent-indigo-600 w-3.5 h-3.5 cursor-pointer" />
+                <input type="checkbox" id="chk-select-all-debts" onchange="toggleSelectAllDebts(this)" class="accent-indigo-600 w-3.5 h-3.5 cursor-pointer shrink-0" />
                 <span class="text-[11px] font-bold text-slate-800">🤝 CÔNG NỢ</span>
             </label>
-            <span id="debt-list-count" class="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-1.5 py-0.2 rounded-full">0 Mục</span>
+            <span id="debt-list-count" class="text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/60 px-1.5 py-0.2 rounded-full shrink-0">0 Mục</span>
         </div>
-        <div class="flex items-center gap-1">
-            <button onclick="openAddDebtModal('THU')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5">💰 Cho vay</button>
-            <button onclick="openAddDebtModal('TRA')" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5">💸 Đi vay</button>
+        <div class="flex items-center gap-1 shrink-0">
+            <button onclick="openRecurringDebtsModal()" class="bg-violet-600 hover:bg-violet-700 active:scale-95 text-white px-2 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shrink-0" title="Quản lý công nợ định kỳ hàng tháng">
+                <span>⚡</span><span>Định kỳ</span><span id="badge-recurring-pending" class="hidden bg-amber-400 text-slate-900 rounded-full px-1 text-[8px] font-black">0</span>
+            </button>
+            <button onclick="openAddDebtModal('THU')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shrink-0">💰 Cho vay</button>
+            <button onclick="openAddDebtModal('TRA')" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded-lg shadow-2xs font-bold text-[10px] transition cursor-pointer flex items-center gap-0.5 whitespace-nowrap shrink-0">💸 Đi vay</button>
         </div>
     </div>
 
@@ -59,6 +68,31 @@
             <option value="thu">Phải thu</option>
             <option value="tra">Phải trả</option>
         </select>
+    </div>
+
+    <!-- Dynamic Container Single List (Công Nợ Đang Hoạt Động) -->
+        <!-- BANNER TỔNG DƯ NỢ CỦA ĐỐI TÁC KHI TÌM KIẾM HOẶC LỌC -->
+    <div id="partner-debt-summary-banner" class="hidden bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border border-indigo-200/90 p-2.5 px-3 rounded-2xl flex justify-between items-center shadow-xs mb-2">
+        <div class="flex items-center gap-2 min-w-0 flex-1 pr-2">
+            <span class="text-base p-1.5 bg-indigo-100 text-indigo-700 rounded-xl shrink-0">👤</span>
+            <div class="truncate">
+                <span class="text-[9px] text-indigo-500 font-bold uppercase tracking-wider">Đối tác</span>
+                <h4 id="partner-banner-name" class="font-bold text-xs text-indigo-950 truncate">Tên Đối Tác</h4>
+                <p id="partner-banner-count" class="text-[9px] text-slate-500">0 khoản nợ</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <div class="text-right">
+                <span class="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Tổng Dư Nợ</span>
+                <p id="partner-banner-amt" class="font-black text-xs text-rose-600">0 ¥</p>
+            </div>
+            <button id="btn-partner-banner-export" onclick="exportCurrentPartnerDebtImage()" title="Xuất báo cáo ảnh cho đối tác này" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg transition cursor-pointer shadow-2xs flex items-center gap-1 shrink-0">
+                📸 Xuất ảnh
+            </button>
+            <button id="btn-partner-banner-stmt" onclick="openPartnerDebtStatementModal()" title="Xem sổ nợ chi tiết" class="bg-white hover:bg-indigo-50 border border-indigo-200 text-indigo-700 active:scale-95 text-[10px] font-bold px-2 py-1.5 rounded-lg transition cursor-pointer shadow-2xs flex items-center gap-1 shrink-0">
+                📑 Sổ nợ
+            </button>
+        </div>
     </div>
 
     <!-- Dynamic Container Single List (Công Nợ Đang Hoạt Động) -->
@@ -76,6 +110,7 @@
     </div>
     <div id="debt-done-cards" class="space-y-1"></div>
   </div>
+
 </div>
 
 <!-- THANH NỔI (FLOATING BAR) THANH TOÁN HÀNG LOẠT & XUẤT ẢNH -->
@@ -89,8 +124,11 @@
         <button onclick="openExportDebtReportModal()" class="flex-1 bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/30 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer text-center flex items-center justify-center gap-1 shadow-xs">
             📸 Xuất BC
         </button>
-        <button onclick="openBulkPayModal()" class="flex-[1.5] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1">
+        <button onclick="openBulkPayModal()" class="flex-[1.2] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-extrabold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1">
             💰 Thanh Toán
+        </button>
+        <button onclick="confirmBulkLockDebts()" class="flex-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white py-1.5 rounded-xl text-xs font-bold shadow-md transition cursor-pointer text-center flex items-center justify-center gap-1" title="Chốt đối soát & Khóa các khoản nợ đã chọn (không cho sửa/xóa)">
+            🔒 Chốt Nợ
         </button>
         <button onclick="resetDebtSelection()" class="w-9 h-8 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 rounded-xl text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center shrink-0" title="Đóng & Hủy Chọn">
             ✕
@@ -100,15 +138,29 @@
 
 <!-- MODAL: GHI THÊM / SỬA KHOẢN NỢ -->
 <div id="modal-add-debt" class="modal-overlay">
-<div class="modal-content !overflow-visible rounded-b-2xl border-t-4 border-indigo-500 !p-4 max-w-md w-full">
+<div class="modal-content !overflow-visible rounded-b-2xl border-t-4 border-indigo-500 !p-4 max-w-[360px] w-full">
   <div class="flex justify-between items-center mb-2.5 border-b pb-1.5">
     <h3 id="add-debt-title" class="text-xs font-bold text-slate-900">Ghi Nợ Mới</h3>
     <button type="button" onclick="closeModal('modal-add-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
   </div>
   
+  <div id="add-debt-lock-notice" class="hidden p-2 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-[10px] font-bold flex items-center gap-1.5 mb-1.5">
+      <span>🔒</span> <span>Khoản công nợ này đã được chốt đối soát, không thể chỉnh sửa hoặc xóa để bảo toàn dữ liệu sổ sách!</span>
+  </div>
+  
   <div class="space-y-2.5 text-xs">
     <input type="hidden" id="add-debt-id" value="" />
     <input type="hidden" id="add-debt-loai" value="THU" />
+
+    <!-- 2 SUBTABS / TOGGLE CHO VAY & ĐI VAY -->
+    <div class="flex gap-2 bg-slate-100 p-1 rounded-xl mb-1">
+        <button id="add-debt-btn-chovay" type="button" onclick="toggleDebtType('THU')" class="flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition flex items-center justify-center gap-1">
+            <span>💰</span><span>Cho vay</span>
+        </button>
+        <button id="add-debt-btn-divay" type="button" onclick="toggleDebtType('TRA')" class="flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1">
+            <span>💸</span><span>Đi vay</span>
+        </button>
+    </div>
 
     <div>
         <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">1. Ngày giao dịch</label>
@@ -122,7 +174,13 @@
     </div>
 
     <div>
-        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Số tiền (¥) <span class="text-indigo-500 lowercase font-normal">(hỗ trợ nhập tính toán ví dụ: (3+3)/2 hoặc 50k)</span></label>
+        <div class="flex justify-between items-center mb-0.5">
+            <label class="block text-[9px] font-bold text-slate-500 uppercase">3. Số tiền (¥) <span class="text-indigo-500 lowercase font-normal">(ví dụ: 50k)</span></label>
+            <div class="flex gap-1">
+                <button type="button" onclick="appendZerosToInput('add-debt-amount', 3)" class="px-2 py-0.5 text-xs font-black bg-slate-100 hover:bg-indigo-100 active:bg-indigo-200 text-slate-700 border border-slate-200 rounded-lg shadow-2xs cursor-pointer select-none transition" title="Thêm 3 số 0 (nghìn/sen)">千</button>
+                <button type="button" onclick="appendZerosToInput('add-debt-amount', 4)" class="px-2 py-0.5 text-xs font-black bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 text-indigo-700 border border-indigo-200 rounded-lg shadow-2xs cursor-pointer select-none transition" title="Thêm 4 số 0 (vạn/man)">万</button>
+            </div>
+        </div>
         <input type="text" id="add-debt-amount" placeholder="¥... ví dụ (3+3)/2 hoặc 50k" onblur="t4_onAmountBlur(this)" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-indigo-600 outline-none focus:border-indigo-400" />
     </div>
 
@@ -137,14 +195,32 @@
         <input type="text" id="add-debt-note" placeholder="Lý do cho vay / mượn..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400" />
     </div>
 
-    <button type="button" onclick="submitAddDebt()" id="btn-add-debt-submit" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Lưu Khoản Nợ</button>
+    <!-- TÙY CHỌN LẶP LẠI ĐỊNH KỲ HÀNG THÁNG -->
+    <div class="p-2 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-1.5">
+        <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="add-debt-chk-recurring" onchange="toggleAddDebtRecurring(this.checked)" class="accent-indigo-600 w-3.5 h-3.5 cursor-pointer" />
+            <span class="text-[11px] font-bold text-indigo-900">⚡ Lặp lại định kỳ hàng tháng</span>
+        </label>
+        <div id="add-debt-recurring-details" class="hidden flex items-center gap-2 pl-5 pt-0.5">
+            <span class="text-[10px] text-slate-600 font-medium">Vào ngày:</span>
+            <input type="number" id="add-debt-recurring-day" min="1" max="31" value="1" class="w-16 bg-white border border-slate-300 rounded-lg px-2 py-0.5 text-xs font-bold text-indigo-700 outline-none text-center" />
+            <span class="text-[10px] text-slate-500">hàng tháng</span>
+        </div>
+    </div>
+
+    <div class="flex gap-2 relative z-10 mt-1">
+        <button type="button" onclick="submitAddDebt()" id="btn-add-debt-submit" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md">Lưu Khoản Nợ</button>
+        <button type="button" id="btn-add-debt-delete" class="hidden px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1" title="Xóa khoản nợ">
+            <span>🗑️</span><span>Xóa</span>
+        </button>
+    </div>
   </div>
 </div>
 </div>
 
 <!-- MODAL: THANH TOÁN NỢ -->
 <div id="modal-pay-debt" class="modal-overlay">
-<div class="modal-content !overflow-visible rounded-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full mb-16 shadow-2xl">
+<div class="modal-content !overflow-visible rounded-2xl border-t-4 border-emerald-500 !p-4 max-w-[360px] w-full mb-16 shadow-2xl">
   <div class="flex justify-between items-center mb-1 border-b pb-1.5">
     <h3 id="pay-debt-title" class="text-xs font-bold text-slate-900">Thanh Toán Nợ</h3>
     <button type="button" onclick="closeModal('modal-pay-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
@@ -169,7 +245,13 @@
     </div>
 
     <div class="relative z-10">
-        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Số tiền thanh toán (¥) <span class="text-emerald-600 lowercase font-normal">(hỗ trợ nhập tính toán ví dụ: (3+3)/2 hoặc 50k)</span></label>
+        <div class="flex justify-between items-center mb-0.5">
+            <label class="block text-[9px] font-bold text-slate-500 uppercase">2. Số tiền thanh toán (¥)</label>
+            <div class="flex gap-1">
+                <button type="button" onclick="appendZerosToInput('pay-debt-amount', 3)" class="px-2 py-0.5 text-xs font-black bg-slate-100 hover:bg-emerald-100 active:bg-emerald-200 text-slate-700 border border-slate-200 rounded-lg shadow-2xs cursor-pointer select-none transition" title="Thêm 3 số 0 (nghìn/sen)">千</button>
+                <button type="button" onclick="appendZerosToInput('pay-debt-amount', 4)" class="px-2 py-0.5 text-xs font-black bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200 rounded-lg shadow-2xs cursor-pointer select-none transition" title="Thêm 4 số 0 (vạn/man)">万</button>
+            </div>
+        </div>
         <input type="text" id="pay-debt-amount" placeholder="0... ví dụ (3+3)/2 hoặc 50k" onblur="t4_onAmountBlur(this)" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-400" />
     </div>
 
@@ -182,6 +264,187 @@
     <button onclick="submitPayDebt()" id="btn-pay-debt-submit" class="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1">Xác Nhận</button>
   </div>
 </div>
+</div>
+
+<!-- MODAL SỔ NỢ CHI TIẾT ĐỐI TÁC (TÍNH DƯ NỢ CỘNG DỒN) -->
+<div id="modal-partner-debt-statement" class="modal-overlay hidden" style="z-index: 290;">
+  <div class="modal-content !p-0 h-[88%] max-h-[calc(100%-30px)] flex flex-col mb-0 rounded-b-none mt-auto max-w-[420px] w-full mx-auto">
+    <div class="p-3 border-b bg-indigo-50 flex justify-between items-center rounded-t-2xl">
+      <div class="flex items-center gap-2">
+          <span class="text-base p-1.5 bg-indigo-100 text-indigo-700 rounded-xl">👤</span>
+          <div>
+              <p class="text-[9px] uppercase text-indigo-500 font-bold tracking-wider">Sổ Nợ Chi Tiết Đối Tác</p>
+              <h3 id="stmt-partner-name" class="text-xs font-bold text-indigo-950">Tên Đối Tác</h3>
+          </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button type="button" onclick="exportCurrentPartnerDebtImage()" title="Xuất báo cáo ảnh cho đối tác này" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-lg font-bold text-[10px] cursor-pointer shadow-2xs flex items-center gap-1">📸 Xuất Ảnh</button>
+        <button type="button" onclick="closeModal('modal-partner-debt-statement')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-full font-bold text-xl cursor-pointer leading-none">&times;</button>
+      </div>
+    </div>
+
+    <!-- Tổng quan số dư đối tác -->
+    <div class="p-2.5 px-3 bg-white border-b border-slate-100 flex justify-between items-center">
+        <div class="space-y-0.5">
+            <span class="text-[9px] uppercase text-slate-400 font-bold tracking-wider">Tổng Dư Nợ Hiện Tại</span>
+            <p id="stmt-partner-total-net" class="text-sm font-black text-rose-600">0 ¥</p>
+        </div>
+        <div class="text-right text-[10px] text-slate-500 space-y-0.5">
+            <div>Phải thu: <b id="stmt-partner-sum-thu" class="text-emerald-600 font-bold">0 ¥</b></div>
+            <div>Phải trả: <b id="stmt-partner-sum-tra" class="text-rose-600 font-bold">0 ¥</b></div>
+        </div>
+    </div>
+
+    <!-- Danh sách lịch sử giao dịch & DƯ NỢ CỘNG DỒN -->
+    <div class="flex-1 overflow-y-auto p-2.5 bg-slate-50 space-y-1.5 custom-scroll scroll-touch">
+        <div id="stmt-partner-table" class="space-y-1.5">
+            <!-- Dynamic Rows with Running Balance -->
+        </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CÔNG NỢ ĐỊNH KỲ HÀNG THÁNG -->
+<div id="modal-recurring-debts" class="modal-overlay hidden" style="z-index: 280;">
+  <div class="modal-content !p-0 h-[90%] max-h-[calc(100%-20px)] flex flex-col mb-0 rounded-b-none mt-auto max-w-[440px] w-full mx-auto">
+    <!-- Header -->
+    <div class="p-3 border-b bg-violet-600 text-white flex justify-between items-center rounded-t-2xl shadow-sm">
+      <div class="flex items-center gap-2">
+        <span class="text-lg p-1 bg-white/20 rounded-xl">⚡</span>
+        <div>
+          <p class="text-[9px] uppercase text-violet-200 font-bold tracking-wider">Tự Động Hóa Khoản Nợ</p>
+          <h3 class="text-xs font-bold text-white flex items-center gap-1.5">
+            <span>Công Nợ Định Kỳ Hàng Tháng</span>
+          </h3>
+        </div>
+      </div>
+      <button type="button" onclick="closeModal('modal-recurring-debts')" class="text-white/80 hover:text-white p-1 rounded-full font-bold text-xl cursor-pointer leading-none">&times;</button>
+    </div>
+
+    <!-- 2 Subtabs -->
+    <div class="flex p-1 bg-slate-100 border-b border-slate-200 gap-1 shrink-0">
+      <button id="btn-rec-subtab-month" onclick="t4_switchRecurringSubtab('month')" class="flex-1 py-1.5 text-[11px] font-bold bg-white text-violet-700 rounded-lg shadow-2xs transition text-center cursor-pointer">
+        📅 Kỳ Tháng Này (<span id="lbl-rec-current-period">--</span>)
+      </button>
+      <button id="btn-rec-subtab-templates" onclick="t4_switchRecurringSubtab('templates')" class="flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg transition text-center cursor-pointer">
+        ⚙️ Mẫu Định Kỳ (<span id="lbl-rec-templates-count">0</span>)
+      </button>
+    </div>
+
+    <!-- Subtab 1: Tháng này -->
+    <div id="rec-section-month" class="flex-1 overflow-hidden bg-slate-50 flex flex-col min-h-0">
+      <div class="px-3 pt-2.5 pb-1.5 bg-white border-b border-slate-200/80 shrink-0 flex justify-between items-center">
+        <div>
+          <span class="text-[9px] text-slate-400 uppercase font-bold">Kỳ ghi nhận: <span id="rec-month-status-text" class="text-violet-700">Tháng này</span></span>
+          <p class="text-[11px] font-medium text-slate-500">Nhập số tiền phát sinh tháng này cho các khoản bên dưới:</p>
+        </div>
+      </div>
+
+      <!-- Danh sách nợ định kỳ tháng này -->
+      <div id="rec-month-list" class="flex-1 overflow-y-auto p-2.5 space-y-2 custom-scroll scroll-touch min-h-0">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Sticky Footer giống Nhanh của Thu Chi -->
+      <div class="p-2.5 px-3 border-t border-slate-200 bg-white shrink-0 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] flex items-center gap-2">
+        <button type="button" id="btn-submit-batch-rec-debt" onclick="submitBatchQuickRecurringDebts(false)" class="flex-1 py-2 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition flex items-center justify-center gap-1" title="Ghi vào sổ nợ các khoản đã nhập số tiền">
+          ⚡ Lưu Ghi Nợ
+        </button>
+        <button type="button" id="btn-submit-batch-rec-settle" onclick="submitBatchQuickRecurringDebts(true)" class="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer transition flex items-center justify-center gap-1" title="Ghi nhận và trừ/cộng ví tất toán luôn các khoản đã nhập số tiền">
+          💵 Lưu & Tất Toán
+        </button>
+      </div>
+    </div>
+
+    <!-- Subtab 2: Mẫu định kỳ -->
+    <div id="rec-section-templates" class="hidden flex-1 overflow-y-auto p-2.5 bg-slate-50 space-y-2 custom-scroll scroll-touch flex flex-col">
+      <div class="flex justify-between items-center gap-1.5">
+        <button onclick="openEditRecurringDebtModal()" class="flex-1 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white py-1.5 rounded-xl text-xs font-bold transition shadow-2xs flex items-center justify-center gap-1 cursor-pointer">
+          ➕ Thêm Mẫu Mới
+        </button>
+        <button onclick="seedDefaultRecurringDebtsAction()" title="Nạp 3 mẫu mẫu: Tiền nước 1F, Quỹ nhà 21, Thu tiền nhà 1F" class="bg-white hover:bg-violet-50 active:scale-95 text-violet-700 border border-violet-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs flex items-center gap-1 cursor-pointer shrink-0">
+          ✨ Nạp Mẫu Mặc Định
+        </button>
+      </div>
+
+      <!-- Danh sách mẫu định kỳ -->
+      <div id="rec-templates-list" class="space-y-1.5 flex-1">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: THÊM / SỬA MẪU CÔNG NỢ ĐỊNH KỲ -->
+<div id="modal-edit-recurring-debt" class="modal-overlay hidden" style="z-index: 295;">
+  <div class="modal-content !overflow-visible rounded-2xl border-t-4 border-violet-600 !p-4 max-w-[360px] w-full">
+    <div class="flex justify-between items-center mb-2 border-b pb-1.5">
+      <h3 id="edit-rec-title" class="text-xs font-bold text-slate-900">Mẫu Công Nợ Định Kỳ</h3>
+      <button type="button" onclick="closeModal('modal-edit-recurring-debt')" class="text-slate-400 font-bold text-xl cursor-pointer hover:text-slate-600 px-1">&times;</button>
+    </div>
+
+    <input type="hidden" id="edit-rec-id" value="" />
+    <input type="hidden" id="edit-rec-type" value="TRA" />
+
+    <div class="space-y-2.5 text-xs">
+      <!-- Cho vay / Đi vay toggle -->
+      <div class="flex gap-2 bg-slate-100 p-1 rounded-xl">
+        <button id="edit-rec-btn-thu" type="button" onclick="toggleEditRecType('THU')" class="flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1">
+          <span>💰</span><span>Cần thu</span>
+        </button>
+        <button id="edit-rec-btn-tra" type="button" onclick="toggleEditRecType('TRA')" class="flex-1 py-1.5 bg-white text-rose-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition flex items-center justify-center gap-1">
+          <span>💸</span><span>Cần trả</span>
+        </button>
+      </div>
+
+      <div class="relative z-50">
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">1. Tên đối tượng / đối tác <span class="text-rose-500">*</span></label>
+        <input type="text" id="edit-rec-name" autocomplete="off" placeholder="Ví dụ: 1F, Quỹ nhà 21..." oninput="renderSuggest('edit-rec-name', 'partner', false)" onclick="renderSuggest('edit-rec-name', 'partner', true)" onmousedown="renderSuggest('edit-rec-name', 'partner', true)" onblur="hideSuggest('edit-rec-name')" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-violet-500" />
+        <div id="box-edit-rec-name" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-36 overflow-y-auto z-50"></div>
+      </div>
+
+      <div>
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">2. Nội dung / Khoản chi trả</label>
+        <input type="text" id="edit-rec-content" placeholder="Ví dụ: Tiền nước 1F, Trích quỹ nhà..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-500" />
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">3. Số tiền gợi ý (Tùy chọn)</label>
+          <input type="text" id="edit-rec-amount" placeholder="Trống = tự nhập mỗi tháng" onblur="t4_onAmountBlur(this)" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-violet-700 outline-none focus:border-violet-500" />
+        </div>
+        <div>
+          <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">4. Ngày trong tháng</label>
+          <input type="number" id="edit-rec-day" min="1" max="31" value="1" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-violet-500 text-center" />
+        </div>
+      </div>
+
+      <div class="relative z-40">
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">5. Ví/Thẻ thanh toán mặc định (tùy chọn)</label>
+        <input type="text" id="edit-rec-source" autocomplete="off" placeholder="Ví Tiền Mặt, Thẻ..." oninput="renderSuggest('edit-rec-source', 'nguon', false)" onclick="renderSuggest('edit-rec-source', 'nguon', true)" onmousedown="renderSuggest('edit-rec-source', 'nguon', true)" onblur="hideSuggest('edit-rec-source')" class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-violet-500" />
+        <div id="box-edit-rec-source" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-xl hidden max-h-32 overflow-y-auto z-50"></div>
+      </div>
+
+      <div>
+        <label class="block text-[9px] font-bold text-slate-500 uppercase mb-0.5">6. Ghi chú thêm</label>
+        <input type="text" id="edit-rec-note" placeholder="Ghi chú thêm..." class="w-full bg-white border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-500" />
+      </div>
+
+      <div class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+        <label class="text-[11px] font-bold text-slate-700 cursor-pointer" for="edit-rec-active">Đang kích hoạt hàng tháng</label>
+        <input type="checkbox" id="edit-rec-active" checked class="accent-violet-600 w-4 h-4 cursor-pointer" />
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button type="button" onclick="saveRecurringDebtTemplate()" id="btn-save-recurring-template" class="flex-1 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md">
+          Lưu Mẫu Định Kỳ
+        </button>
+        <button type="button" onclick="closeModal('modal-edit-recurring-debt')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-bold cursor-pointer transition">
+          Hủy
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 
@@ -265,50 +528,85 @@
           return `${yyyy}-${mm}-${dd}`;
       }
       const str = String(val).trim();
-      if (!str) return getTodayString();
+      if (!str || str === 'undefined' || str === 'null' || str === 'Invalid Date') return getTodayString();
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-      if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
-          const parts = str.split(' ')[0].split('-');
+
+      // yyyy-MM-dd or yyyy/MM/dd (có thể kèm giờ)
+      if (/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}/.test(str)) {
+          const spaceParts = str.includes('T') ? str.split('T') : str.split(' ');
+          const sep = spaceParts[0].includes('-') ? '-' : '/';
+          const parts = spaceParts[0].split(sep);
           const yyyy = parts[0];
           const mm = parts[1].padStart(2, '0');
           const dd = parts[2].padStart(2, '0');
           return `${yyyy}-${mm}-${dd}`;
       }
-      if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
-          const parts = str.split(' ')[0].split('/');
+
+      // dd/MM/yyyy or dd-MM-yyyy or d/M/yyyy (có thể kèm giờ)
+      if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}/.test(str)) {
+          const spaceParts = str.split(' ');
+          const sep = spaceParts[0].includes('/') ? '/' : '-';
+          const parts = spaceParts[0].split(sep);
           const dd = parts[0].padStart(2, '0');
           const mm = parts[1].padStart(2, '0');
           let yyyy = parts[2];
           if (yyyy.length === 2) yyyy = "20" + yyyy;
           return `${yyyy}-${mm}-${dd}`;
       }
-      const d = new Date(str);
-      if (!isNaN(d.getTime())) {
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
+
+      // dd/MM or d/M (không có năm -> lấy năm hiện tại)
+      if (/^\d{1,2}[\/\-]\d{1,2}$/.test(str)) {
+          const sep = str.includes('/') ? '/' : '-';
+          const parts = str.split(sep);
+          const dd = parts[0].padStart(2, '0');
+          const mm = parts[1].padStart(2, '0');
+          const yyyy = new Date().getFullYear();
           return `${yyyy}-${mm}-${dd}`;
       }
+
+      try {
+          const cleanedStr = str.replace(/\s*\([^)]*\)$/, '');
+          const d = new Date(cleanedStr);
+          if (!isNaN(d.getTime())) {
+              const yyyy = d.getFullYear();
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const dd = String(d.getDate()).padStart(2, '0');
+              return `${yyyy}-${mm}-${dd}`;
+          }
+      } catch(e) {}
+
       return getTodayString();
   }
 
   function applyTab4Data(res) {
-      if (!res || !res.success) return;
+      if (!res || res.success === false) return;
       window.t1_tab4Data = res;
       if (res.summary) {
-          const net = res.summary.net || 0;
+          const net = (res.summary.net !== undefined ? res.summary.net : (res.summary.netDebt !== undefined ? res.summary.netDebt : 0));
           const netEl = document.getElementById('debt-dashboard-net');
           const recEl = document.getElementById('debt-dashboard-receivables');
           const payEl = document.getElementById('debt-dashboard-payables');
-          if (netEl) netEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
-          if (recEl) recEl.innerText = (res.summary.receivables || 0).toLocaleString() + ' ¥';
-          if (payEl) payEl.innerText = (res.summary.payables || 0).toLocaleString() + ' ¥';
+          if (netEl) {
+              netEl.innerText = (net >= 0 ? '+' : '') + net.toLocaleString() + ' ¥';
+              netEl.className = net >= 0 ? "text-2xl font-bold mt-0.5 text-emerald-300" : "text-2xl font-bold mt-0.5 text-rose-300";
+          }
+          if (recEl) recEl.innerText = (res.summary.receivables ?? res.summary.totalReceivable ?? 0).toLocaleString() + ' ¥';
+          if (payEl) payEl.innerText = (res.summary.payables ?? res.summary.totalPayable ?? 0).toLocaleString() + ' ¥';
       }
       if (res.partners) {
           window.PARTNER_LIST = res.partners;
       }
       window.TAB4_DEBTS = res.debts || [];
       window.TAB4_ALL_DEBTS = res.allDebts || res.debts || [];
+
+      if (res.recurringDebts) {
+          window.TAB4_RECURRING_DEBTS = res.recurringDebts;
+          window.TAB4_RECURRING_PERIOD = res.recurringPeriod || '';
+          window.TAB4_RECURRING_PENDING_COUNT = res.recurringPendingCount ?? 0;
+          if (typeof updateRecurringDebtsUI === 'function') {
+              updateRecurringDebtsUI();
+          }
+      }
 
       // Cập nhật số lượng hoàn tất trên huy hiệu Subtab 2
       const doneList = window.TAB4_ALL_DEBTS.filter(item => isDebtDone(item));
@@ -330,14 +628,15 @@
   function isDebtDone(item) {
       if (!item) return false;
       const st = String(item.trangThai || item.trangThaiDuNo || '').trim().toUpperCase();
-      if (st === 'HOAN_TAT' || st === 'DA_TRA' || st === 'DONE' || 
+      if (st === 'HOAN_TAT' || st === 'DA_TRA' || st === 'DONE' || st === 'TAT_TOAN' || st === 'DA_TAT_TOAN' ||
           st.includes('HOÀN TẤT') || st.includes('ĐÃ TRẢ') || st.includes('ĐÃ THANH TOÁN') || st.includes('ĐÃ TT') ||
-          st.includes('DA TRA') || st.includes('HOAN TAT') || st.includes('DA THANH TOAN')) {
+          st.includes('DA_TRA') || st.includes('HOAN_TAT') || st.includes('DA_THANH_TOAN') || st.includes('TAT_TOAN') || st === 'TẤT TOÁN') {
           return true;
       }
       const tongNo = Number(item.tongNo) || 0;
       const daTra = Number(item.daTra) || 0;
-      const duNo = Number(item.duNo) || 0;
+      const duNo = Number(item.duNo);
+      if (!isNaN(duNo) && duNo <= 0 && (tongNo > 0 || daTra > 0)) return true;
       if (tongNo > 0 && duNo <= 0) return true;
       if (daTra > 0 && daTra >= tongNo) return true;
       return false;
@@ -349,9 +648,8 @@
       const month = monthSelect ? monthSelect.value : 'All';
       const year = yearSelect ? yearSelect.value : 'All';
 
-      if (forceRefresh === false && window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
+      if (window.TAB4_DEBTS && window.TAB4_DEBTS.length > 0) {
           renderDebtCardsList(window.TAB4_DEBTS);
-          return;
       }
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getTab4Data === 'function') {
@@ -361,7 +659,7 @@
               } else if (res && res.message) {
                   showToast("❌ " + res.message, true);
               }
-          }).getTab4Data(month, year);
+          }).getTab4Data(month, year, (typeof getTenantTarget === 'function' ? getTenantTarget() : (window.CURRENT_SESSION_TOKEN || window.CURRENT_USER_SS_ID || null)));
       }
   }
 
@@ -400,12 +698,14 @@
           const filterVal = document.getElementById('t4-debt-type-filter')?.value || 'all';
           window.CURRENT_DEBT_TAB = filterVal;
           renderDebtCardsList(window.TAB4_DEBTS);
+          if (typeof reloadTab4Data === 'function') reloadTab4Data(false);
       } else if (subtab === 'datt') {
           window.CURRENT_DEBT_TAB = 'done';
           renderDebtCardsList(window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0 ? window.TAB4_ALL_DEBTS : window.TAB4_DEBTS);
+          if (typeof reloadTab4Data === 'function') reloadTab4Data(false);
       } else if (subtab === 'choxuly') {
           if (typeof reloadTab3Data === 'function') {
-              reloadTab3Data();
+              reloadTab3Data(false);
           }
       }
   }
@@ -446,6 +746,34 @@
           if (countEl) countEl.innerText = `${filtered.length} Mục`;
       }
 
+      // Sắp xếp thứ tự hiển thị chuẩn theo ngày (mới nhất lên đầu)
+      const parseItemDate = (val) => {
+          if (!val) return 0;
+          if (val instanceof Date) return isNaN(val.getTime()) ? 0 : val.getTime();
+          const str = String(val).trim();
+          if (!str) return 0;
+          if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
+              const p = str.split(' ')[0].split('/');
+              let y = parseInt(p[2], 10);
+              if (y < 100) y += 2000;
+              return new Date(y, parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime() || 0;
+          }
+          if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+              const p = str.split(' ')[0].split('-');
+              return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime() || 0;
+          }
+          const d = new Date(str);
+          return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+
+      filtered.sort((a, b) => {
+          const dateA = isDoneTab ? (a.ngayTra || a.ngay) : (a.ngay || a.ngayTra);
+          const dateB = isDoneTab ? (b.ngayTra || b.ngay) : (b.ngay || b.ngayTra);
+          const diff = parseItemDate(dateB) - parseItemDate(dateA);
+          if (diff !== 0) return diff;
+          return (b.row || 0) - (a.row || 0);
+      });
+
       if (filtered.length === 0) {
           container.innerHTML = `<div class="text-center py-6 text-xs text-slate-400">${isDoneTab ? 'Chưa có khoản công nợ nào hoàn tất.' : 'Không có khoản công nợ nào đang hoạt động.'}</div>`;
           calcBulkPay();
@@ -453,11 +781,16 @@
       }
 
       // VẼ DANH SÁCH THẺ (Nền trắng sạch, chỉ tô màu giá tiền: Xanh thu / Đỏ trả)
+      // Tính toán DƯ NỢ CỘNG DỒN cho từng đối tác xuyên suốt lịch sử
+      computePartnerDebtRunningBalances(window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0 ? window.TAB4_ALL_DEBTS : debts);
+
+      // VẼ DANH SÁCH THẺ (Nền trắng sạch, chỉ tô màu giá tiền: Xanh thu / Đỏ trả)
       container.innerHTML = filtered.map(item => {
           const lUp = String(item.loai || '').toUpperCase();
           const tUp = (String(item.ten || '') + ' ' + String(item.noidung || '')).toUpperCase();
           const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
           const isDone = isDebtDone(item);
+          const isLocked = isDebtLocked(item);
 
           const cardStyle = 'bg-white border-slate-200 hover:border-slate-300 text-slate-800';
           const amtColor = isThu ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
@@ -482,6 +815,7 @@
                               ${item.ten || 'Không tên'} 
                               <span class="text-[9px] text-slate-500 font-normal">(${item.noidung || 'Ghi nợ'})</span>
                           </span>
+                          ${isLocked ? `<span class="bg-amber-100 text-amber-800 text-[8px] font-bold px-1 py-0.2 rounded shrink-0 flex items-center gap-0.5" title="Khoản nợ đã chốt đối soát, bị khóa không thể sửa/xóa">🔒 Đã chốt</span>` : ''}
                       </div>
                       <div class="text-right shrink-0">
                           <span class="font-bold ${amtColor} text-[11px]">${amtSign}${displayAmt.toLocaleString()} ¥</span>
@@ -490,8 +824,7 @@
                   <div class="flex justify-between items-center pt-0.5 border-t border-slate-100 text-[9px] text-slate-500 flex-wrap gap-1">
                       <span>Ngày: <b>${item.ngay || 'N/A'}</b> | Nguồn: <b>${item.nguon || '—'}</b>${isDone ? ` | Hoàn tất: <b>${item.ngayTra || item.ngay || '—'}</b>` : ` | Đã trả: <b>${(item.daTra || 0).toLocaleString()} ¥</b>`}</span>
                       <div class="flex gap-1 items-center shrink-0">
-                          ${!isDone ? `<button onclick="event.stopPropagation(); openPayModal('${item.id}', '${(item.ten || '').replace(/'/g, "\\'").replace(/"/g, "&quot;")}', ${item.duNo}, '${item.loai}')" class="px-1.5 py-0.2 ${payBtnBg} rounded font-bold transition cursor-pointer text-[9px] shadow-2xs">${payBtnText}</button>` : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-1.5 py-0.2 rounded font-bold text-[9px]">✓ Đã TT</span>`}
-                          <button onclick="event.stopPropagation(); confirmDeleteDebt('${item.id}')" class="bg-rose-100 hover:bg-rose-200 text-rose-700 px-1.5 py-0.2 rounded font-bold transition cursor-pointer text-[9px]">🗑️</button>
+                          ${!isDone ? `<button onclick="event.stopPropagation(); openPayModal('${item.id}', '${(item.ten || '').replace(/'/g, "\\'")}', ${item.duNo}, '${item.loai}')" class="px-1.5 py-0.2 ${payBtnBg} rounded font-bold transition cursor-pointer text-[9px] shadow-2xs">${payBtnText}</button>` : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-1.5 py-0.2 rounded font-bold text-[9px]">✓ Đã TT</span>`}
                       </div>
                   </div>
               </div>
@@ -516,6 +849,254 @@
       }
   });
 
+  function isDebtLocked(item) {
+      if (!item) return false;
+      const st = String(item.trangThai || item.trangThaiDuNo || '').toUpperCase();
+      return item.isLocked === true || st === 'DA_CHOT' || st === 'CHOT_SO' || st === 'LOCKED' || st.includes('ĐÃ CHỐT') || st.includes('DA CHOT');
+  }
+
+  function confirmBulkLockDebts() {
+      const checked = document.querySelectorAll('.chk-debt-item:checked');
+      if (checked.length === 0) {
+          showToast("⚠️ Vui lòng chọn ít nhất 1 khoản nợ để chốt!", true);
+          return;
+      }
+
+      const ids = Array.from(checked).map(c => c.getAttribute('data-id'));
+      const confirmMsg = `Bạn có chắc chắn muốn CHỐT và KHÓA ${ids.length} khoản công nợ đã chọn không?\n\n⚠️ Lưu ý quan trọng: Sau khi chốt, các khoản nợ này sẽ bị KHÓA an toàn (không thể sửa hoặc xóa) để bảo toàn dữ liệu sổ sách!`;
+
+      if (typeof showConfirmModal === 'function') {
+          showConfirmModal("🔒 Chốt Đối Soát Công Nợ", confirmMsg, function() {
+              executeLockDebts(ids);
+          });
+      } else if (confirm(confirmMsg)) {
+          executeLockDebts(ids);
+      }
+  }
+
+  function executeLockDebts(ids) {
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.lockDebtsBatch === 'function') {
+          showToast("⏳ Đang chốt đối soát công nợ...");
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  if (res && res.success) {
+                      showToast(res.message || "🔒 Đã chốt và khóa công nợ thành công!");
+                      document.querySelectorAll('.chk-debt-item:checked').forEach(c => c.checked = false);
+                      calcBulkPay();
+                      reloadTab4Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Chốt nợ thất bại!"), true);
+                  }
+              })
+              .withFailureHandler(function(err) {
+                  showToast("❌ Lỗi: " + (err ? (err.message || err) : "Lỗi kết nối"), true);
+              })
+              .lockDebtsBatch(ids);
+      } else {
+          showToast(`🔒 [Demo] Đã chốt ${ids.length} khoản nợ!`);
+      }
+  }
+
+  function computePartnerDebtRunningBalances(allDebts) {
+      if (!Array.isArray(allDebts) || allDebts.length === 0) return {};
+
+      const parseItemDate = (val) => {
+          if (!val) return 0;
+          if (val instanceof Date) return isNaN(val.getTime()) ? 0 : val.getTime();
+          const str = String(val).trim();
+          if (!str) return 0;
+          if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
+              const p = str.split(' ')[0].split('/');
+              let y = parseInt(p[2], 10);
+              if (y < 100) y += 2000;
+              return new Date(y, parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime() || 0;
+          }
+          if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+              const p = str.split(' ')[0].split('-');
+              return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime() || 0;
+          }
+          const d = new Date(str);
+          return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+
+      const groups = {};
+      allDebts.forEach(it => {
+          const rawName = String(it.ten || 'Chưa đặt tên').trim();
+          const key = rawName.toLowerCase();
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(it);
+      });
+
+      const partnerStats = {};
+
+      Object.keys(groups).forEach(key => {
+          const list = groups[key];
+          // Sắp xếp các khoản nợ của đối tác này theo ngày cũ nhất -> mới nhất để tính cộng dồn
+          list.sort((a, b) => {
+              const tA = parseItemDate(a.ngay);
+              const tB = parseItemDate(b.ngay);
+              if (tA !== tB) return tA - tB;
+              return (a.row || 0) - (b.row || 0);
+          });
+
+          let runningNet = 0;
+          let totalActiveReceivable = 0;
+          let totalActivePayable = 0;
+
+          list.forEach(it => {
+              const lUp = String(it.loai || '').toUpperCase();
+              const tUp = (String(it.ten || '') + ' ' + String(it.noidung || '')).toUpperCase();
+              const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+              
+              const isDone = isDebtDone(it);
+              const tongNo = Number(it.tongNo) || 0;
+              const daTra = Number(it.daTra) || 0;
+              const duNo = isDone ? 0 : (Number(it.duNo) || Math.max(0, tongNo - daTra));
+
+              // Dư nợ còn lại của dòng này: Thu (+) vs Trả (-)
+              const delta = isThu ? duNo : -duNo;
+              runningNet += delta;
+              it.runningDebt = runningNet;
+              it.partnerKey = key;
+
+              if (!isDone) {
+                  if (isThu) totalActiveReceivable += duNo;
+                  else totalActivePayable += duNo;
+              }
+          });
+
+          partnerStats[key] = {
+              name: list[0]?.ten || key,
+              totalNet: totalActiveReceivable - totalActivePayable,
+              receivables: totalActiveReceivable,
+              payables: totalActivePayable,
+              activeCount: list.filter(it => !isDebtDone(it)).length,
+              totalCount: list.length,
+              items: list
+          };
+      });
+
+      window.T4_PARTNER_STATS = partnerStats;
+      return partnerStats;
+  }
+
+  function updatePartnerSummaryBanner(query) {
+      const banner = document.getElementById('partner-debt-summary-banner');
+      if (!banner) return;
+      const cleanQ = (query || '').trim().toLowerCase();
+      if (!cleanQ || cleanQ.length < 2) {
+          banner.classList.add('hidden');
+          return;
+      }
+      const partnerStats = window.T4_PARTNER_STATS || {};
+      const matchedKey = Object.keys(partnerStats).find(k => k.includes(cleanQ) || (partnerStats[k].name && partnerStats[k].name.toLowerCase().includes(cleanQ)));
+      if (matchedKey && partnerStats[matchedKey]) {
+          const p = partnerStats[matchedKey];
+          const netAmt = p.totalNet;
+          const netSign = netAmt > 0 ? '+' : '';
+          const netColor = netAmt > 0 ? 'text-indigo-700' : (netAmt < 0 ? 'text-rose-600' : 'text-slate-700');
+          document.getElementById('partner-banner-name').innerText = p.name;
+          document.getElementById('partner-banner-count').innerText = `${p.activeCount} khoản chưa trả / ${p.totalCount} tổng`;
+          document.getElementById('partner-banner-amt').innerHTML = `<span class="${netColor} font-black text-xs">${netSign}${netAmt.toLocaleString()} ¥</span>`;
+          document.getElementById('btn-partner-banner-stmt').setAttribute('onclick', `openPartnerDebtStatementModal('${p.name.replace(/'/g, "\\'")}')`);
+          const exportBtn = document.getElementById('btn-partner-banner-export');
+          if (exportBtn) exportBtn.setAttribute('onclick', `exportCurrentPartnerDebtImage('${p.name.replace(/'/g, "\\'")}')`);
+          banner.classList.remove('hidden');
+      } else {
+          banner.classList.add('hidden');
+      }
+  }
+
+  window.CURRENT_ACTIVE_PARTNER_NAME = '';
+
+  function openPartnerDebtStatementModal(partnerName) {
+      const targetName = partnerName || (document.getElementById('partner-banner-name')?.innerText || '');
+      if (!targetName) return;
+      window.CURRENT_ACTIVE_PARTNER_NAME = targetName;
+      const key = targetName.trim().toLowerCase();
+      const allDebts = window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0 ? window.TAB4_ALL_DEBTS : (window.TAB4_DEBTS || []);
+      
+      const stats = computePartnerDebtRunningBalances(allDebts);
+      const pData = stats[key] || { name: targetName, totalNet: 0, receivables: 0, payables: 0, items: [] };
+
+      document.getElementById('stmt-partner-name').innerText = pData.name;
+      const netVal = pData.totalNet;
+      const netColor = netVal > 0 ? 'text-indigo-700' : (netVal < 0 ? 'text-rose-600' : 'text-slate-700');
+      document.getElementById('stmt-partner-total-net').className = `text-sm font-black ${netColor}`;
+      document.getElementById('stmt-partner-total-net').innerText = (netVal > 0 ? '+' : '') + netVal.toLocaleString() + ' ¥';
+      document.getElementById('stmt-partner-sum-thu').innerText = pData.receivables.toLocaleString() + ' ¥';
+      document.getElementById('stmt-partner-sum-tra').innerText = pData.payables.toLocaleString() + ' ¥';
+
+      const tableEl = document.getElementById('stmt-partner-table');
+      if (tableEl) {
+          if (!pData.items || pData.items.length === 0) {
+              tableEl.innerHTML = '<div class="text-center py-8 text-xs text-slate-400">Không có giao dịch nào cho đối tác này.</div>';
+          } else {
+              tableEl.innerHTML = pData.items.map(it => {
+                  const lUp = String(it.loai || '').toUpperCase();
+                  const tUp = (String(it.ten || '') + ' ' + String(it.noidung || '')).toUpperCase();
+                  const isThu = lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+                  const isDone = isDebtDone(it);
+                  const amtSign = isThu ? '+' : '-';
+                  const amtColor = isThu ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
+                  const runVal = it.runningDebt !== undefined ? it.runningDebt : (it.duNo || 0);
+                  const runColor = runVal > 0 ? 'text-indigo-700 font-bold' : (runVal < 0 ? 'text-rose-600 font-bold' : 'text-slate-600');
+                  const runSign = runVal > 0 ? '+' : '';
+
+                  return `
+                      <div class="bg-white p-2 rounded-xl border border-slate-200/90 shadow-2xs space-y-1 text-xs">
+                          <div class="flex justify-between items-center gap-1">
+                              <span class="font-bold text-slate-800 text-[11px] truncate flex-1 min-w-0">${it.noidung || 'Ghi nợ'}</span>
+                              <span class="${amtColor} text-[11px] font-bold shrink-0">${amtSign}${(Number(it.tongNo) || Number(it.duNo) || 0).toLocaleString()} ¥</span>
+                          </div>
+                          <div class="flex justify-between items-center text-[10px] text-slate-500 pt-0.5 border-t border-slate-100 flex-wrap gap-1">
+                              <span>Ngày: <b>${it.ngay || 'N/A'}</b> | Nguồn: <b>${it.nguon || '—'}</b>${isDone ? ' | <span class="text-emerald-600 font-bold">✓ Đã TT</span>' : ` | Còn nợ: <b class="text-rose-600">${(it.duNo || 0).toLocaleString()} ¥</b>`}</span>
+                              <span class="bg-indigo-50 border border-indigo-100 px-1.5 py-0.2 rounded text-[9px]">
+                                  Lũy kế: <b class="${runColor}">${runSign}${runVal.toLocaleString()} ¥</b>
+                              </span>
+                          </div>
+                      </div>
+                  `;
+              }).join('');
+          }
+      }
+
+      openModal('modal-partner-debt-statement');
+  }
+
+  function exportCurrentPartnerDebtImage(paramName) {
+      const pName = paramName || window.CURRENT_ACTIVE_PARTNER_NAME || (document.getElementById('stmt-partner-name')?.innerText || '');
+      if (!pName) return;
+      const key = pName.trim().toLowerCase();
+      const stats = window.T4_PARTNER_STATS || {};
+      const pData = stats[key];
+      if (!pData || !pData.items || pData.items.length === 0) {
+          showToast("⚠️ Không có giao dịch nào để tạo báo cáo ảnh!", true);
+          return;
+      }
+      // Chỉ lấy các khoản nợ CHƯA tất toán của đối tác này để xuất báo cáo
+      const activeItems = pData.items.filter(it => !isDebtDone(it));
+      if (activeItems.length === 0) {
+          showToast("ℹ️ Đối tác này đã tất toán toàn bộ công nợ!", false);
+          return;
+      }
+      currentBulkItems = activeItems.map(it => ({
+          id: it.id,
+          name: it.ten || pName,
+          amount: Number(it.duNo) || (Number(it.tongNo || 0) - Number(it.daTra || 0)) || Number(it.amount || 0),
+          loai: it.loai,
+          noidung: it.noidung,
+          ngay: it.ngay,
+          trangThai: it.trangThai,
+          trangThaiDuNo: it.trangThaiDuNo,
+          duNo: it.duNo,
+          tongNo: it.tongNo,
+          daTra: it.daTra
+      }));
+      closeModal('modal-partner-debt-statement');
+      openExportDebtReportModal();
+  }
+
   function filterDebtCards() {
       const input = document.getElementById('search-list-all');
       if (!input) return;
@@ -529,6 +1110,7 @@
               card.style.display = 'none';
           }
       });
+      updatePartnerSummaryBanner(query);
   }
 
   function filterDoneDebtCards() {
@@ -557,6 +1139,9 @@
       if (activeBtn) activeBtn.className = "flex-1 min-w-[65px] py-1.5 text-[11px] font-bold bg-white text-indigo-600 rounded-lg shadow-2xs cursor-pointer transition text-center whitespace-nowrap";
 
       renderDebtCardsList(tab === 'done' ? (window.TAB4_ALL_DEBTS || window.TAB4_DEBTS) : window.TAB4_DEBTS);
+      if (typeof reloadTab4Data === 'function') {
+          reloadTab4Data(false);
+      }
   }
 
   function toggleSelectAllDebts(chkElem) {
@@ -589,6 +1174,7 @@
   let currentBulkCount = 0;
   let currentBulkIds = [];
   let currentBulkItems = [];
+  let currentBulkNetBalance = 0;
 
   function calcBulkPay() {
       let sumThu = 0;
@@ -600,8 +1186,8 @@
 
       chks.forEach(c => {
           const amt = parseInt(c.getAttribute('data-amount')) || 0;
-          const loai = c.getAttribute('data-loai');
-          const isThu = (loai === 'THU' || loai === 'CHO_VAY');
+          const loai = String(c.getAttribute('data-loai') || '').toUpperCase();
+          const isThu = (loai === 'THU' || loai === 'CHO_VAY' || loai.includes('THU') || loai.includes('CHO VAY') || loai.includes('KHÁCH'));
           if (isThu) sumThu += amt;
           else sumTra += amt;
 
@@ -623,6 +1209,7 @@
       const bar = document.getElementById('bulk-pay-bar');
       if (!bar) return;
 
+      currentBulkNetBalance = netBalance;
       currentBulkAmount = Math.abs(netBalance);
       currentBulkCount = count;
       currentBulkIds = selectedIds;
@@ -639,44 +1226,100 @@
       }
   }
 
+  function toggleDebtType(type) {
+      type = (type || 'THU').toUpperCase();
+      const typeInput = document.getElementById('add-debt-loai');
+      if (typeInput) typeInput.value = type;
+
+      const btnChoVay = document.getElementById('add-debt-btn-chovay');
+      const btnDiVay = document.getElementById('add-debt-btn-divay');
+      const lblName = document.getElementById('lbl-add-debt-name');
+      const inputName = document.getElementById('add-debt-name');
+      const lblSource = document.getElementById('lbl-add-debt-source');
+      const inputAmount = document.getElementById('add-debt-amount');
+      const title = document.getElementById('add-debt-title');
+      const submitBtn = document.getElementById('btn-add-debt-submit');
+      const modal = document.getElementById('modal-add-debt');
+      const modalContent = modal ? modal.querySelector('.modal-content') : null;
+      const isEditing = !!(document.getElementById('add-debt-id') && document.getElementById('add-debt-id').value);
+
+      if (type === 'THU') {
+          if (btnChoVay) btnChoVay.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition flex items-center justify-center gap-1";
+          if (btnDiVay) btnDiVay.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1";
+          if (lblName) lblName.innerText = "2. Tên Đối Tượng / Khách Nợ";
+          if (inputName) inputName.placeholder = "Tên người mượn...";
+          if (lblSource) lblSource.innerText = "4. Tiền xuất ra từ Ví nào?";
+          if (inputAmount) inputAmount.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-600 outline-none focus:border-emerald-500";
+          if (modalContent) modalContent.className = "modal-content !overflow-visible rounded-b-2xl border-t-4 border-emerald-500 !p-4 max-w-[360px] w-full";
+          if (!isEditing && title) title.innerText = "💰 Ghi Khoản Cho Vay (Phải Thu)";
+          if (submitBtn) {
+              submitBtn.className = "w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
+              if (!isEditing) submitBtn.innerText = "Lưu Khoản Cho Vay";
+          }
+      } else {
+          if (btnChoVay) btnChoVay.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1";
+          if (btnDiVay) btnDiVay.className = "flex-1 py-1.5 bg-white text-rose-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition flex items-center justify-center gap-1";
+          if (lblName) lblName.innerText = "2. Tên Đối Tượng / Chủ Nợ";
+          if (inputName) inputName.placeholder = "Tên chủ nợ / người cho mượn...";
+          if (lblSource) lblSource.innerText = "4. Tiền nhận vào Ví nào?";
+          if (inputAmount) inputAmount.className = "w-full bg-slate-50 border border-slate-300 rounded-xl px-2.5 py-1.5 text-xs font-bold text-rose-600 outline-none focus:border-rose-500";
+          if (modalContent) modalContent.className = "modal-content !overflow-visible rounded-b-2xl border-t-4 border-rose-500 !p-4 max-w-[360px] w-full";
+          if (!isEditing && title) title.innerText = "💸 Ghi Khoản Đi Vay (Phải Trả)";
+          if (submitBtn) {
+              submitBtn.className = "w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
+              if (!isEditing) submitBtn.innerText = "Lưu Khoản Đi Vay";
+          }
+      }
+  }
+
   function openAddDebtModal(type) {
       const modal = document.getElementById('modal-add-debt');
       if(!modal) return;
-      const modalContent = modal.querySelector('.modal-content');
       
       document.getElementById('add-debt-id').value = '';
-      document.getElementById('add-debt-loai').value = type;
       document.getElementById('add-debt-date').value = getTodayString();
       document.getElementById('add-debt-name').value = '';
       document.getElementById('add-debt-amount').value = '';
-      document.getElementById('add-debt-source').value = '';
+      const debtSourceEl = document.getElementById('add-debt-source');
+      if (debtSourceEl) {
+          debtSourceEl.value = '';
+          if (debtSourceEl.dataset) {
+              debtSourceEl.dataset.walletId = '';
+              debtSourceEl.dataset.walletName = '';
+          }
+      }
       document.getElementById('add-debt-note').value = '';
+
+      const chkRec = document.getElementById('add-debt-chk-recurring');
+      if (chkRec) chkRec.checked = false;
+      const detRec = document.getElementById('add-debt-recurring-details');
+      if (detRec) detRec.classList.add('hidden');
+      const dayRec = document.getElementById('add-debt-recurring-day');
+      if (dayRec) dayRec.value = new Date().getDate() || 1;
+
+      const inputs = ['add-debt-date', 'add-debt-name', 'add-debt-amount', 'add-debt-source', 'add-debt-note'];
+      inputs.forEach(inpId => {
+          const el = document.getElementById(inpId);
+          if (el) el.disabled = false;
+      });
+      const typeBtn1 = document.getElementById('add-debt-btn-chovay');
+      const typeBtn2 = document.getElementById('add-debt-btn-divay');
+      if (typeBtn1) typeBtn1.disabled = false;
+      if (typeBtn2) typeBtn2.disabled = false;
+      const lockNotice = document.getElementById('add-debt-lock-notice');
+      if (lockNotice) lockNotice.classList.add('hidden');
 
       const submitBtn = document.getElementById('btn-add-debt-submit');
       if (submitBtn) {
           submitBtn.disabled = false;
-          submitBtn.classList.remove('opacity-50', 'pointer-events-none');
+          submitBtn.classList.remove('hidden', 'opacity-50', 'pointer-events-none');
+          submitBtn.innerText = "Ghi Nhận Công Nợ";
       }
+      const deleteBtn = document.getElementById('btn-add-debt-delete');
+      if (deleteBtn) deleteBtn.classList.add('hidden');
+      document.getElementById('add-debt-title').innerText = "Ghi Nợ Mới";
 
-      if(type === 'THU') {
-          document.getElementById('add-debt-title').innerText = "💰 Ghi Khoản Cho Mượn (Phải Thu)";
-          document.getElementById('lbl-add-debt-name').innerText = "2. Tên Đối Tượng / Khách Nợ";
-          document.getElementById('lbl-add-debt-source').innerText = "4. Tiền xuất ra từ Ví nào?";
-          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full";
-          if(submitBtn) {
-              submitBtn.className = "w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
-              submitBtn.innerText = "Lưu Khoản Cho Mượn";
-          }
-      } else {
-          document.getElementById('add-debt-title').innerText = "💸 Ghi Khoản Mượn Nợ (Phải Trả)";
-          document.getElementById('lbl-add-debt-name').innerText = "2. Tên Đối Tượng / Chủ Nợ";
-          document.getElementById('lbl-add-debt-source').innerText = "4. Tiền nhận vào Ví nào?";
-          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-rose-500 !p-4 max-w-md w-full";
-          if(submitBtn) {
-              submitBtn.className = "w-full py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
-              submitBtn.innerText = "Lưu Khoản Mượn Nợ";
-          }
-      }
+      toggleDebtType(type || 'THU');
       
       openModal('modal-add-debt');
       setTimeout(() => {
@@ -686,8 +1329,9 @@
           }
       }, 150);
   }
+  window.openAddDebtModal = openAddDebtModal;
 
-  function openEditDebtModal(id) {
+  function openEditDebtModal(id, isReadOnly) {
       const allList = (window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0) ? window.TAB4_ALL_DEBTS : (window.TAB4_DEBTS || []);
       const item = allList.find(d => String(d.id) === String(id));
       if (!item) {
@@ -695,16 +1339,56 @@
           return;
       }
 
+      const locked = isReadOnly || (typeof isDebtLocked === 'function' && isDebtLocked(item));
       openAddDebtModal(item.loai || 'THU');
-      document.getElementById('add-debt-title').innerText = `✏️ Sửa Công Nợ (${item.id})`;
       document.getElementById('add-debt-id').value = item.id;
+      document.getElementById('add-debt-title').innerHTML = locked ? `🔒 Chi Tiết Công Nợ (Đã Chốt)` : `✏️ Sửa Công Nợ (${item.id})`;
       document.getElementById('add-debt-date').value = t4_formatIsoDate(item.ngay);
       document.getElementById('add-debt-name').value = item.ten || '';
       document.getElementById('add-debt-amount').value = item.tongNo || 0;
       document.getElementById('add-debt-source').value = item.nguon || '';
       document.getElementById('add-debt-note').value = item.noidung || '';
+      toggleDebtType(item.loai || 'THU');
+
+      const inputs = ['add-debt-date', 'add-debt-name', 'add-debt-amount', 'add-debt-source', 'add-debt-note'];
+      inputs.forEach(inpId => {
+          const el = document.getElementById(inpId);
+          if (el) el.disabled = locked;
+      });
+      const typeBtn1 = document.getElementById('add-debt-btn-chovay');
+      const typeBtn2 = document.getElementById('add-debt-btn-divay');
+      if (typeBtn1) typeBtn1.disabled = locked;
+      if (typeBtn2) typeBtn2.disabled = locked;
+
       const submitBtn = document.getElementById('btn-add-debt-submit');
-      if (submitBtn) submitBtn.innerText = "Cập Nhật Công Nợ";
+      if (submitBtn) {
+          if (locked) {
+              submitBtn.classList.add('hidden');
+          } else {
+              submitBtn.classList.remove('hidden');
+              submitBtn.innerText = "Cập Nhật Công Nợ";
+          }
+      }
+
+      const lockNotice = document.getElementById('add-debt-lock-notice');
+      if (lockNotice) {
+          if (locked) lockNotice.classList.remove('hidden');
+          else lockNotice.classList.add('hidden');
+      }
+
+      const deleteBtn = document.getElementById('btn-add-debt-delete');
+      if (deleteBtn) {
+          const isPaidOrSettled = (item.duNo <= 0) || ((item.daTra || 0) > 0) || String(item.trangThai || '').toUpperCase().includes('THANH_TOAN') || String(item.trangThai || '').toUpperCase().includes('DA_TRA');
+          if (!locked && !isPaidOrSettled) {
+              deleteBtn.classList.remove('hidden');
+              deleteBtn.onclick = function() {
+                  closeModal('modal-add-debt');
+                  confirmDeleteDebt(item.id);
+              };
+          } else {
+              deleteBtn.classList.add('hidden');
+          }
+      }
   }
 
   function submitAddDebt() {
@@ -745,6 +1429,9 @@
       }
 
       const reqId = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_DEBT_") : ("REQ_DEBT_" + Date.now());
+      const walletId = (typeof getSelectedWalletId === 'function') ? getSelectedWalletId('add-debt-source') : '';
+      const isRecurring = document.getElementById('add-debt-chk-recurring') ? document.getElementById('add-debt-chk-recurring').checked : false;
+      const recurringDay = document.getElementById('add-debt-recurring-day') ? Number(document.getElementById('add-debt-recurring-day').value || 1) : 1;
       const payload = {
           requestId: reqId,
           id: id,
@@ -753,8 +1440,16 @@
           loai: loai,
           sotien: sotien,
           nguon: nguon,
-          noidung: noidung
+          walletId: walletId,
+          noidung: noidung,
+          is_recurring: isRecurring,
+          recurring_day: recurringDay,
+          ssTarget: window.CURRENT_USER_SS_ID || ''
       };
+
+      // Optimistic UI: đóng modal ngay lập tức & báo toast đang lưu
+      closeModal('modal-add-debt');
+      showToast("⚡ Đang lưu khoản công nợ...");
 
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveDebtTransaction === 'function') {
           google.script.run
@@ -762,8 +1457,13 @@
                   restoreAddBtn();
                   if (res && res.success) {
                       showToast(res.message || "✅ Đã lưu khoản công nợ!");
-                      closeModal('modal-add-debt');
+                      if (typeof window.notifyReconcileItemResolved === 'function' && window.rec_currentResolvingTemp) {
+                          window.notifyReconcileItemResolved(res.savedItem || res, 'Debt');
+                      }
                       reloadTab4Data();
+                      if (typeof reloadTab2Data === 'function') reloadTab2Data();
+                      else if (typeof loadTab2Data === 'function') loadTab2Data(true);
+                      if (typeof reloadTab1Data === 'function') reloadTab1Data();
                       if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
                           mergeUpdatedWallets(res.updatedWallets);
                       }
@@ -772,23 +1472,25 @@
                       }
                   } else {
                       showToast("❌ " + (res ? res.message : "Lỗi lưu dữ liệu"), true);
+                      reloadTab4Data();
                   }
               })
               .withFailureHandler(function(err) {
                   restoreAddBtn();
                   showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Không thể gửi dữ liệu"), true);
+                  reloadTab4Data();
               })
               .saveDebtTransaction(payload);
       } else {
           restoreAddBtn();
           showToast("✅ Đã ghi nhận khoản công nợ (Demo)!");
-          closeModal('modal-add-debt');
       }
   }
 
   function openBulkPayModal() {
       if (currentBulkIds.length === 0) return;
-      openPayModal(currentBulkIds, `Hàng loạt (${currentBulkCount} đơn)`, currentBulkAmount, 'THU');
+      const bulkType = currentBulkNetBalance >= 0 ? 'THU' : 'TRA';
+      openPayModal(currentBulkIds, `Hàng loạt (${currentBulkCount} đơn)`, currentBulkAmount, bulkType);
   }
 
   function openPayModal(idsOrId, name, amount, type) {
@@ -820,7 +1522,7 @@
       if(type === 'THU' || type === 'THU_TAB3') {
           document.getElementById('pay-debt-title').innerText = "💰 Nhận Tiền Thu Nợ";
           document.getElementById('lbl-pay-debt-source').innerText = "3. Nhận tiền vào Ví/Thẻ nào?";
-          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-emerald-500 !p-4 max-w-md w-full";
+          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-emerald-500 !p-4 max-w-[360px] w-full";
           if(btn) {
               btn.className = "w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
               btn.innerText = "Xác Nhận Nhận Tiền";
@@ -828,7 +1530,7 @@
       } else {
           document.getElementById('pay-debt-title').innerText = "💸 Trả Tiền Nợ";
           document.getElementById('lbl-pay-debt-source').innerText = "3. Trừ tiền từ Ví/Thẻ nào?";
-          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-rose-500 !p-4 max-w-md w-full";
+          if(modalContent) modalContent.className = "modal-content rounded-b-2xl border-t-4 border-rose-500 !p-4 max-w-[360px] w-full";
           if(btn) {
               btn.className = "w-full py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold cursor-pointer transition shadow-md relative z-10 mt-1";
               btn.innerText = "Xác Nhận Trả Nợ";
@@ -865,6 +1567,7 @@
           btn.innerText = "⏳ Đang xử lý...";
       }
 
+      const sourceWalletId = (typeof getSelectedWalletId === 'function') ? getSelectedWalletId('pay-debt-source') : '';
       const reqIdSettle = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_DS_") : ("REQ_DS_" + Date.now());
       const payload = {
           requestId: reqIdSettle,
@@ -872,7 +1575,10 @@
           name: currentPayContext.name,
           amount: amtVal,
           date: dateStr,
-          sourceWallet: source
+          sourceWallet: source,
+          sourceWalletId: sourceWalletId,
+          walletId: sourceWalletId,
+          type: currentPayContext.type
       };
 
       if (currentPayContext.type === 'THU_TAB3') {
@@ -885,6 +1591,9 @@
                           closeModal('modal-pay-debt');
                           if (res.freshData && typeof applyTab3Data === 'function') applyTab3Data(res.freshData);
                           else if (typeof reloadTab3Data === 'function') reloadTab3Data();
+                          if (typeof reloadTab2Data === 'function') reloadTab2Data();
+                          else if (typeof loadTab2Data === 'function') loadTab2Data(true);
+                          if (typeof reloadTab1Data === 'function') reloadTab1Data();
                           if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
                               mergeUpdatedWallets(res.updatedWallets);
                           }
@@ -899,7 +1608,7 @@
                       restorePayBtn();
                       showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Lỗi gửi dữ liệu"), true);
                   })
-                  .confirmBatchDebtSalesPayment(currentPayContext.ids, source, dateStr);
+                  .confirmBatchDebtSalesPayment(currentPayContext.ids, source, dateStr, sourceWalletId);
           } else {
               restorePayBtn();
               closeModal('modal-pay-debt');
@@ -908,14 +1617,22 @@
           return;
       }
 
+      // Optimistic UI: Đóng modal ngay lập tức & báo toast đang xử lý
+      closeModal('modal-pay-debt');
+      showToast("⚡ Đang thanh toán công nợ...");
+
       if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.settleDebtPayment === 'function') {
           google.script.run
               .withSuccessHandler(function(res) {
                   restorePayBtn();
                   if (res && res.success) {
                       showToast(res.message || "✅ Đã gạch nợ thành công!");
-                      closeModal('modal-pay-debt');
+                      document.querySelectorAll('.chk-debt-item:checked').forEach(c => c.checked = false);
+                      calcBulkPay();
                       reloadTab4Data();
+                      if (typeof reloadTab2Data === 'function') reloadTab2Data();
+                      else if (typeof loadTab2Data === 'function') loadTab2Data(true);
+                      if (typeof reloadTab1Data === 'function') reloadTab1Data();
                       if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
                           mergeUpdatedWallets(res.updatedWallets);
                       }
@@ -924,17 +1641,18 @@
                       }
                   } else {
                       showToast("❌ " + (res ? res.message : "Thanh toán thất bại"), true);
+                      reloadTab4Data();
                   }
               })
               .withFailureHandler(function(err) {
                   restorePayBtn();
                   showToast("❌ Lỗi kết nối: " + (err ? (err.message || err) : "Không thể gửi dữ liệu"), true);
+                  reloadTab4Data();
               })
               .settleDebtPayment(payload);
       } else {
           restorePayBtn();
           showToast(`✅ Đã thanh toán (Demo)! ${amtVal.toLocaleString()} ¥`, false);
-          closeModal('modal-pay-debt');
       }
 
       function restorePayBtn() {
@@ -946,39 +1664,246 @@
       }
   }
 
-  function openExportDebtReportModal() {
-      if (currentBulkItems.length === 0) {
-          showToast("⚠️ Vui lòng chọn ít nhất 1 khoản nợ để tạo báo cáo ảnh!", true);
-          return;
+  window.T4_EXCLUDED_REPORT_IDS = new Set();
+
+  function toggleReportItemInclusion(itemId) {
+      if (!window.T4_EXCLUDED_REPORT_IDS) window.T4_EXCLUDED_REPORT_IDS = new Set();
+      const sId = String(itemId);
+      if (window.T4_EXCLUDED_REPORT_IDS.has(sId)) {
+          window.T4_EXCLUDED_REPORT_IDS.delete(sId);
+      } else {
+          window.T4_EXCLUDED_REPORT_IDS.add(sId);
+      }
+      renderDebtReportTableWithFilters();
+  }
+
+  function togglePriorItemsPicker() {
+      const drawer = document.getElementById('drawer-prior-items');
+      if (drawer) drawer.classList.toggle('hidden');
+  }
+
+  function setDebtReportPeriod(period) {
+      const d = new Date();
+      const curY = d.getFullYear();
+      const curM = d.getMonth(); // 0-indexed
+      const fromInp = document.getElementById('ipt-rpt-from-date');
+      const toInp = document.getElementById('ipt-rpt-to-date');
+      const chkFold = document.getElementById('chk-rpt-fold-prev');
+
+      if (period === 'THIS_MONTH') {
+          const mStr = String(curM + 1).padStart(2, '0');
+          const dStr = String(d.getDate()).padStart(2, '0');
+          if (fromInp) fromInp.value = `${curY}-${mStr}-01`;
+          if (toInp) toInp.value = `${curY}-${mStr}-${dStr}`;
+          if (chkFold) chkFold.checked = true;
+      } else if (period === 'LAST_MONTH') {
+          const prevMonthDate = new Date(curY, curM, 0);
+          const pY = prevMonthDate.getFullYear();
+          const pM = String(prevMonthDate.getMonth() + 1).padStart(2, '0');
+          const pLastD = String(prevMonthDate.getDate()).padStart(2, '0');
+          if (fromInp) fromInp.value = `${pY}-${pM}-01`;
+          if (toInp) toInp.value = `${pY}-${pM}-${pLastD}`;
+          if (chkFold) chkFold.checked = true;
+      } else if (period === 'ALL') {
+          if (fromInp) fromInp.value = '';
+          if (toInp) toInp.value = '';
+          if (chkFold) chkFold.checked = false;
+      }
+      renderDebtReportTableWithFilters();
+  }
+
+    function formatDebtReportDate(dateStr) {
+      if (!dateStr) return '';
+      const s = String(dateStr).trim();
+      const mDMY = s.match(/^(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{4}|\d{2}))?$/);
+      if (mDMY) return mDMY[1].padStart(2, '0') + '/' + mDMY[2].padStart(2, '0');
+      const mYMD = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+      if (mYMD) return mYMD[3].padStart(2, '0') + '/' + mYMD[2].padStart(2, '0');
+      return s;
+  }
+
+function renderDebtReportTableWithFilters() {
+      const allItems = window.CURRENT_REPORT_ALL_ITEMS || currentBulkItems || [];
+      if (allItems.length === 0) return;
+
+      const parseDt = (val) => {
+          if (!val) return 0;
+          if (val instanceof Date) return isNaN(val.getTime()) ? 0 : val.getTime();
+          const str = String(val).trim();
+          if (/^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(str)) {
+              const p = str.split(' ')[0].split('/');
+              let y = parseInt(p[2], 10);
+              if (y < 100) y += 2000;
+              return new Date(y, parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime() || 0;
+          }
+          if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+              const p = str.split(' ')[0].split('-');
+              return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime() || 0;
+          }
+          return new Date(str).getTime() || 0;
+      };
+
+      const sortedAll = [...allItems].sort((a, b) => {
+          const tA = parseDt(a.ngay);
+          const tB = parseDt(b.ngay);
+          if (tA !== tB) return tA - tB;
+          return (a.row || 0) - (b.row || 0);
+      });
+
+      const fromVal = document.getElementById('ipt-rpt-from-date')?.value || '';
+      const toVal = document.getElementById('ipt-rpt-to-date')?.value || '';
+      const foldPrev = document.getElementById('chk-rpt-fold-prev')?.checked !== false;
+
+      let fromTime = 0;
+      if (fromVal) {
+          const p = fromVal.split('-');
+          fromTime = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+      }
+      let toTime = 0;
+      if (toVal) {
+          const p = toVal.split('-');
+          toTime = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), 23, 59, 59, 999).getTime();
       }
 
-      const firstPartner = currentBulkItems[0].name || 'ĐỐI TÁC';
-      const allSamePartner = currentBulkItems.every(it => (it.name || '').trim().toLowerCase() === firstPartner.trim().toLowerCase());
-      const partnerDisplayName = allSamePartner ? firstPartner : 'BÁO CÁO TỔNG HỢP';
+      const checkIsThu = (it) => {
+          const lUp = String(it.loai || '').toUpperCase();
+          const tUp = (String(it.name || it.ten || '') + ' ' + String(it.noidung || '')).toUpperCase();
+          return lUp === 'THU' || lUp === 'CHO_VAY' || lUp.includes('THU') || lUp.includes('KHÁCH') || lUp.includes('CHO VAY') || lUp.includes('CẦN THU') || tUp.includes('CHO VAY') || tUp.includes('KHÁCH NỢ');
+      };
 
-      document.getElementById('rpt-partner-name').innerText = partnerDisplayName;
-      document.getElementById('rpt-date-str').innerText = getTodayString();
+      const excludedIds = window.T4_EXCLUDED_REPORT_IDS || new Set();
 
+      let priorBal = 0;
+      const priorItems = [];
+      const periodItems = [];
+
+      sortedAll.forEach(it => {
+          // BỎ QUA HOÀN TOÀN CÁC KHOẢN NỢ ĐÃ TẤT TOÁN - KHÔNG HIỂN THỊ LẠI TRÊN XUẤT ẢNH
+          if (typeof isDebtDone === 'function' && isDebtDone(it)) return;
+          if (it.duNo !== undefined && Number(it.duNo) <= 0 && (Number(it.tongNo || 0) > 0 || Number(it.daTra || 0) > 0)) return;
+
+          const t = parseDt(it.ngay);
+          if (fromTime && t < fromTime) {
+              priorItems.push(it);
+              // Chỉ tính vào nợ tồn nếu không bị loại trừ
+              if (!excludedIds.has(String(it.id))) {
+                  const isThu = checkIsThu(it);
+                  const amt = Number(it.duNo) || (Number(it.tongNo || 0) - Number(it.daTra || 0)) || Number(it.amount || 0);
+                  priorBal += (isThu ? amt : -amt);
+              }
+          } else if (!toTime || t <= toTime) {
+              periodItems.push(it);
+          }
+      });
+
+      // Cập nhật Drawer lọc Nợ tồn kỳ trước (cho phép bỏ chọn khoản nợ lớn như 400 man)
+      const btnPriorPicker = document.getElementById('btn-toggle-prior-picker');
+      const drawerPriorList = document.getElementById('drawer-prior-items-list');
+      if (btnPriorPicker && drawerPriorList) {
+          if (priorItems.length > 0 && foldPrev) {
+              btnPriorPicker.classList.remove('hidden');
+              drawerPriorList.innerHTML = priorItems.map(it => {
+                  const isInc = !excludedIds.has(String(it.id));
+                  const isThu = checkIsThu(it);
+                  const amt = Number(it.duNo) || (Number(it.tongNo || 0) - Number(it.daTra || 0)) || Number(it.amount || 0);
+                  const amtStr = (isThu ? '+' : '-') + amt.toLocaleString() + ' ¥';
+                  const amtClass = isThu ? 'text-emerald-600' : 'text-rose-600';
+                  return `
+                      <label class="flex items-center justify-between gap-1 p-1 rounded hover:bg-indigo-50/50 cursor-pointer text-[10px]">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                              <input type="checkbox" id="chk-prior-${it.id}" ${isInc ? 'checked' : ''} onchange="toggleReportItemInclusion('${it.id}')" class="accent-indigo-600 shrink-0 w-3 h-3 cursor-pointer" />
+                              <span class="truncate ${!isInc ? 'line-through text-slate-400' : 'text-slate-800'}">${it.ngay || ''} - ${it.noidung || 'Nợ cũ'}</span>
+                          </div>
+                          <span class="${amtClass} font-bold shrink-0">${amtStr}</span>
+                      </label>
+                  `;
+              }).join('');
+          } else {
+              btnPriorPicker.classList.add('hidden');
+              const drawer = document.getElementById('drawer-prior-items');
+              if (drawer) drawer.classList.add('hidden');
+          }
+      }
+
+      let rowsHtml = '';
       let sumThu = 0;
       let sumTra = 0;
+      let runningSum = 0;
 
-      const rowsHtml = currentBulkItems.map(it => {
-          const isThu = (it.loai === 'THU' || it.loai === 'CHO_VAY');
-          const amt = Number(it.amount) || 0;
-          if (isThu) sumThu += amt;
-          else sumTra += amt;
+      // 1. DÒNG NỢ TỒN KỲ TRƯỚC (NẾU CÓ BẬT VÀ CÒN SỐ DƯ)
+      if (foldPrev && fromTime && (priorBal !== 0 || priorItems.length > 0)) {
+          runningSum = priorBal;
+          if (priorBal > 0) sumThu += priorBal;
+          else if (priorBal < 0) sumTra += Math.abs(priorBal);
+
+          const prevDay = new Date(fromTime - 86400000);
+          const priorDateStr = `${String(prevDay.getDate()).padStart(2, '0')}/${String(prevDay.getMonth() + 1).padStart(2, '0')}`;
+          const amtStr = (priorBal >= 0 ? '+' : '-') + Math.abs(priorBal).toLocaleString() + ' ¥';
+          const amtClass = priorBal >= 0 ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold';
+          const runStr = (runningSum >= 0 ? '+' : '') + runningSum.toLocaleString() + ' ¥';
+          const runClass = runningSum >= 0 ? 'text-indigo-900 font-black' : 'text-amber-800 font-black';
+
+          rowsHtml += `
+              <div class="grid grid-cols-[42px_1fr_60px_70px] gap-1 px-2 py-1.5 text-center items-center border-b border-indigo-100 bg-indigo-50/70 font-bold" style="display: grid; grid-template-columns: 42px 1fr 60px 70px; gap: 4px; line-height: 1.35;">
+                  <span class="text-[9px] text-indigo-900 inline-block text-left pl-0.5 font-mono">${priorDateStr}</span>
+                  <span class="text-[9.5px] text-indigo-950 text-left pl-0.5 break-words inline-block font-bold">📌 Nợ tồn</span>
+                  <span class="text-right pr-0.5 ${amtClass} text-[10px] font-bold whitespace-nowrap">${amtStr}</span>
+                  <span class="text-right pr-0.5 ${runClass} text-[10px] font-bold whitespace-nowrap">${runStr}</span>
+              </div>
+          `;
+      }
+
+      // 2. CÁC GIAO DỊCH PHÁT SINH TRONG KỲ (HỖ TRỢ BẬT/TẮT TRỰC TIẾP TỪNG DÒNG BẰNG NÚT 👁️)
+      periodItems.forEach(it => {
+          const isExcluded = excludedIds.has(String(it.id));
+          const isThu = checkIsThu(it);
+          const amt = Number(it.duNo) || (Number(it.tongNo || 0) - Number(it.daTra || 0)) || Number(it.amount || 0);
+
+          if (!isExcluded) {
+              if (isThu) {
+                  sumThu += amt;
+                  runningSum += amt;
+              } else {
+                  sumTra += amt;
+                  runningSum -= amt;
+              }
+          }
 
           const amtStr = (isThu ? '+' : '-') + amt.toLocaleString() + ' ¥';
           const amtClass = isThu ? 'text-emerald-600 font-bold' : 'text-rose-600 font-bold';
+          const runStr = (runningSum >= 0 ? '+' : '') + runningSum.toLocaleString() + ' ¥';
+          const runClass = runningSum >= 0 ? 'text-indigo-900 font-black' : 'text-amber-800 font-black';
 
-          return `
-              <div class="grid grid-cols-12 px-2 py-1.5 text-center items-center">
-                  <span class="col-span-3 text-[10px] text-slate-500 font-medium">${it.ngay || getTodayString()}</span>
-                  <span class="col-span-5 text-[10px] font-bold text-slate-700 truncate text-left pl-1">${it.noidung || 'Ghi nợ'}</span>
-                  <span class="col-span-4 text-right ${amtClass} text-[11px] pr-1">${amtStr}</span>
-              </div>
-          `;
-      }).join('');
+          let cleanNote = String(it.noidung || 'Ghi nợ').trim();
+          let displayNote = cleanNote;
+          if (displayNote.length > 46) {
+              displayNote = displayNote.slice(0, 44) + '...';
+          }
+
+          if (isExcluded) {
+              rowsHtml += `
+                  <div class="grid grid-cols-[42px_1fr_60px_70px] gap-1 px-2 py-1 text-center items-center border-b border-slate-100 last:border-0 opacity-40 bg-slate-100/80 line-through text-slate-400 cursor-pointer select-none transition" onclick="toggleReportItemInclusion('${it.id}')" data-html2canvas-ignore="true" title="Đã tắt (chạm để bật lại)" style="display: grid; grid-template-columns: 42px 1fr 60px 70px; gap: 4px; line-height: 1.35;">
+                      <span class="text-[9px] text-slate-400 font-semibold inline-block text-left pl-0.5 font-mono">${formatDebtReportDate(it.ngay || getTodayString())}</span>
+                      <span class="text-[9.5px] text-left pl-0.5 break-words inline-block text-slate-400 min-w-0" title="${cleanNote}">${displayNote} <b class="text-[8px] text-rose-500 font-normal no-underline">(Đã tắt)</b></span>
+                      <span class="text-right pr-0.5 text-[10px] font-bold whitespace-nowrap text-slate-400">${amtStr}</span>
+                      <span class="text-right pr-0.5 text-[8.5px] text-slate-400 font-medium whitespace-nowrap">Đã tắt</span>
+                  </div>
+              `;
+          } else {
+              rowsHtml += `
+                  <div class="grid grid-cols-[42px_1fr_60px_70px] gap-1 px-2 py-1 text-center items-center border-b border-slate-100 last:border-0 hover:bg-indigo-50/50 cursor-pointer select-none transition" onclick="toggleReportItemInclusion('${it.id}')" title="Chạm vào dòng để tắt/bật khoản này" style="display: grid; grid-template-columns: 42px 1fr 60px 70px; gap: 4px; line-height: 1.35;">
+                      <span class="text-[9px] text-slate-600 font-semibold inline-block text-left pl-0.5 font-mono">${formatDebtReportDate(it.ngay || getTodayString())}</span>
+                      <span class="text-[9.5px] font-bold text-slate-800 text-left pl-0.5 break-words inline-block min-w-0" title="${cleanNote}">${displayNote}</span>
+                      <span class="text-right pr-0.5 ${amtClass} text-[10px] font-bold whitespace-nowrap">${amtStr}</span>
+                      <span class="text-right pr-0.5 ${runClass} text-[10px] font-bold whitespace-nowrap">${runStr}</span>
+                  </div>
+              `;
+          }
+      });
+
+      if (!rowsHtml) {
+          rowsHtml = `<div class="py-6 text-center text-xs text-slate-400">Không có giao dịch nào trong khoảng thời gian này.</div>`;
+      }
 
       document.getElementById('rpt-table-body').innerHTML = rowsHtml;
 
@@ -989,86 +1914,259 @@
       document.getElementById('rpt-sum-tra').innerText = '-' + sumTra.toLocaleString() + ' ¥';
       document.getElementById('rpt-sum-net').innerText = netSign + netBalance.toLocaleString() + ' ¥';
 
+      const payableAmt = Math.abs(netBalance);
+      const debtLabel = (netBalance >= 0) ? "tổng phải trả" : "tổng tiền Quậy thiếu";
+      const partnerDisplayName = document.getElementById('rpt-partner-name')?.innerText || 'ĐỐI TÁC';
+      const captionMsg = (typeof buildDebtReportAccompanyingMessage === 'function')
+          ? buildDebtReportAccompanyingMessage(payableAmt, netBalance)
+          : `Alo ! Cho Quậy gửi chi tiết công nợ ${debtLabel} - ${payableAmt.toLocaleString()} ¥ . Kiểm tra lại chi tiết giúp nha. Cám ơn`;
+
+      window.CURRENT_DEBT_REPORT_CAPTION = captionMsg;
+      window.CURRENT_REPORT_CAPTION_TEXT = captionMsg;
+      const rptCaptionAmtEl = document.getElementById('rpt-caption-amt');
+      if (rptCaptionAmtEl) rptCaptionAmtEl.innerText = payableAmt.toLocaleString() + ' ¥';
+      const rptMsgTextEl = document.getElementById('rpt-accompanying-msg-text');
+      if (rptMsgTextEl) rptMsgTextEl.innerText = captionMsg;
+
+      if (typeof t4_resetAndPreRenderDebtReport === 'function') {
+          t4_resetAndPreRenderDebtReport();
+      }
+  }
+
+  function openExportDebtReportModal() {
+      if (currentBulkItems.length === 0) {
+          showToast("⚠️ Vui lòng chọn ít nhất 1 khoản nợ để tạo báo cáo ảnh!", true);
+          return;
+      }
+
+      window.T4_EXCLUDED_REPORT_IDS = new Set();
+      const drawer = document.getElementById('drawer-prior-items');
+      if (drawer) drawer.classList.add('hidden');
+
+      const firstPartner = currentBulkItems[0].name || currentBulkItems[0].ten || 'ĐỐI TÁC';
+      const allSamePartner = currentBulkItems.every(it => (it.name || it.ten || '').trim().toLowerCase() === firstPartner.trim().toLowerCase());
+      const partnerDisplayName = allSamePartner ? firstPartner : 'BÁO CÁO TỔNG HỢP';
+
+      document.getElementById('rpt-partner-name').innerText = partnerDisplayName;
+      document.getElementById('rpt-date-str').innerText = getTodayString();
+
+      // Lấy toàn bộ giao dịch chưa tất toán của đối tác này từ lịch sử (Lọc bỏ các khoản đã tất toán)
+      const allDebts = (window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0) ? window.TAB4_ALL_DEBTS : (window.TAB4_DEBTS || []);
+      let partnerHistoryItems = [];
+      if (allSamePartner) {
+          const key = firstPartner.trim().toLowerCase();
+          partnerHistoryItems = allDebts.filter(d => (d.ten || '').trim().toLowerCase() === key && !isDebtDone(d));
+      }
+      if (partnerHistoryItems.length === 0) {
+          partnerHistoryItems = currentBulkItems.filter(it => !isDebtDone(it));
+      }
+      window.CURRENT_REPORT_ALL_ITEMS = partnerHistoryItems;
+
+      // Thiết lập mặc định: Từ đầu tháng hiện tại -> Hôm nay
+      const d = new Date();
+      const curY = d.getFullYear();
+      const curM = String(d.getMonth() + 1).padStart(2, '0');
+      const curD = String(d.getDate()).padStart(2, '0');
+      const firstDayThisMonth = `${curY}-${curM}-01`;
+      const todayStr = `${curY}-${curM}-${curD}`;
+
+      const fromInp = document.getElementById('ipt-rpt-from-date');
+      const toInp = document.getElementById('ipt-rpt-to-date');
+      const chkFold = document.getElementById('chk-rpt-fold-prev');
+
+      if (fromInp) fromInp.value = firstDayThisMonth;
+      if (toInp) toInp.value = todayStr;
+      if (chkFold) chkFold.checked = true;
+
+      renderDebtReportTableWithFilters();
       openModal('modal-export-debt-image');
+  }
+
+  function copyDebtReportCaptionOnly() {
+      const captionMsg = (window.CURRENT_DEBT_REPORT_CAPTION || document.getElementById('rpt-accompanying-msg-text')?.innerText || '').trim();
+      if (!captionMsg) {
+          showToast("⚠️ Chưa có nội dung tin nhắn để sao chép!", true);
+          return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(captionMsg).then(() => {
+              showToast("💬 Đã sao chép tin nhắn công nợ vào bộ nhớ tạm!");
+          }).catch(() => {
+              if (typeof copyTextSynchronously === 'function') {
+                  copyTextSynchronously(captionMsg, true);
+              } else {
+                  showToast("💬 Đã sao chép tin nhắn!");
+              }
+          });
+      } else if (typeof copyTextSynchronously === 'function') {
+          copyTextSynchronously(captionMsg, true);
+      } else {
+          showToast("💬 Đã sao chép tin nhắn!");
+      }
   }
 
   function copyDebtReportImageToClipboard() {
       const el = document.getElementById('debt-report-preview');
       const btn = document.getElementById('btn-copy-rpt-img');
-      if (!el || typeof html2canvas === 'undefined') {
-          showToast("❌ Chưa sẵn sàng thư viện chụp ảnh!", true);
+      if (!el) {
+          showToast("⚠️ Không tìm thấy khung báo cáo để xuất ảnh!", true);
           return;
       }
 
-      const origText = btn ? btn.innerHTML : '<span>📋</span> <span>Sao Chép Ảnh</span>';
-      if (btn) {
-          btn.disabled = true;
-          btn.innerText = "⏳ Đang tạo ảnh...";
+      const captionMsg = (window.CURRENT_DEBT_REPORT_CAPTION || document.getElementById('rpt-accompanying-msg-text')?.innerText || '').trim();
+      if (typeof executeUnifiedReportExport === 'function') {
+          executeUnifiedReportExport({
+              btn: btn,
+              stepStateKey: 'T4_EXPORT_STEP',
+              captionMsg: captionMsg,
+              origBtnHtml: '<span>📸</span> <span>Xuất Ảnh</span>',
+              getPreRenderedBlob: () => window.T4_PRE_RENDERED_BLOB || null,
+              getPreRenderedCanvas: () => window.T4_PRE_RENDERED_CANVAS || null,
+              renderBlobPromise: () => t4_preparePreRenderedDebtBlob()
+          });
       }
-
-      html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
-          canvas.toBlob(blob => {
-              if (!blob) {
-                  if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-                  showToast("❌ Lỗi tạo file ảnh!", true);
-                  return;
-              }
-              if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-                  navigator.clipboard.write([
-                      new ClipboardItem({ 'image/png': blob })
-                  ]).then(() => {
-                      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-                      showToast("✅ Đã sao chép ảnh báo cáo vào Clipboard! Bạn có thể dán (Ctrl+V) gửi ngay.");
-                  }).catch(err => {
-                      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-                      downloadDebtReportImage();
-                  });
-              } else {
-                  if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-                  downloadDebtReportImage();
-              }
-          }, 'image/png');
-      }).catch(err => {
-          if (btn) { btn.disabled = false; btn.innerHTML = origText; }
-          showToast("❌ Lỗi xuất ảnh: " + err, true);
-      });
   }
 
   function downloadDebtReportImage() {
       const el = document.getElementById('debt-report-preview');
       const btn = document.getElementById('btn-download-rpt-img');
-      if (!el || typeof html2canvas === 'undefined') {
-          showToast("❌ Chưa sẵn sàng thư viện chụp ảnh!", true);
+      if (!el) {
+          showToast("⚠️ Không tìm thấy khung báo cáo để xuất ảnh!", true);
           return;
       }
 
-      const origText = btn ? btn.innerHTML : '<span>📥</span> <span>Tải File</span>';
+      const captionMsg = window.CURRENT_DEBT_REPORT_CAPTION || document.getElementById('rpt-accompanying-msg-text')?.innerText || '';
+      const origText = btn ? btn.innerHTML : '<span>📥</span> <span>Tải</span>';
       if (btn) {
           btn.disabled = true;
           btn.innerText = "⏳ Đang tạo...";
       }
 
-      html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" }).then(canvas => {
+      t4_renderCaptureDebtReport(el, (canvas, err) => {
           if (btn) {
               btn.disabled = false;
               btn.innerHTML = origText;
           }
-          const link = document.createElement('a');
-          const pName = (document.getElementById('rpt-partner-name')?.innerText || 'CongNo').replace(/[^a-zA-Z0-9_\-]/g, '_');
-          link.download = `BaoCao_CongNo_${pName}_${getTodayString()}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          showToast("✅ Đã tải file ảnh báo cáo công nợ!");
+          if (err || !canvas) {
+              showToast("❌ Lỗi xuất ảnh: " + (err ? (err.message || err) : "Không tạo được canvas"), true);
+              return;
+          }
+          if (typeof showRenderedImagePreviewModal === 'function') {
+              showRenderedImagePreviewModal(canvas, captionMsg);
+          }
+          try {
+              const link = document.createElement('a');
+              const pName = (document.getElementById('rpt-partner-name')?.innerText || 'CongNo').replace(/[^a-zA-Z0-9_\-]/g, '_');
+              link.download = `BaoCao_CongNo_${pName}_${getTodayString()}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              showToast("✅ Đã tải file ảnh báo cáo công nợ!");
+          } catch(e) {
+              showToast("💡 Chạm giữ vào ảnh bên dưới để Lưu hình ảnh vào thiết bị.");
+          }
+      });
+  }
+
+  function t4_resetAndPreRenderDebtReport() {
+      window.T4_PRE_RENDERED_BLOB = null;
+      window.T4_PRE_RENDERED_CANVAS = null;
+      window.T4_EXPORT_STEP = 1;
+      const btn = document.getElementById('btn-copy-rpt-img');
+      if (btn) {
+          btn.innerHTML = '<span>📸</span> <span>Xuất Ảnh</span>';
+          btn.className = "flex-[1.5] py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl font-bold shadow-xs transition cursor-pointer text-xs flex items-center justify-center gap-1";
+      }
+      setTimeout(() => {
+          t4_preparePreRenderedDebtBlob();
+      }, 150);
+  }
+
+  function t4_preparePreRenderedDebtBlob() {
+      const cardEl = document.getElementById('debt-report-preview');
+      if (!cardEl || typeof html2canvas === 'undefined') return Promise.resolve(null);
+      return new Promise((resolve) => {
+          t4_renderCaptureDebtReport(cardEl, (canvas, err) => {
+              if (err || !canvas) {
+                  resolve(null);
+                  return;
+              }
+              window.T4_PRE_RENDERED_CANVAS = canvas;
+              canvas.toBlob(blob => {
+                  window.T4_PRE_RENDERED_BLOB = blob || null;
+                  resolve(blob || null);
+              }, 'image/png');
+          });
+      });
+  }
+
+  function t4_renderCaptureDebtReport(el, callback) {
+      if (!el) {
+          callback(null, new Error("Không tìm thấy thẻ báo cáo để chụp"));
+          return;
+      }
+      if (typeof html2canvas === 'undefined') {
+          callback(null, new Error("Thư viện chụp ảnh html2canvas chưa sẵn sàng!"));
+          return;
+      }
+
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '375px';
+      container.style.zIndex = '-9999';
+      container.style.backgroundColor = '#ffffff';
+      container.style.padding = '0';
+      container.style.margin = '0';
+
+      const clone = el.cloneNode(true);
+      clone.style.transform = 'none';
+      clone.style.animation = 'none';
+      clone.style.maxWidth = '375px';
+      clone.style.width = '375px';
+      clone.style.maxHeight = 'none';
+      clone.style.overflow = 'visible';
+      clone.style.height = 'auto';
+      clone.style.boxSizing = 'border-box';
+      clone.style.margin = '0 auto';
+
+      // Loại bỏ hoàn toàn các phần tử có data-html2canvas-ignore="true" (như nút mắt 👁️, dòng đã loại trừ)
+      clone.querySelectorAll('[data-html2canvas-ignore="true"]').forEach(elem => elem.remove());
+      clone.querySelectorAll('.col-span-5, .col-span-3, .col-span-4').forEach(elem => {
+          elem.style.overflow = 'visible';
+          elem.style.maxHeight = 'none';
+      });
+
+      container.appendChild(clone);
+      document.body.appendChild(container);
+
+      html2canvas(clone, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          width: 375,
+          windowWidth: 400
+      }).then(canvas => {
+          try { document.body.removeChild(container); } catch(e) {}
+          callback(canvas, null);
       }).catch(err => {
-          if (btn) {
-              btn.disabled = false;
-              btn.innerHTML = origText;
-          }
-          showToast("❌ Lỗi xuất ảnh: " + err, true);
+          try { document.body.removeChild(container); } catch(e) {}
+          callback(null, err);
       });
   }
 
   function confirmDeleteDebt(id) {
+      const allList = (window.TAB4_ALL_DEBTS && window.TAB4_ALL_DEBTS.length > 0) ? window.TAB4_ALL_DEBTS : (window.TAB4_DEBTS || []);
+      const item = allList.find(d => String(d.id) === String(id));
+      if (item && typeof isDebtLocked === 'function' && isDebtLocked(item)) {
+          showToast("🔒 Khoản nợ này đã được chốt đối soát, không được phép xóa!", true);
+          return;
+      }
+      if (item && item.tongNo > 0 && ((item.duNo <= 0) || ((item.daTra || 0) > 0) || String(item.trangThai || '').toUpperCase().includes('THANH_TOAN') || String(item.trangThai || '').toUpperCase().includes('DA_TRA'))) {
+          showToast("⚠️ Khoản nợ đã thanh toán, không được phép xóa!", true);
+          return;
+      }
       if (typeof showConfirmModal === 'function') {
           showConfirmModal("⚠️ Xóa Bản Ghi Công Nợ", `Bạn có chắc chắn muốn xóa bản ghi công nợ (${id}) không?`, function() {
               const reqIdDel = (typeof generateClientRequestId === 'function') ? generateClientRequestId("REQ_DD_") : ("REQ_DD_" + Date.now());
@@ -1079,6 +2177,9 @@
                           if (res && res.success) {
                               showToast(res.message || "✅ Đã xóa bản ghi công nợ!");
                               reloadTab4Data();
+                              if (typeof reloadTab2Data === 'function') reloadTab2Data();
+                              else if (typeof loadTab2Data === 'function') loadTab2Data(true);
+                              if (typeof reloadTab1Data === 'function') reloadTab1Data();
                               if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
                                   mergeUpdatedWallets(res.updatedWallets);
                               }
@@ -1101,9 +2202,654 @@
   }
 
   if(typeof openModal === 'undefined') {
-      window.openModal = function(id) { document.getElementById(id).classList.add('active'); };
-      window.closeModal = function(id) { document.getElementById(id).classList.remove('active'); };
+      window.openModal = function(id) {
+          const el = typeof id === 'string' ? document.getElementById(id) : id;
+          if (el) {
+              if (document.body && el.parentElement !== document.body) document.body.appendChild(el);
+              el.classList.remove('hidden');
+              el.classList.add('active');
+          }
+      };
+      window.closeModal = function(id) {
+          const el = typeof id === 'string' ? document.getElementById(id) : id;
+          if (el) {
+              el.classList.remove('active');
+              el.classList.add('hidden');
+          }
+      };
   }
+
+  // ========================================================
+  // QUẢN LÝ CÔNG NỢ ĐỊNH KỲ (RECURRING DEBTS CLIENT LOGIC)
+  // ========================================================
+
+  window.CURRENT_REC_SUBTAB = 'month';
+
+  function toggleAddDebtRecurring(checked) {
+      const details = document.getElementById('add-debt-recurring-details');
+      if (details) {
+          details.classList.toggle('hidden', !checked);
+      }
+  }
+
+  function getActiveTab4Period() {
+      const monthSelect = document.getElementById('t4-filter-month');
+      const yearSelect = document.getElementById('t4-filter-year');
+      const now = new Date();
+      let m = monthSelect && monthSelect.value !== 'All' ? parseInt(monthSelect.value, 10) : (now.getMonth() + 1);
+      let y = yearSelect && yearSelect.value !== 'All' ? parseInt(yearSelect.value, 10) : now.getFullYear();
+      if (!m || isNaN(m)) m = now.getMonth() + 1;
+      if (!y || isNaN(y)) y = now.getFullYear();
+      return {
+          month: m,
+          year: y,
+          period: `${y}-${String(m).padStart(2, '0')}`,
+          label: `Tháng ${m}/${y}`
+      };
+  }
+
+  function updateRecurringDebtsUI() {
+      const items = window.TAB4_RECURRING_DEBTS || [];
+      const pendingCount = items.filter(t => t.is_active && (!t.is_generated || !t.is_paid)).length;
+      
+      // 1. Cập nhật Badge trên nút Định kỳ ở header
+      const badge = document.getElementById('badge-recurring-pending');
+      if (badge) {
+          if (pendingCount > 0) {
+              badge.innerText = pendingCount;
+              badge.classList.remove('hidden');
+          } else {
+              badge.classList.add('hidden');
+          }
+      }
+
+      // 2. Cập nhật Banner công nợ định kỳ
+      const banner = document.getElementById('banner-recurring-debts');
+      const bannerPeriod = document.getElementById('banner-rec-period');
+      const bannerBadge = document.getElementById('banner-rec-badge');
+      const bannerDesc = document.getElementById('banner-rec-desc');
+      const activePeriod = getActiveTab4Period();
+
+      if (banner) {
+          if (items.length > 0) {
+              banner.classList.remove('hidden');
+              if (bannerPeriod) bannerPeriod.innerText = activePeriod.label;
+              if (bannerBadge) {
+                  if (pendingCount > 0) {
+                      bannerBadge.innerText = `${pendingCount} chưa ghi`;
+                      bannerBadge.className = "bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded-full";
+                  } else {
+                      bannerBadge.innerText = `✓ Đã xong`;
+                      bannerBadge.className = "bg-emerald-100 text-emerald-800 border border-emerald-300 text-[9px] font-bold px-1.5 py-0.2 rounded-full";
+                  }
+              }
+              if (bannerDesc) {
+                  const pendingNames = items.filter(t => t.is_active && !t.is_generated).map(t => t.content || t.name);
+                  if (pendingNames.length > 0) {
+                      bannerDesc.innerText = pendingNames.slice(0, 3).join(', ') + (pendingNames.length > 3 ? '...' : '');
+                  } else if (pendingCount > 0) {
+                      bannerDesc.innerText = 'Tất cả đã ghi nhận vào sổ nợ, chờ tất toán';
+                  } else {
+                      bannerDesc.innerText = 'Tất cả các khoản nợ định kỳ tháng này đã được hoàn tất!';
+                  }
+              }
+          } else {
+              banner.classList.add('hidden');
+          }
+      }
+
+      // 3. Cập nhật trong modal nếu đang mở
+      const periodLbl = document.getElementById('lbl-rec-current-period');
+      if (periodLbl) periodLbl.innerText = activePeriod.label;
+      const tCountLbl = document.getElementById('lbl-rec-templates-count');
+      if (tCountLbl) tCountLbl.innerText = items.length;
+      const statusText = document.getElementById('rec-month-status-text');
+      if (statusText) statusText.innerText = `${activePeriod.label} (${pendingCount} khoản cần xử lý)`;
+
+      if (document.getElementById('modal-recurring-debts')?.classList.contains('active')) {
+          renderRecurringDebtsMonthView();
+          renderRecurringDebtsTemplatesView();
+      }
+  }
+
+  function openRecurringDebtsModal() {
+      const activePeriod = getActiveTab4Period();
+      const periodLbl = document.getElementById('lbl-rec-current-period');
+      if (periodLbl) periodLbl.innerText = activePeriod.label;
+      const statusText = document.getElementById('rec-month-status-text');
+      if (statusText) statusText.innerText = activePeriod.label;
+
+      renderRecurringDebtsMonthView();
+      renderRecurringDebtsTemplatesView();
+      t4_switchRecurringSubtab('month');
+      openModal('modal-recurring-debts');
+  }
+
+  function t4_switchRecurringSubtab(subtab) {
+      window.CURRENT_REC_SUBTAB = subtab;
+      const btnMonth = document.getElementById('btn-rec-subtab-month');
+      const btnTemplates = document.getElementById('btn-rec-subtab-templates');
+      const secMonth = document.getElementById('rec-section-month');
+      const secTemplates = document.getElementById('rec-section-templates');
+
+      const activeClass = "flex-1 py-1.5 text-[11px] font-bold bg-white text-violet-700 rounded-lg shadow-2xs transition text-center cursor-pointer";
+      const inactiveClass = "flex-1 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg transition text-center cursor-pointer hover:bg-slate-200";
+
+      if (btnMonth) btnMonth.className = subtab === 'month' ? activeClass : inactiveClass;
+      if (btnTemplates) btnTemplates.className = subtab === 'templates' ? activeClass : inactiveClass;
+
+      if (secMonth) secMonth.classList.toggle('hidden', subtab !== 'month');
+      if (secTemplates) secTemplates.classList.toggle('hidden', subtab !== 'templates');
+  }
+
+  function renderRecurringDebtsMonthView() {
+      const container = document.getElementById('rec-month-list');
+      if (!container) return;
+
+      const items = window.TAB4_RECURRING_DEBTS || [];
+      if (items.length === 0) {
+          container.innerHTML = `
+              <div class="text-center py-8 text-slate-400 bg-white rounded-xl border border-dashed border-slate-200 p-4">
+                  <span class="text-3xl">⚡</span>
+                  <p class="text-xs font-bold text-slate-600 mt-2">Chưa có khoản công nợ định kỳ nào</p>
+                  <p class="text-[10px] text-slate-400 mt-0.5">Bấm nút "Nạp Mẫu Mặc Định" để tự động thêm Tiền nước 1F, Quỹ 21, Tiền nhà 1F</p>
+                  <button onclick="seedDefaultRecurringDebtsAction()" class="mt-3 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition">
+                      ✨ Nạp 3 Mẫu Mặc Định Ngay
+                  </button>
+              </div>
+          `;
+          return;
+      }
+
+      const activePeriod = getActiveTab4Period();
+      const targetM = activePeriod.month || (new Date().getMonth() + 1);
+      const targetY = activePeriod.year || new Date().getFullYear();
+      const maxDays = new Date(targetY, targetM, 0).getDate();
+
+      let html = '';
+
+      items.forEach((item, idx) => {
+          const isThu = (item.type === 'THU');
+          const typeBadge = isThu
+              ? '<span class="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0">💰 Cần thu</span>'
+              : '<span class="bg-rose-100 text-rose-800 border border-rose-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0">💸 Cần trả</span>';
+
+          const recurringDay = Math.min(Math.max(1, parseInt(item.day_of_month || 1, 10)), maxDays);
+          const dateStr = `${targetY}-${String(targetM).padStart(2, '0')}-${String(recurringDay).padStart(2, '0')}`;
+          const prevAmt = Number(item.prevAmount || item.amount || 0);
+
+          if (!item.is_active) {
+              html += `
+                  <div class="bg-white/70 p-2.5 rounded-xl border border-slate-200/80 shadow-2xs flex justify-between items-center gap-2 opacity-75">
+                      <div class="min-w-0 flex-1">
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                              ${typeBadge}
+                              <h4 class="font-bold text-xs text-slate-700 truncate">${item.name}</h4>
+                              <span class="bg-slate-100 text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-md">⏸️ Tạm ngưng</span>
+                          </div>
+                          <p class="text-[11px] font-medium text-slate-500 mt-0.5 truncate">${item.content || 'Công nợ định kỳ'}</p>
+                      </div>
+                      <button onclick="toggleRecurringDebtActive('${item.id}', true)" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer shrink-0">
+                          ▶ Kích hoạt
+                      </button>
+                  </div>
+              `;
+          } else if (item.is_generated) {
+              const genAmt = Number(item.generatedDebt?.amount ?? item.amount ?? 0);
+              const genAmtStr = genAmt.toLocaleString() + ' ¥';
+              const remAmt = Number(item.generatedDebt?.remaining_debt ?? 0);
+              const remStr = remAmt.toLocaleString() + ' ¥';
+              const statusBadge = item.is_paid
+                  ? '<span class="bg-emerald-100 text-emerald-700 border border-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded-md">✓ Đã tất toán</span>'
+                  : `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[9px] font-bold px-1.5 py-0.5 rounded-md">📝 Đang nợ: ${remStr}</span>`;
+              const actionHtml = item.is_paid
+                  ? `<span class="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">✓ Hoàn tất (${item.generatedDebt ? item.generatedDebt.id : 'Đã trả'})</span>`
+                  : `<button onclick="openPayDebtModalDirect('${item.generatedDebt?.id}')" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition shadow-2xs flex items-center gap-0.5 cursor-pointer">💰 ${isThu ? 'Thu nợ' : 'Trả nợ'}</button>`;
+
+              html += `
+                  <div class="bg-white p-2.5 rounded-xl border border-emerald-200/90 shadow-2xs flex flex-col gap-1.5">
+                      <div class="flex justify-between items-start gap-1">
+                          <div class="min-w-0 flex-1">
+                              <div class="flex items-center gap-1.5 flex-wrap">
+                                  ${typeBadge}
+                                  <h4 class="font-bold text-xs text-slate-900">${item.name}</h4>
+                                  ${statusBadge}
+                              </div>
+                              <p class="text-[11px] font-medium text-slate-600 mt-0.5">${item.content || 'Công nợ định kỳ'}</p>
+                          </div>
+                          <div class="text-right shrink-0">
+                              <p class="font-black text-xs ${isThu ? 'text-emerald-600' : 'text-rose-600'}">${genAmtStr}</p>
+                              <span class="text-[9px] text-slate-400">${item.generatedDebt?.date || dateStr}</span>
+                          </div>
+                      </div>
+                      <div class="pt-1.5 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500">
+                          <div class="truncate max-w-[180px]">
+                              <span>Ví: </span><b class="text-slate-700 font-semibold">${item.generatedDebt?.wallet_name || item.wallet_name || 'Chưa chọn ví'}</b>
+                          </div>
+                          <div class="shrink-0">${actionHtml}</div>
+                      </div>
+                  </div>
+              `;
+          } else {
+              // Giao diện nhập số tiền trực tiếp giống hệt "⚡ Nhanh" của Thu Chi (Tab 2)
+              html += `
+                  <div class="bg-white border border-slate-200/90 rounded-xl p-2.5 space-y-2 w-full box-border relative overflow-visible z-10 hover:z-30 shadow-2xs">
+                      <div class="flex items-center justify-between gap-1.5 border-b border-slate-100 pb-1.5">
+                          <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                              ${typeBadge}
+                              <span class="text-xs font-bold text-slate-900 truncate" title="${item.name || ''}">${item.name || ''}</span>
+                              <span class="text-[11px] font-medium text-slate-600 truncate">- ${item.content || 'Công nợ định kỳ'}</span>
+                          </div>
+                          <span class="bg-amber-50 text-amber-700 border border-amber-200 text-[9px] font-bold px-1.5 py-0.5 rounded-md shrink-0">⏳ Chưa ghi</span>
+                      </div>
+
+                      <div class="flex items-center justify-between gap-1.5 w-full">
+                          <div class="flex items-center gap-1 shrink-0">
+                              <span class="text-[9px] font-bold text-slate-400 uppercase hidden sm:inline">Ngày:</span>
+                              <input type="date" id="qrd-date-${idx}" value="${dateStr}" class="bg-white border border-slate-300 rounded-md px-1 py-1 text-[10px] font-bold text-slate-700 outline-none focus:border-violet-400 w-[104px] text-center shrink-0" />
+                          </div>
+                          <div class="flex items-center gap-1 min-w-0 justify-end flex-1">
+                              ${prevAmt > 0 ? `<button type="button" onclick="const el=document.getElementById('qrd-money-${idx}');if(el){el.value='${prevAmt.toLocaleString('en-US')}';}" class="text-[8px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-1.5 py-1 rounded shrink-0 truncate cursor-pointer" title="Bấm để điền nhanh số tiền kỳ trước: ${prevAmt.toLocaleString()} ¥">T.Trước: ${prevAmt.toLocaleString()} ¥</button>` : ''}
+                              <input type="text" inputmode="decimal" id="qrd-money-${idx}" value="" placeholder="Nhập số tiền ¥" onblur="t4_onAmountBlur(this)" class="w-full max-w-[125px] bg-white border ${isThu ? 'border-emerald-300 text-emerald-700' : 'border-rose-300 text-rose-600'} rounded-md px-2 py-1 text-xs font-bold outline-none focus:ring-1 focus:ring-violet-400 text-right" />
+                          </div>
+                      </div>
+
+                      <div class="flex items-center justify-between gap-1.5 w-full">
+                          <div class="relative min-w-0 flex-1">
+                              <input type="text" id="qrd-source-${idx}" autocomplete="off" placeholder="Ví giao dịch (Để trống = chỉ ghi nợ)..." value="${item.wallet_name || ''}" data-wallet-id="${item.wallet_id || ''}" data-wallet-name="${item.wallet_name || ''}" oninput="renderSuggest('qrd-source-${idx}', 'nguon', false)" onfocus="renderSuggest('qrd-source-${idx}', 'nguon', true)" onclick="renderSuggest('qrd-source-${idx}', 'nguon', true)" onmousedown="renderSuggest('qrd-source-${idx}', 'nguon', true)" onblur="hideSuggest('qrd-source-${idx}')" class="w-full bg-white border border-slate-300 rounded-md px-2 py-1 text-[11px] font-bold text-slate-700 outline-none focus:border-violet-400 truncate" />
+                              <div id="box-qrd-source-${idx}" class="suggest-box absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl hidden max-h-36 overflow-y-auto z-50"></div>
+                          </div>
+                          <div class="flex items-center gap-1 shrink-0">
+                              <button type="button" onclick="generateSingleRecurringDebt('${item.id}', false, ${idx})" class="bg-violet-600 hover:bg-violet-700 active:scale-95 text-white px-2 py-1 rounded-md text-[10px] font-bold transition shadow-2xs cursor-pointer" title="Ghi nhận nợ vào sổ với số tiền đã nhập">
+                                  ⚡ Ghi nợ
+                              </button>
+                              <button type="button" onclick="generateSingleRecurringDebt('${item.id}', true, ${idx})" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-2 py-1 rounded-md text-[10px] font-bold transition shadow-2xs cursor-pointer" title="Ghi nhận và tất toán ngay với số tiền đã nhập">
+                                  💵 ${isThu ? 'Thu ngay' : 'Trả ngay'}
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              `;
+          }
+      });
+
+      container.innerHTML = html;
+  }
+
+  function renderRecurringDebtsTemplatesView() {
+      const container = document.getElementById('rec-templates-list');
+      if (!container) return;
+
+      const items = window.TAB4_RECURRING_DEBTS || [];
+      if (items.length === 0) {
+          container.innerHTML = `
+              <div class="text-center py-6 text-slate-400 bg-white rounded-xl border border-dashed border-slate-200 p-4">
+                  <p class="text-xs font-bold text-slate-600">Chưa có mẫu nào</p>
+                  <p class="text-[10px] text-slate-400 mt-1">Bấm "+ Thêm Mẫu Mới" hoặc "Nạp Mẫu Mặc Định" để bắt đầu</p>
+              </div>
+          `;
+          return;
+      }
+
+      let html = '';
+      items.forEach(item => {
+          const isThu = (item.type === 'THU');
+          const amt = Number(item.amount || 0);
+          const prevAmt = Number(item.prevAmount || 0);
+          const amtBadgeHtml = amt > 0
+              ? `<p class="font-black text-xs ${isThu ? 'text-emerald-600' : 'text-rose-600'}">${amt.toLocaleString()} ¥</p>`
+              : (prevAmt > 0
+                  ? `<span class="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">T.Trước: ${prevAmt.toLocaleString()} ¥</span>`
+                  : `<span class="text-[9px] font-semibold text-slate-400 italic">Nhập theo tháng</span>`);
+          const typeBadge = isThu
+              ? '<span class="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2 rounded-md">💰 Cần thu</span>'
+              : '<span class="bg-rose-100 text-rose-800 text-[9px] font-bold px-1.5 py-0.2 rounded-md">💸 Cần trả</span>';
+
+          html += `
+              <div class="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-2xs flex justify-between items-center gap-2">
+                  <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                          <h4 class="font-bold text-xs text-slate-900 truncate">${item.name}</h4>
+                          ${typeBadge}
+                      </div>
+                      <p class="text-[10px] text-slate-600 mt-0.5 truncate">${item.content || ''}</p>
+                      <div class="flex items-center gap-2 text-[9px] text-slate-400 mt-0.5">
+                          <span>📅 Ngày <b>${item.day_of_month || 1}</b> hàng tháng</span>
+                          <span>•</span>
+                          <span>Ví: <b>${item.wallet_name || 'Chưa đặt'}</b></span>
+                      </div>
+                  </div>
+                  <div class="flex flex-col items-end gap-1.5 shrink-0">
+                      ${amtBadgeHtml}
+                      <div class="flex items-center gap-1">
+                          <label class="relative inline-flex items-center cursor-pointer" title="Bật/Tắt mẫu">
+                              <input type="checkbox" onchange="toggleRecurringDebtActive('${item.id}', this.checked)" ${item.is_active ? 'checked' : ''} class="sr-only peer" />
+                              <div class="w-7 h-4 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-violet-600"></div>
+                          </label>
+                          <button onclick="openEditRecurringDebtModal('${item.id}')" class="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-violet-700 transition cursor-pointer" title="Chỉnh sửa">
+                              ✏️
+                          </button>
+                          <button onclick="deleteRecurringDebtTemplate('${item.id}')" class="p-1 hover:bg-rose-50 rounded text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Xóa mẫu">
+                              🗑️
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          `;
+      });
+
+      container.innerHTML = html;
+  }
+
+  function toggleEditRecType(type) {
+      document.getElementById('edit-rec-type').value = type;
+      const btnThu = document.getElementById('edit-rec-btn-thu');
+      const btnTra = document.getElementById('edit-rec-btn-tra');
+      if (type === 'THU') {
+          btnThu.className = "flex-1 py-1.5 bg-white text-emerald-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition flex items-center justify-center gap-1";
+          btnTra.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1";
+      } else {
+          btnThu.className = "flex-1 py-1.5 text-slate-500 rounded-lg text-xs font-bold cursor-pointer transition flex items-center justify-center gap-1";
+          btnTra.className = "flex-1 py-1.5 bg-white text-rose-600 rounded-lg text-xs font-bold shadow-sm cursor-pointer transition flex items-center justify-center gap-1";
+      }
+  }
+
+  function openEditRecurringDebtModal(itemOrId) {
+      let item = null;
+      if (typeof itemOrId === 'string' && itemOrId) {
+          item = (window.TAB4_RECURRING_DEBTS || []).find(t => t.id === itemOrId);
+      } else if (typeof itemOrId === 'object' && itemOrId !== null) {
+          item = itemOrId;
+      }
+
+      document.getElementById('edit-rec-id').value = item ? item.id : '';
+      document.getElementById('edit-rec-title').innerText = item ? 'Chỉnh Sửa Mẫu Định Kỳ' : 'Thêm Mẫu Định Kỳ Mới';
+      document.getElementById('edit-rec-name').value = item ? item.name : '';
+      document.getElementById('edit-rec-content').value = item ? (item.content || '') : '';
+      document.getElementById('edit-rec-amount').value = item ? (item.amount || '') : '';
+      document.getElementById('edit-rec-day').value = item ? (item.day_of_month || 1) : 1;
+      const srcEl = document.getElementById('edit-rec-source');
+      if (srcEl) {
+          srcEl.value = item ? (item.wallet_name || '') : '';
+          if (srcEl.dataset) {
+              srcEl.dataset.walletId = item ? (item.wallet_id || '') : '';
+              srcEl.dataset.walletName = item ? (item.wallet_name || '') : '';
+          }
+      }
+      document.getElementById('edit-rec-note').value = item ? (item.note || '') : '';
+      document.getElementById('edit-rec-active').checked = item ? (item.is_active !== false) : true;
+      toggleEditRecType(item ? (item.type || 'TRA') : 'TRA');
+
+      openModal('modal-edit-recurring-debt');
+  }
+
+  function saveRecurringDebtTemplate() {
+      const name = document.getElementById('edit-rec-name').value.trim();
+      if (!name) {
+          showToast("⚠️ Vui lòng nhập tên đối tượng!", true);
+          return;
+      }
+      const rawAmt = document.getElementById('edit-rec-amount').value;
+      const amount = t4_parseMathAmount(rawAmt);
+      const day = Math.min(31, Math.max(1, parseInt(document.getElementById('edit-rec-day').value, 10) || 1));
+      const srcEl = document.getElementById('edit-rec-source');
+      const walletName = srcEl ? srcEl.value.trim() : '';
+      const walletId = (typeof getSelectedWalletId === 'function') ? getSelectedWalletId('edit-rec-source') : (srcEl?.dataset?.walletId || '');
+
+      const payload = {
+          id: document.getElementById('edit-rec-id').value.trim(),
+          name: name,
+          type: document.getElementById('edit-rec-type').value,
+          content: document.getElementById('edit-rec-content').value.trim(),
+          amount: amount,
+          day_of_month: day,
+          wallet_id: walletId,
+          wallet_name: walletName,
+          note: document.getElementById('edit-rec-note').value.trim(),
+          is_active: document.getElementById('edit-rec-active').checked
+      };
+
+      closeModal('modal-edit-recurring-debt');
+      showToast("⚡ Đang lưu mẫu định kỳ...");
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveRecurringDebt === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã lưu mẫu định kỳ!");
+                      reloadTab4Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Lỗi lưu dữ liệu"), true);
+                  }
+              })
+              .withFailureHandler(function(err) {
+                  showToast("❌ Lỗi: " + (err ? (err.message || err) : "Lỗi không xác định"), true);
+              })
+              .saveRecurringDebt(payload);
+      }
+  }
+
+  function deleteRecurringDebtTemplate(id) {
+      if (!id) return;
+      if (typeof showConfirmModal === 'function') {
+          showConfirmModal("Xóa Mẫu Định Kỳ", "Bạn có chắc chắn muốn xóa mẫu công nợ định kỳ này?", function() {
+              showToast("⚡ Đang xóa mẫu...");
+              if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.deleteRecurringDebt === 'function') {
+                  google.script.run
+                      .withSuccessHandler(function(res) {
+                          if (res && res.success) {
+                              showToast(res.message || "✅ Đã xóa mẫu định kỳ!");
+                              reloadTab4Data();
+                          } else {
+                              showToast("❌ " + (res ? res.message : "Xóa thất bại"), true);
+                          }
+                      })
+                      .deleteRecurringDebt(id);
+              }
+          }, "Xóa Mẫu");
+      }
+  }
+
+  function toggleRecurringDebtActive(id, isActive) {
+      if (!id) return;
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.toggleRecurringDebt === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã cập nhật trạng thái!");
+                      reloadTab4Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Cập nhật thất bại"), true);
+                  }
+              })
+              .toggleRecurringDebt(id, isActive);
+      }
+  }
+
+  function generateSingleRecurringDebt(recId, autoSettle = false, idx = null) {
+      if (!recId) return;
+      const activePeriod = getActiveTab4Period();
+
+      let newDate = '';
+      let newAmount = 0;
+      let newSource = undefined;
+      let walletId = '';
+
+      if (idx !== null && idx !== undefined) {
+          const dateEl = document.getElementById('qrd-date-' + idx);
+          const moneyEl = document.getElementById('qrd-money-' + idx);
+          const sourceEl = document.getElementById('qrd-source-' + idx);
+          newDate = dateEl ? dateEl.value : '';
+          newAmount = moneyEl ? t4_parseMathAmount(moneyEl.value) : 0;
+          newSource = sourceEl ? sourceEl.value.trim() : '';
+          walletId = (typeof getSelectedWalletId === 'function' && sourceEl) ? getSelectedWalletId('qrd-source-' + idx) : (sourceEl?.dataset?.walletId || '');
+
+          if (!newAmount || newAmount <= 0) {
+              showToast("⚠️ Vui lòng nhập số tiền cho kỳ này trước khi lưu!", true);
+              if (moneyEl) moneyEl.focus();
+              return;
+          }
+          if (autoSettle && !newSource && !walletId) {
+              showToast("⚠️ Vui lòng chọn Ví giao dịch để Tất toán ngay (hoặc bấm '⚡ Ghi nợ' nếu chưa trả tiền)!", true);
+              if (sourceEl) sourceEl.focus();
+              return;
+          }
+      }
+
+      showToast(autoSettle ? "⚡ Đang ghi nhận và thanh toán nợ định kỳ..." : "⚡ Đang ghi nhận khoản nợ định kỳ...");
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.generateRecurringDebt === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã xử lý khoản công nợ định kỳ!");
+                      if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                          mergeUpdatedWallets(res.updatedWallets);
+                      }
+                      reloadTab4Data();
+                      if (typeof reloadTab1Data === 'function') reloadTab1Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Xử lý thất bại"), true);
+                  }
+              })
+              .withFailureHandler(function(err) {
+                  showToast("❌ Lỗi: " + (err ? (err.message || err) : "Lỗi kết nối"), true);
+              })
+              .generateRecurringDebt({
+                  recurring_id: recId,
+                  month: activePeriod.month,
+                  year: activePeriod.year,
+                  newDate: newDate,
+                  newAmount: newAmount,
+                  amount: newAmount,
+                  newSource: newSource,
+                  wallet_id: walletId,
+                  wallet_name: newSource,
+                  autoSettle: autoSettle
+              });
+      }
+  }
+
+  function submitBatchQuickRecurringDebts(autoSettle = false) {
+      const items = window.TAB4_RECURRING_DEBTS || [];
+      if (!items || items.length === 0) {
+          closeModal('modal-recurring-debts');
+          return;
+      }
+
+      const activePeriod = getActiveTab4Period();
+      let missingWalletForSettle = false;
+
+      const payload = items.map((item, idx) => {
+          if (!item || !item.is_active || item.is_generated) return null;
+          const dateEl = document.getElementById('qrd-date-' + idx);
+          const moneyEl = document.getElementById('qrd-money-' + idx);
+          const sourceEl = document.getElementById('qrd-source-' + idx);
+          const amt = moneyEl ? t4_parseMathAmount(moneyEl.value) : 0;
+          if (!amt || amt <= 0) return null;
+
+          const srcName = sourceEl ? sourceEl.value.trim() : '';
+          const wId = (typeof getSelectedWalletId === 'function' && sourceEl) ? getSelectedWalletId('qrd-source-' + idx) : (sourceEl?.dataset?.walletId || '');
+          if (autoSettle && !srcName && !wId) {
+              missingWalletForSettle = true;
+          }
+
+          return {
+              recurring_id: item.id,
+              newDate: dateEl ? dateEl.value : '',
+              newAmount: amt,
+              amount: amt,
+              newSource: srcName,
+              wallet_id: wId,
+              wallet_name: srcName,
+              month: activePeriod.month,
+              year: activePeriod.year,
+              autoSettle: autoSettle
+          };
+      }).filter(Boolean);
+
+      if (payload.length === 0) {
+          showToast("⚠️ Vui lòng nhập số tiền cho ít nhất 1 khoản định kỳ bên trên!", true);
+          return;
+      }
+
+      if (autoSettle && missingWalletForSettle) {
+          showToast("⚠️ Vui lòng chọn Ví giao dịch cho các khoản muốn Tất toán ngay (hoặc bấm '⚡ Lưu Ghi Nợ')!", true);
+          return;
+      }
+
+      const btnDebt = document.getElementById('btn-submit-batch-rec-debt');
+      const btnSettle = document.getElementById('btn-submit-batch-rec-settle');
+      if (btnDebt) btnDebt.disabled = true;
+      if (btnSettle) btnSettle.disabled = true;
+      showToast(autoSettle ? "⚡ Đang lưu và tất toán các khoản đã nhập..." : "⚡ Đang lưu ghi nợ các khoản đã nhập...");
+
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.saveBatchQuickRecurringDebts === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  if (btnDebt) btnDebt.disabled = false;
+                  if (btnSettle) btnSettle.disabled = false;
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã lưu các khoản công nợ định kỳ!");
+                      if (res.updatedWallets && typeof mergeUpdatedWallets === 'function') {
+                          mergeUpdatedWallets(res.updatedWallets);
+                      }
+                      reloadTab4Data();
+                      if (typeof reloadTab1Data === 'function') reloadTab1Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Lỗi lưu dữ liệu"), true);
+                  }
+              })
+              .withFailureHandler(function(err) {
+                  if (btnDebt) btnDebt.disabled = false;
+                  if (btnSettle) btnSettle.disabled = false;
+                  showToast("❌ Lỗi: " + (err ? (err.message || err) : "Lỗi kết nối"), true);
+              })
+              .saveBatchQuickRecurringDebts(payload, activePeriod.month, activePeriod.year, autoSettle);
+      }
+  }
+
+  function quickGenerateAllRecurringDebtsCurrentMonth() {
+      openRecurringDebtsModal();
+  }
+
+  function seedDefaultRecurringDebtsAction() {
+      showToast("⚡ Đang nạp mẫu công nợ định kỳ mặc định...");
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.seedDefaultRecurringDebts === 'function') {
+          google.script.run
+              .withSuccessHandler(function(res) {
+                  if (res && res.success) {
+                      showToast(res.message || "✅ Đã nạp xong 3 mẫu mặc định!");
+                      reloadTab4Data();
+                  } else {
+                      showToast("❌ " + (res ? res.message : "Thất bại"), true);
+                  }
+              })
+              .seedDefaultRecurringDebts();
+      }
+  }
+
+  function openPayDebtModalDirect(debtId) {
+      if (!debtId) return;
+      closeModal('modal-recurring-debts');
+      if (typeof openPayModal === 'function') {
+          openPayModal(debtId);
+      }
+  }
+
+  window.openRecurringDebtsModal = openRecurringDebtsModal;
+  window.t4_switchRecurringSubtab = t4_switchRecurringSubtab;
+  window.openEditRecurringDebtModal = openEditRecurringDebtModal;
+  window.saveRecurringDebtTemplate = saveRecurringDebtTemplate;
+  window.deleteRecurringDebtTemplate = deleteRecurringDebtTemplate;
+  window.toggleRecurringDebtActive = toggleRecurringDebtActive;
+  window.generateSingleRecurringDebt = generateSingleRecurringDebt;
+  window.submitBatchQuickRecurringDebts = submitBatchQuickRecurringDebts;
+  window.quickGenerateAllRecurringDebtsCurrentMonth = quickGenerateAllRecurringDebtsCurrentMonth;
+  window.seedDefaultRecurringDebtsAction = seedDefaultRecurringDebtsAction;
+  window.toggleAddDebtRecurring = toggleAddDebtRecurring;
+  window.toggleEditRecType = toggleEditRecType;
+  window.updateRecurringDebtsUI = updateRecurringDebtsUI;
 
   window.copyDebtReportImageToClipboard = copyDebtReportImageToClipboard;
   window.downloadDebtReportImage = downloadDebtReportImage;
@@ -1111,4 +2857,5 @@
   window.openPayModal = openPayModal;
   window.openPayDebtModal = openPayModal;
   window.submitPayDebt = submitPayDebt;
+
 </script>
