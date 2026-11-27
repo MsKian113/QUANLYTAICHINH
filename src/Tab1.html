@@ -3210,8 +3210,26 @@ Ví dụ:
         });
 
         const reminders = creditWallets.map(w => t1_getCardSettlementReminder(w));
-        const urgentCards = reminders.filter(r => r.isUrgent);
-        const debtCards = reminders.filter(r => r.debt > 0);
+
+        // Lọc bỏ triệt để các thẻ đã tất toán trong kỳ này hoặc vừa ấn tất toán
+        const unsettledReminders = reminders.filter(r => {
+            if (!r || r.debt <= 0) return false;
+            const rNameLower = String(r.name || '').trim().toLowerCase();
+            const rIdLower = String(r.id || '').trim().toLowerCase();
+            if (window._settledCardsThisSession && (window._settledCardsThisSession.has(rNameLower) || window._settledCardsThisSession.has(rIdLower))) {
+                return false;
+            }
+            if (r.status === 'SETTLED_THIS_MONTH' || r.hasSettleThisMonth || r.status === 'NO_DEBT' || r.status === 'SETTLED' || r.isSettled) {
+                return false;
+            }
+            if (r.badge && (r.badge.includes('Đã tất toán') || r.badge.includes('Đã thanh toán'))) {
+                return false;
+            }
+            return true;
+        });
+
+        const urgentCards = unsettledReminders.filter(r => r.isUrgent);
+        const debtCards = unsettledReminders;
 
         const btnCard = document.getElementById('btn-card');
         if (btnCard) {
@@ -3247,17 +3265,15 @@ Ví dụ:
                 const dueMonth = r.effectiveDueMonth || curMonth;
                 const settleAmt = r.dueDebt || r.debt;
                 cardsHtml += `
-                <div class="p-2 px-2.5 rounded-xl bg-white/95 border border-rose-200 shadow-2xs space-y-1.5">
-                    <div class="flex items-center justify-between gap-2 cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
+                <div class="p-1.5 px-2.5 rounded-xl bg-white/95 border border-rose-200 shadow-2xs flex items-center justify-between gap-1.5 transition hover:border-rose-400">
+                    <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
                         <span class="text-xs font-black text-slate-800 truncate">${r.name}</span>
-                        <span class="text-xs font-black text-rose-600 whitespace-nowrap">${settleAmt.toLocaleString()} ¥</span>
+                        <span class="text-[9.5px] px-1.5 py-0.2 rounded font-black inline-flex items-center shrink-0 ${r.badgeClass}">${r.badge}</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                        <div class="cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
-                            <span class="text-[9.5px] px-1.5 py-0.5 rounded font-black inline-flex items-center ${r.badgeClass}">${r.badge}</span>
-                        </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-xs font-black text-rose-600 whitespace-nowrap cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')">${settleAmt.toLocaleString()} ¥</span>
                         <button type="button" onclick="openSettleModal('${safeName}', ${settleAmt}, '${safeId}')"
-                                class="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg text-[10.5px] font-black shadow-xs cursor-pointer transition flex items-center gap-1 shrink-0 animate-pulse"
+                                class="px-2 py-0.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg text-[10px] font-black shadow-xs cursor-pointer transition flex items-center gap-0.5 whitespace-nowrap animate-pulse"
                                 title="Mở form tất toán thẻ ngay">
                             ⚡ Tất toán
                         </button>
@@ -3275,17 +3291,15 @@ Ví dụ:
                         const dueMonth = r.effectiveDueMonth || curMonth;
                         const settleAmt = r.dueDebt || r.debt;
                         otherHtml += `
-                        <div class="p-2 px-2.5 rounded-xl bg-white/80 border border-slate-200 shadow-2xs space-y-1.5">
-                            <div class="flex items-center justify-between gap-2 cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
+                        <div class="p-1.5 px-2.5 rounded-xl bg-white/90 border border-slate-200 shadow-2xs flex items-center justify-between gap-1.5 transition hover:border-slate-300">
+                            <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
                                 <span class="text-xs font-black text-slate-800 truncate">${r.name}</span>
-                                <span class="text-xs font-black text-slate-700 whitespace-nowrap">${settleAmt.toLocaleString()} ¥</span>
+                                <span class="text-[9.5px] px-1.5 py-0.2 rounded font-bold inline-flex items-center shrink-0 ${r.badgeClass}">${r.badge}</span>
                             </div>
-                            <div class="flex items-center justify-between gap-2">
-                                <div class="cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')" title="Bấm để xem sao kê kỳ ${dueMonth}">
-                                    <span class="text-[9.5px] px-1.5 py-0.5 rounded font-bold inline-flex items-center ${r.badgeClass}">${r.badge}</span>
-                                </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <span class="text-xs font-black text-slate-700 whitespace-nowrap cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth}, '${safeId}')">${settleAmt.toLocaleString()} ¥</span>
                                 <button type="button" onclick="openSettleModal('${safeName}', ${settleAmt}, '${safeId}')"
-                                        class="px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 shrink-0">
+                                        class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold cursor-pointer transition flex items-center gap-0.5 whitespace-nowrap">
                                     💸 Tất toán
                                 </button>
                             </div>
@@ -3323,17 +3337,15 @@ Ví dụ:
                     const dueMonth = r.effectiveDueMonth || curMonth;
                     const settleAmt = r.dueDebt || r.debt;
                     expandedListHtml += `
-                    <div class="p-2 px-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1.5">
-                        <div class="flex items-center justify-between gap-2 cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})" title="Bấm để xem sao kê kỳ ${dueMonth}">
+                    <div class="p-1.5 px-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs flex items-center justify-between gap-1.5 transition hover:border-slate-300">
+                        <div class="flex items-center gap-1.5 min-w-0 flex-1 truncate cursor-pointer select-none" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})" title="Bấm để xem sao kê kỳ ${dueMonth}">
                             <span class="text-xs font-black text-slate-800 truncate">${r.name}</span>
-                            <span class="text-xs font-black text-slate-700 whitespace-nowrap">${settleAmt.toLocaleString()} ¥</span>
+                            <span class="text-[9.5px] px-1.5 py-0.2 rounded font-bold inline-flex items-center shrink-0 ${r.badgeClass}">${r.badge}</span>
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})" title="Bấm để xem sao kê kỳ ${dueMonth}">
-                                <span class="text-[9.5px] px-1.5 py-0.5 rounded font-bold inline-flex items-center ${r.badgeClass}">${r.badge}</span>
-                            </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs font-black text-slate-700 whitespace-nowrap cursor-pointer" onclick="openStatement('${safeName}', 'CREDIT', ${dueMonth})">${settleAmt.toLocaleString()} ¥</span>
                             <button type="button" onclick="openSettleModal('${safeName}', ${settleAmt})"
-                                    class="px-2.5 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10.5px] font-bold cursor-pointer transition flex items-center gap-1 shrink-0">
+                                    class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold cursor-pointer transition flex items-center gap-0.5 whitespace-nowrap">
                                 💸 Tất toán
                             </button>
                         </div>
@@ -7347,6 +7359,11 @@ Ví dụ:
             return;
         }
 
+        // Đánh dấu thẻ đã tất toán trong session để không bao giờ hiển thị lại nút tất toán
+        window._settledCardsThisSession = window._settledCardsThisSession || new Set();
+        if (card) window._settledCardsThisSession.add(String(card).trim().toLowerCase());
+        if (cardId) window._settledCardsThisSession.add(String(cardId).trim().toLowerCase());
+
         // Optimistic UI updates - phản hồi tức thì 0ms
         let oldCardBal = 0;
         let oldSourceBal = 0;
@@ -7360,7 +7377,9 @@ Ví dụ:
                 oldCardBal = Number(targetCardObj.current_balance) || 0;
                 targetCardObj.current_balance = oldCardBal + amt;
                 targetCardObj.debt = Math.max(0, (Number(targetCardObj.debt) || 0) - amt);
+                targetCardObj.dueDebt = 0;
                 targetCardObj.hasSettleThisMonth = true;
+                targetCardObj.isSettled = true;
                 targetCardObj.lastSettleDate = dateVal || new Date().toISOString().split('T')[0];
                 targetCardObj.settlementReminder = null;
             }
@@ -7369,6 +7388,9 @@ Ví dụ:
                 sourceWalletObj.current_balance = oldSourceBal - amt;
             }
             renderTab1Wallets();
+            if (typeof t1_renderSettlementAlertBanner === 'function') {
+                t1_renderSettlementAlertBanner();
+            }
         }
 
         // Đóng modal ngay lập tức không bắt người dùng chờ
@@ -7387,11 +7409,23 @@ Ví dụ:
                 showToast(res.message || "✅ Đã tất toán thẻ thành công!");
                 const wList = res.wallets || res.updatedWallets;
                 if (wList && Array.isArray(wList)) {
+                    wList.forEach(w => {
+                        const wNameLower = String(w.name || '').trim().toLowerCase();
+                        const wIdLower = String(w.id || '').trim().toLowerCase();
+                        if (window._settledCardsThisSession && (window._settledCardsThisSession.has(wNameLower) || window._settledCardsThisSession.has(wIdLower))) {
+                            w.hasSettleThisMonth = true;
+                            w.isSettled = true;
+                            w.dueDebt = 0;
+                        }
+                    });
                     if (typeof mergeUpdatedWallets === 'function') {
                         mergeUpdatedWallets(wList);
                     } else {
                         window.t1_walletsData = wList;
                         renderTab1Wallets();
+                    }
+                    if (typeof t1_renderSettlementAlertBanner === 'function') {
+                        t1_renderSettlementAlertBanner();
                     }
                     if (typeof t1_activeWalletForStatement !== 'undefined' && t1_activeWalletForStatement) {
                         const matchedW = wList.find(w => (t1_activeWalletForStatement.id && String(w.id) === String(t1_activeWalletForStatement.id)) || (w.name && String(w.name).toLowerCase() === String(t1_activeWalletForStatement.name).toLowerCase()));
