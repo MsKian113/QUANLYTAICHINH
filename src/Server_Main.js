@@ -1336,27 +1336,27 @@ function getAppData(month, year, ssTarget, forceRefresh) {
               status = 'OVERDUE';
               urgency = 'CRITICAL';
               isUrgent = true;
-              badge = '🚨 Quá hạn ' + overdueDays + ' ngày (Hạn: ' + effectiveDueDay + '/' + effectiveDueMonth + ')';
+              badge = '🚨 Quá ' + overdueDays + ' ngày';
               badgeClass = 'bg-rose-100 text-rose-800 border border-rose-300 font-black animate-pulse';
               message = 'Đã quá hạn tất toán ' + overdueDays + ' ngày (Hạn: ngày ' + effectiveDueDay + '/' + effectiveDueMonth + (isShifted ? ' dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ' : '') + ')';
             } else if (diffDays === 0) {
               status = 'DUE_TODAY';
               urgency = 'HIGH';
               isUrgent = true;
-              badge = '⚠️ Đến hạn hôm nay (' + effectiveDueDay + '/' + effectiveDueMonth + ')';
+              badge = '⚠️ Hôm nay';
               badgeClass = 'bg-rose-500 text-white font-black animate-pulse';
               message = 'Hôm nay đến hạn tất toán (Hạn: ngày ' + effectiveDueDay + '/' + effectiveDueMonth + (isShifted ? ' dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ' : '') + ')';
             } else if (diffDays <= 5) {
               status = 'DUE_SOON';
               urgency = 'MEDIUM';
               isUrgent = true;
-              badge = '⏳ Sắp đến hạn (' + diffDays + ' ngày)';
+              badge = '⏳ Còn ' + diffDays + ' ngày';
               badgeClass = 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
               message = 'Sắp đến hạn tất toán còn ' + diffDays + ' ngày (Hạn: ngày ' + effectiveDueDay + '/' + effectiveDueMonth + (isShifted ? ' dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ' : '') + ')';
             } else {
               status = 'UPCOMING';
               urgency = 'LOW';
-              badge = '📅 Hạn: ngày ' + effectiveDueDay + '/' + effectiveDueMonth;
+              badge = '📅 ' + effectiveDueDay + '/' + effectiveDueMonth;
               badgeClass = 'bg-blue-50 text-blue-700 border border-blue-200';
               message = 'Đến hạn ngày ' + effectiveDueDay + '/' + effectiveDueMonth + (isShifted ? ' (dời từ ngày ' + nominalDueDay + ' do T7/CN/Lễ)' : '') + ' (còn ' + diffDays + ' ngày)';
             }

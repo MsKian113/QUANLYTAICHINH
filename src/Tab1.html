@@ -2375,7 +2375,18 @@ Ví dụ:
     window.activeEmailReviewItem = null;
 
     async function fetchKianPendingEmailTransactions(silent = true) {
-        if (window.isStienTenant) return;
+        const u = window.CURRENT_USER || (function(){ try { return JSON.parse(localStorage.getItem('FIN_AUTH_USER') || '{}'); } catch(e){ return {}; } })();
+        const uName = String(u.username || u.name || '').toLowerCase();
+        const isStien = (typeof window.isStienTenant !== 'undefined' && window.isStienTenant) || uName.includes('tien') || uName.includes('stien');
+        if (isStien) {
+            window.t1_pendingEmailTransactions = [];
+            const container = document.getElementById('t1-email-review-wrapper');
+            if (container) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+            }
+            return;
+        }
         try {
             let res;
             if (typeof callServerMasterRouter === 'function') {
@@ -2410,7 +2421,10 @@ Ví dụ:
     window.fetchKianPendingEmailTransactions = fetchKianPendingEmailTransactions;
 
     function t1_renderEmailReviewInboxHtml(items) {
-        if (!items || items.length === 0) return '';
+        const u = window.CURRENT_USER || (function(){ try { return JSON.parse(localStorage.getItem('FIN_AUTH_USER') || '{}'); } catch(e){ return {}; } })();
+        const uName = String(u.username || u.name || '').toLowerCase();
+        const isStien = (typeof window.isStienTenant !== 'undefined' && window.isStienTenant) || uName.includes('tien') || uName.includes('stien');
+        if (isStien || !items || items.length === 0) return '';
         const count = items.length;
         let listHtml = '';
 
@@ -2991,7 +3005,15 @@ Ví dụ:
         
         // Nếu server đã trả về reminder được tính toán sẵn
         if (w.settlementReminder && typeof w.settlementReminder === 'object' && w.settlementReminder.badge) {
-            return w.settlementReminder;
+            const rem = Object.assign({}, w.settlementReminder);
+            if (rem.badge) {
+                rem.badge = String(rem.badge)
+                    .replace(/Sắp đến hạn \((\d+)\s*ngày\)/i, 'Còn $1 ngày')
+                    .replace(/Quá hạn (\d+)\s*ngày[^\)]*\)/i, 'Quá $1 ngày')
+                    .replace(/Đến hạn hôm nay[^\)]*\)/i, 'Hôm nay')
+                    .replace(/Hạn: ngày\s*/i, '');
+            }
+            return rem;
         }
 
         const metrics = (typeof getCreditCardMetrics === 'function') ? getCreditCardMetrics(w) : { debt: Number(w.debt || 0) };
